@@ -1,5 +1,5 @@
 {
-  "description": "Internal logic diffs map to enclosing method via line ranges, not declaration regex",
+  "description": "Internal logic diffs map to enclosing method; semantic engine emits BODY_CHANGED",
   "diffCases": [
     {
       "file": "src/auth.service.ts",
@@ -11,7 +11,15 @@
           "className": "AuthService"
         }
       ],
-      "mustNotEncloseOnly": ["sign"]
+      "mustChangedSymbols": [
+        {
+          "kind": "METHOD",
+          "name": "generateToken",
+          "className": "AuthService"
+        }
+      ],
+      "mustSemanticEvents": ["BODY_CHANGED"],
+      "mustNotSemanticEvents": ["METHOD_REMOVED", "METHOD_ADDED"]
     }
   ]
 }

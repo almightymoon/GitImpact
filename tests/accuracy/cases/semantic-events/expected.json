@@ -1,0 +1,36 @@
+{
+  "description": "Old vs new AST comparison emits precise semantic events",
+  "diffCases": [
+    {
+      "file": "src/signature-change.ts",
+      "patch": "@@ -1,6 +1,7 @@\n export class TokenService {\n-  issue(user: string): string {\n+  issue(user: string, ttl: number): string {\n+    audit(user);\n     return sign(user);\n   }\n }\n",
+      "mustChangedSymbols": [
+        {
+          "kind": "METHOD",
+          "name": "issue",
+          "className": "TokenService"
+        }
+      ],
+      "mustSemanticEvents": [
+        "PARAMETER_ADDED",
+        "SIGNATURE_CHANGED",
+        "CALL_ADDED",
+        "BODY_CHANGED"
+      ],
+      "mustNotSemanticEvents": ["METHOD_REMOVED", "METHOD_ADDED"]
+    },
+    {
+      "file": "src/method-added.ts",
+      "patch": "@@ -1,6 +1,10 @@\n export class TokenService {\n   issue(user: string): string {\n     return sign(user);\n   }\n+\n+  revoke(token: string): boolean {\n+    return token.length > 0;\n+  }\n }\n",
+      "mustChangedSymbols": [
+        {
+          "kind": "METHOD",
+          "name": "revoke",
+          "className": "TokenService"
+        }
+      ],
+      "mustSemanticEvents": ["METHOD_ADDED"],
+      "mustNotSemanticEvents": ["METHOD_REMOVED"]
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 {
   "description": "Identical method names on different classes must resolve to the correct declaration",
+  "mustSymbols": [
+    "METHOD:src/user-service.ts:UserService.save",
+    "METHOD:src/order-service.ts:OrderService.save"
+  ],
   "mustCall": [
     {
       "from": "FUNCTION:src/caller.ts:run",

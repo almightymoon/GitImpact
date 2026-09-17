@@ -2,18 +2,40 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { parseRepository, mapPatchToEnclosingSymbols } from "@gitimpact/parser";
+import {
+  parseRepository,
+  mapPatchToEnclosingSymbols,
+  analyzeSemanticDiff,
+  enclosingSymbolToNodeId,
+} from "@gitimpact/parser";
 import { buildGraph } from "@gitimpact/graph";
 import { extractAllRoutes } from "@gitimpact/framework-detector";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const fixturesRoot = path.resolve(__dirname, "../../fixtures/accuracy");
+/** v0.4 accuracy benchmark cases live beside this harness */
+const fixturesRoot = path.resolve(__dirname, "cases");
 
 type EdgeExpectation = {
   from?: string;
   to?: string;
   type?: string;
   fromContains?: string;
+};
+
+type SymbolExpectation = {
+  kind: string;
+  name: string;
+  className?: string;
+  id?: string;
+};
+
+type DiffCase = {
+  file: string;
+  patch: string;
+  mustEnclose?: SymbolExpectation[];
+  mustChangedSymbols?: SymbolExpectation[];
+  mustSemanticEvents?: string[];
+  mustNotSemanticEvents?: string[];
 };
 
 type FixtureExpected = {
@@ -24,11 +46,9 @@ type FixtureExpected = {
   mustEdge?: EdgeExpectation[];
   softMustCall?: Array<EdgeExpectation & { note?: string }>;
   mustDetectRoutes?: Array<{ method: string; path: string }>;
-  diffCases?: Array<{
-    file: string;
-    patch: string;
-    mustEnclose: Array<{ kind: string; name: string; className?: string }>;
-  }>;
+  /** Graph node ids that must exist after parse */
+  mustSymbols?: string[];
+  diffCases?: DiffCase[];
 };
 
 async function listFixtures(): Promise<string[]> {
@@ -51,7 +71,18 @@ function hasCall(
   });
 }
 
-describe("GitImpact accuracy fixtures", async () => {
+function matchesSymbol(
+  symbol: { kind: string; name: string; className?: string },
+  want: SymbolExpectation,
+): boolean {
+  return (
+    symbol.kind === want.kind &&
+    symbol.name === want.name &&
+    (want.className ? symbol.className === want.className : true)
+  );
+}
+
+describe("GitImpact accuracy benchmark (v0.4)", async () => {
   const fixtures = await listFixtures();
 
   for (const name of fixtures) {
@@ -69,16 +100,48 @@ describe("GitImpact accuracy fixtures", async () => {
             content,
             diffCase.patch,
           );
-          for (const want of diffCase.mustEnclose) {
+          const semantic = analyzeSemanticDiff(diffCase.file, content, diffCase.patch);
+
+          for (const want of diffCase.mustEnclose ?? []) {
             expect(
-              enclosing.some(
-                (symbol) =>
-                  symbol.kind === want.kind &&
-                  symbol.name === want.name &&
-                  (want.className ? symbol.className === want.className : true),
-              ),
+              enclosing.some((symbol) => matchesSymbol(symbol, want)),
               `expected enclosing ${want.kind} ${want.className ?? ""}.${want.name}, got ${JSON.stringify(enclosing)}`,
             ).toBe(true);
+          }
+
+          for (const want of diffCase.mustChangedSymbols ?? []) {
+            const hit =
+              semantic.changedSymbols.some((symbol) => matchesSymbol(symbol, want)) ||
+              (want.id
+                ? semantic.changedSymbolIds.includes(want.id)
+                : semantic.changedSymbolIds.includes(
+                    enclosingSymbolToNodeId({
+                      kind: want.kind as "FUNCTION" | "METHOD" | "CLASS",
+                      name: want.name,
+                      className: want.className,
+                      startLine: 0,
+                      endLine: 0,
+                      file: diffCase.file,
+                    }),
+                  ));
+            expect(
+              hit,
+              `expected changed symbol ${want.kind} ${want.className ?? ""}.${want.name}, got ${JSON.stringify(semantic.changedSymbolIds)}`,
+            ).toBe(true);
+          }
+
+          for (const kind of diffCase.mustSemanticEvents ?? []) {
+            expect(
+              semantic.events.some((event) => event.kind === kind),
+              `expected semantic event ${kind}, got ${semantic.events.map((e) => e.kind).join(", ") || "(none)"}`,
+            ).toBe(true);
+          }
+
+          for (const kind of diffCase.mustNotSemanticEvents ?? []) {
+            expect(
+              semantic.events.some((event) => event.kind === kind),
+              `forbidden semantic event ${kind}`,
+            ).toBe(false);
           }
         }
       }
@@ -88,7 +151,8 @@ describe("GitImpact accuracy fixtures", async () => {
         (expected.mustNotCall?.length ?? 0) > 0 ||
         (expected.mustEdge?.length ?? 0) > 0 ||
         (expected.mustDetectRoutes?.length ?? 0) > 0 ||
-        (expected.softMustCall?.length ?? 0) > 0;
+        (expected.softMustCall?.length ?? 0) > 0 ||
+        (expected.mustSymbols?.length ?? 0) > 0;
 
       if (!hasGraphAssertions) return;
 
@@ -101,6 +165,11 @@ describe("GitImpact accuracy fixtures", async () => {
         parsed.packageDeps,
       );
       const graph = buildGraph(parsed.files, routes);
+      const nodeIds = new Set(graph.nodes.map((n) => n.id));
+
+      for (const id of expected.mustSymbols ?? []) {
+        expect(nodeIds.has(id), `missing symbol node ${id}`).toBe(true);
+      }
 
       for (const edge of expected.mustCall ?? []) {
         expect(
@@ -130,7 +199,6 @@ describe("GitImpact accuracy fixtures", async () => {
         ).toBe(true);
       }
 
-      // softMustCall: log-only style — do not fail the suite yet
       for (const edge of expected.softMustCall ?? []) {
         if (!hasCall(graph.edges, edge)) {
           console.warn(`[soft] ${name}: missing ${edge.from} -> ${edge.to} (${edge.note ?? ""})`);

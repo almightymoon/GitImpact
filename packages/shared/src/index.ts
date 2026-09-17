@@ -206,6 +206,15 @@ export interface ChangeRecord {
   newValue?: string;
   startLine?: number;
   endLine?: number;
+  /** Precise AST semantic events (v0.4 Semantic Diff Engine) */
+  semanticEvents?: Array<{
+    kind: string;
+    symbolId: string;
+    file: string;
+    name: string;
+    className?: string;
+    details?: Record<string, unknown>;
+  }>;
 }
 
 export interface PullRequestMeta {

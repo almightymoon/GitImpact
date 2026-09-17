@@ -1,5 +1,5 @@
 {
-  "description": "Deleted-only hunks still map to the enclosing method via deletion anchors + old AST",
+  "description": "Deleted-only hunks resolve via old AST; whole-method delete emits METHOD_REMOVED",
   "diffCases": [
     {
       "file": "src/auth.service.ts",
@@ -10,7 +10,16 @@
           "name": "generateToken",
           "className": "AuthService"
         }
-      ]
+      ],
+      "mustChangedSymbols": [
+        {
+          "kind": "METHOD",
+          "name": "generateToken",
+          "className": "AuthService"
+        }
+      ],
+      "mustSemanticEvents": ["BODY_CHANGED", "CALL_REMOVED"],
+      "mustNotSemanticEvents": ["METHOD_REMOVED"]
     },
     {
       "file": "src/auth-removed-method.ts",
@@ -21,7 +30,16 @@
           "name": "generateToken",
           "className": "AuthService"
         }
-      ]
+      ],
+      "mustChangedSymbols": [
+        {
+          "kind": "METHOD",
+          "name": "generateToken",
+          "className": "AuthService"
+        }
+      ],
+      "mustSemanticEvents": ["METHOD_REMOVED"],
+      "mustNotSemanticEvents": ["METHOD_ADDED"]
     }
   ]
 }

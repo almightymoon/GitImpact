@@ -673,3 +673,11 @@ export {
   type EnclosingSymbol,
   type ChangedLineRanges,
 } from "./diff-to-ast.js";
+export {
+  analyzeSemanticDiff,
+  extractSymbolSnapshots,
+  semanticEventsToChangeCategory,
+  type SemanticChangeKind,
+  type SemanticChangeEvent,
+  type SemanticDiffResult,
+} from "./semantic-diff.js";

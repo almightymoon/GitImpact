@@ -80,14 +80,14 @@ cli                           Local CLI
 3. Never execute repository code
 4. Confidence levels on relationships
 
-### Accuracy suite
+### Accuracy benchmark (v0.4)
 
 ```bash
 pnpm build:packages
 pnpm test:accuracy
 ```
 
-Fixtures live under `fixtures/accuracy/` and assert exact CALLS edges (e.g. `UserService.save` ≠ `OrderService.save`).
+Cases live under `tests/accuracy/cases/` and assert exact CALLS edges, changed symbols, and semantic events (e.g. `UserService.save` ≠ `OrderService.save`, `METHOD_REMOVED`, `BODY_CHANGED`).
 
 Call graphs resolve through the TypeScript type checker (repository-level `ts-morph` Project), not name heuristics:
 
@@ -104,3 +104,7 @@ Graph semantics:
 ### v0.3 — Diff-to-AST
 
 Changed line ranges from Git patches map to the smallest enclosing FUNCTION/METHOD/CLASS via AST — not declaration-line regex alone.
+
+### v0.4 — Semantic Diff Engine
+
+Unified diffs are compared as old-file AST vs new-file AST, emitting events such as `METHOD_REMOVED`, `PARAMETER_ADDED`, `CALL_ADDED`, and `BODY_CHANGED` — finer than broad STRUCTURAL / INTERFACE / BEHAVIORAL buckets.

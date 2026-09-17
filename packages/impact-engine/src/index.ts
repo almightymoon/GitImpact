@@ -1,7 +1,9 @@
 import { GraphStore } from "@gitimpact/graph";
 import {
+  analyzeSemanticDiff,
   enclosingSymbolToNodeId,
   mapPatchToEnclosingSymbols,
+  semanticEventsToChangeCategory,
 } from "@gitimpact/parser";
 import type {
   ChangeCategory,
@@ -333,24 +335,52 @@ export function mapChangesToSymbolNodes(
     const content = contentsByPath?.get(change.filePath);
     let mappedFromAst = false;
 
-    // Diff-to-AST: changed line ranges → smallest enclosing symbol
+    // Semantic Diff (v0.4): old AST vs new AST → exact changed symbols
     if (content && change.patch) {
-      const enclosing = mapPatchToEnclosingSymbols(
-        change.filePath,
-        content,
-        change.patch,
-      );
-      for (const symbol of enclosing) {
+      const semantic = analyzeSemanticDiff(change.filePath, content, change.patch);
+      change.semanticEvents = semantic.events;
+      if (!change.symbols?.length && semantic.changedSymbolIds.length) {
+        change.symbols = semantic.changedSymbols.map((s) => s.name);
+      }
+      if (semantic.events.length) {
+        change.changeType = semanticEventsToChangeCategory(semantic.events);
+      }
+
+      for (const symbol of semantic.changedSymbols) {
         const id = enclosingSymbolToNodeId(symbol);
         const node = store.getNode(id);
         if (node) {
           nodes.push(node);
           mappedFromAst = true;
         } else {
+          // Removed symbols may be absent from the HEAD graph — try name lookup.
           const found = store.findSymbolNodes(change.filePath, symbol.name);
           if (found.length) {
             nodes.push(...found);
             mappedFromAst = true;
+          }
+        }
+      }
+
+      // Diff-to-AST fallback for residual line anchors
+      if (!mappedFromAst) {
+        const enclosing = mapPatchToEnclosingSymbols(
+          change.filePath,
+          content,
+          change.patch,
+        );
+        for (const symbol of enclosing) {
+          const id = enclosingSymbolToNodeId(symbol);
+          const node = store.getNode(id);
+          if (node) {
+            nodes.push(node);
+            mappedFromAst = true;
+          } else {
+            const found = store.findSymbolNodes(change.filePath, symbol.name);
+            if (found.length) {
+              nodes.push(...found);
+              mappedFromAst = true;
+            }
           }
         }
       }
