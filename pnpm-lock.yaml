@@ -20,6 +20,9 @@ importers:
       '@gitimpact/analysis':
         specifier: workspace:*
         version: link:../../packages/analysis
+      '@gitimpact/git':
+        specifier: workspace:*
+        version: link:../../packages/git
       '@gitimpact/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -203,6 +206,9 @@ importers:
       '@gitimpact/framework-detector':
         specifier: workspace:*
         version: link:../../packages/framework-detector
+      '@gitimpact/git':
+        specifier: workspace:*
+        version: link:../../packages/git
       '@gitimpact/graph':
         specifier: workspace:*
         version: link:../../packages/graph
@@ -212,6 +218,9 @@ importers:
       '@gitimpact/parser':
         specifier: workspace:*
         version: link:../../packages/parser
+      '@gitimpact/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
       typescript:
         specifier: ^5.8.3

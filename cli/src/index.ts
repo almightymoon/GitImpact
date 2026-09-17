@@ -1,24 +1,31 @@
 #!/usr/bin/env node
-import { analyzeRepositoryUrl } from "@gitimpact/analysis";
+import {
+  analyzeAndCommentOnPullRequest,
+  analyzeRepositoryUrl,
+  parseGitHubUrl,
+} from "@gitimpact/analysis";
 
 async function main() {
-  const [, , command, target] = process.argv;
+  const [, , command, target, ...rest] = process.argv;
 
   if (!command || command === "help" || command === "--help") {
     console.log(`GitImpact CLI
 
 Usage:
   gitimpact analyze <github-url>
+  gitimpact comment <github-pr-url> [--dry-run]
   gitimpact diff <github-pr-url>
 
 Examples:
   gitimpact analyze github.com/owner/repo
   gitimpact analyze github.com/owner/repo/pull/123
+  gitimpact comment github.com/owner/repo/pull/123
+  gitimpact comment github.com/owner/repo/pull/123 --dry-run
 `);
     return;
   }
 
-  if (command !== "analyze" && command !== "diff" && command !== "pr") {
+  if (!["analyze", "diff", "pr", "comment"].includes(command)) {
     console.error(`Unknown command: ${command}`);
     process.exit(1);
   }
@@ -26,6 +33,38 @@ Examples:
   if (!target) {
     console.error("A GitHub repository or pull request URL is required.");
     process.exit(1);
+  }
+
+  if (command === "comment") {
+    const dryRun = rest.includes("--dry-run");
+    const parsed = parseGitHubUrl(target);
+    if (parsed.kind !== "pull_request" || !parsed.prNumber) {
+      console.error("comment requires a pull request URL");
+      process.exit(1);
+    }
+
+    console.log(dryRun ? "Analyzing (dry-run, will not post)…" : "Analyzing and commenting…");
+    const result = await analyzeAndCommentOnPullRequest({
+      owner: parsed.owner,
+      repo: parsed.repo,
+      number: parsed.prNumber,
+      maxFiles: 800,
+      postComment: !dryRun,
+      analysisBaseUrl: process.env.GITIMPACT_PUBLIC_URL,
+    });
+
+    console.log("");
+    console.log(result.commentBody);
+    console.log("");
+    if (result.posted) {
+      console.log(
+        result.commentCreated ? "Posted new PR comment." : "Updated existing GitImpact comment.",
+      );
+      if (result.commentUrl) console.log(result.commentUrl);
+    } else {
+      console.log(`Comment not posted: ${result.skippedReason ?? "unknown"}`);
+    }
+    return;
   }
 
   console.log("Analyzing…");
@@ -49,6 +88,11 @@ Examples:
     console.log(`Potential gaps: ${analysis.impact.missingTests.length}`);
     console.log("");
     console.log(analysis.impact.summary);
+  }
+
+  if (analysis.prOverview) {
+    console.log("");
+    console.log(`Complexity: ${analysis.prOverview.complexityScore}/100 (${analysis.prOverview.impactLevel})`);
   }
 }
 

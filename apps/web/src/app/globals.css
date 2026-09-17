@@ -122,8 +122,18 @@ a {
   animation: dash-flow 1s linear infinite;
 }
 
-/* Keep React Flow labels from blowing out layout */
-.react-flow__node {
+/* Keep Impact Graph labels from blowing out layout */
+.impact-graph .react-flow__node {
   max-width: 180px;
   overflow: hidden;
+}
+
+.structure-diagram .react-flow__node {
+  max-width: none;
+  overflow: visible;
+}
+
+.structure-diagram .react-flow__node-structure {
+  max-width: none !important;
+  overflow: visible !important;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, memo } from "react";
+import { useCallback, useEffect, useMemo, useState, memo } from "react";
 import {
   Background,
   Controls,
@@ -25,38 +25,79 @@ const severityFill: Record<string, string> = {
   NEUTRAL: "#64748b",
 };
 
+/** Distinct path colors for multi-select connections */
+const PATH_COLORS = [
+  "#0f7a6c", // teal
+  "#c2410c", // orange
+  "#7c3aed", // violet
+  "#0369a1", // blue
+  "#be185d", // pink
+  "#ca8a04", // gold
+];
+
 type ImpactNodeData = {
   title: string;
   subtitle: string;
   severity: string;
   selected: boolean;
+  selectionIndex: number; // -1 if not in path selection
+  selectionColor?: string;
 };
 
 function ImpactNode({ data }: NodeProps) {
   const nodeData = data as ImpactNodeData;
-  const border = nodeData.selected
-    ? "#0f7a6c"
-    : severityFill[nodeData.severity] ?? severityFill.NEUTRAL;
+  const inPath = nodeData.selectionIndex >= 0;
+  const border = inPath
+    ? nodeData.selectionColor ?? "#0f7a6c"
+    : nodeData.selected
+      ? "#0f7a6c"
+      : severityFill[nodeData.severity] ?? severityFill.NEUTRAL;
 
   return (
     <div
-      title={`${nodeData.title}\n${nodeData.subtitle}`}
+      title={`${nodeData.title}\n${nodeData.subtitle}${
+        inPath ? `\nSelected #${nodeData.selectionIndex + 1}` : ""
+      }`}
       style={{
         width: 168,
         maxWidth: 168,
         overflow: "hidden",
         borderRadius: 12,
-        border: `1.5px solid ${border}`,
-        background: nodeData.selected ? "#0b1220" : "#ffffff",
-        color: nodeData.selected ? "#f7fafc" : "#0b1220",
-        boxShadow:
-          nodeData.severity !== "NEUTRAL"
+        border: `2px solid ${border}`,
+        background: inPath || nodeData.selected ? "#0b1220" : "#ffffff",
+        color: inPath || nodeData.selected ? "#f7fafc" : "#0b1220",
+        boxShadow: inPath
+          ? `0 0 0 3px ${(nodeData.selectionColor ?? "#0f7a6c")}33`
+          : nodeData.severity !== "NEUTRAL"
             ? `0 0 0 3px ${(severityFill[nodeData.severity] ?? "#64748b")}22`
             : undefined,
         padding: "8px 10px",
+        position: "relative",
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+      {inPath ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 4,
+            right: 6,
+            width: 16,
+            height: 16,
+            borderRadius: 999,
+            background: nodeData.selectionColor,
+            color: "#fff",
+            fontSize: 9,
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+          }}
+        >
+          {nodeData.selectionIndex + 1}
+        </div>
+      ) : null}
       <div
         style={{
           fontSize: 11,
@@ -65,6 +106,7 @@ function ImpactNode({ data }: NodeProps) {
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          paddingRight: inPath ? 18 : 0,
         }}
       >
         {nodeData.title}
@@ -89,10 +131,69 @@ function ImpactNode({ data }: NodeProps) {
 
 const nodeTypes = { impact: memo(ImpactNode) };
 
+function buildAdjacency(edges: GraphEdge[]): Map<string, string[]> {
+  const adj = new Map<string, string[]>();
+  const link = (a: string, b: string) => {
+    const list = adj.get(a) ?? [];
+    list.push(b);
+    adj.set(a, list);
+  };
+  for (const edge of edges) {
+    // Undirected for "connecting path" discovery
+    link(edge.from, edge.to);
+    link(edge.to, edge.from);
+  }
+  return adj;
+}
+
+/** BFS shortest path between two nodes (undirected). */
+function shortestPath(
+  adj: Map<string, string[]>,
+  from: string,
+  to: string,
+): string[] | null {
+  if (from === to) return [from];
+  if (!adj.has(from) || !adj.has(to)) return null;
+
+  const queue = [from];
+  const prev = new Map<string, string | null>();
+  prev.set(from, null);
+
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    for (const next of adj.get(cur) ?? []) {
+      if (prev.has(next)) continue;
+      prev.set(next, cur);
+      if (next === to) {
+        const path: string[] = [];
+        let walk: string | null = to;
+        while (walk) {
+          path.push(walk);
+          walk = prev.get(walk) ?? null;
+        }
+        path.reverse();
+        return path;
+      }
+      queue.push(next);
+    }
+  }
+  return null;
+}
+
+function edgeKey(a: string, b: string): string {
+  return a < b ? `${a}::${b}` : `${b}::${a}`;
+}
+
+type LitEdge = {
+  color: string;
+  pathIndex: number;
+};
+
 function layoutNodes(
   nodes: GraphNode[],
   impacted: Map<string, string>,
   selectedId: string | null,
+  pathSelection: string[],
 ): Node[] {
   const focus = impacted.size
     ? nodes.filter((n) => impacted.has(n.id) || impacted.has(`FILE:${n.file}`))
@@ -100,6 +201,7 @@ function layoutNodes(
 
   const pool = (focus.length > 0 ? focus : nodes).slice(0, 120);
   const columns = Math.max(3, Math.ceil(Math.sqrt(pool.length)));
+  const selectionIndex = new Map(pathSelection.map((id, i) => [id, i]));
 
   return pool.map((node, index) => {
     const col = index % columns;
@@ -108,6 +210,7 @@ function layoutNodes(
       impacted.get(node.id) ??
       impacted.get(`FILE:${node.file}`) ??
       "NEUTRAL";
+    const selIdx = selectionIndex.get(node.id) ?? -1;
 
     return {
       id: node.id,
@@ -118,28 +221,58 @@ function layoutNodes(
         subtitle: node.type,
         severity,
         selected: node.id === selectedId,
+        selectionIndex: selIdx,
+        selectionColor: selIdx >= 0 ? PATH_COLORS[selIdx % PATH_COLORS.length] : undefined,
       } satisfies ImpactNodeData,
+      zIndex: selIdx >= 0 ? 10 : 1,
     };
   });
 }
 
-function layoutEdges(edges: GraphEdge[], visibleIds: Set<string>): Edge[] {
+function layoutEdges(
+  edges: GraphEdge[],
+  visibleIds: Set<string>,
+  litEdges: Map<string, LitEdge>,
+): Edge[] {
   return edges
     .filter((edge) => visibleIds.has(edge.from) && visibleIds.has(edge.to))
     .slice(0, 200)
-    .map((edge) => ({
-      id: edge.id,
-      source: edge.from,
-      target: edge.to,
-      animated: edge.type === "IMPORTS",
-      style: { stroke: "#94a3b8", strokeWidth: 1.2 },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: "#94a3b8",
-        width: 16,
-        height: 16,
-      },
-    }));
+    .map((edge) => {
+      const lit = litEdges.get(edgeKey(edge.from, edge.to));
+      const stroke = lit?.color ?? "#94a3b8";
+      const width = lit ? 3.2 : 1.2;
+      return {
+        id: edge.id,
+        source: edge.from,
+        target: edge.to,
+        animated: Boolean(lit) || edge.type === "IMPORTS",
+        className: lit ? "impact-edge" : undefined,
+        style: {
+          stroke,
+          strokeWidth: width,
+          opacity: lit ? 1 : 0.45,
+        },
+        zIndex: lit ? 5 : 0,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: stroke,
+          width: lit ? 18 : 14,
+          height: lit ? 18 : 14,
+        },
+        label: lit ? `path ${lit.pathIndex + 1}` : undefined,
+        labelStyle: lit
+          ? {
+              fontSize: 9,
+              fill: lit.color,
+              fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+              fontWeight: 600,
+            }
+          : undefined,
+        labelBgStyle: lit ? { fill: "#f7fafc", fillOpacity: 0.9 } : undefined,
+        labelBgPadding: lit ? ([3, 5] as [number, number]) : undefined,
+        labelBgBorderRadius: 4,
+      };
+    });
 }
 
 export function ImpactGraph({
@@ -157,17 +290,63 @@ export function ImpactGraph({
   onSelect: (id: string) => void;
   onClear?: () => void;
 }) {
+  const [pathSelection, setPathSelection] = useState<string[]>([]);
+
+  // Parent cleared → clear path chain. Parent picked a new root outside the chain → restart.
+  useEffect(() => {
+    if (!selectedId) {
+      setPathSelection((prev) => (prev.length === 0 ? prev : []));
+      return;
+    }
+    setPathSelection((prev) => {
+      if (prev.length === 0) return [selectedId];
+      if (prev.includes(selectedId)) return prev;
+      return [selectedId];
+    });
+  }, [selectedId]);
+
+  const adjacency = useMemo(() => buildAdjacency(edges), [edges]);
+
+  const litEdges = useMemo(() => {
+    const map = new Map<string, LitEdge>();
+    for (let i = 0; i < pathSelection.length - 1; i++) {
+      const from = pathSelection[i]!;
+      const to = pathSelection[i + 1]!;
+      const path = shortestPath(adjacency, from, to);
+      if (!path || path.length < 2) continue;
+      const color = PATH_COLORS[i % PATH_COLORS.length]!;
+      for (let j = 0; j < path.length - 1; j++) {
+        const key = edgeKey(path[j]!, path[j + 1]!);
+        if (!map.has(key)) map.set(key, { color, pathIndex: i });
+      }
+    }
+    return map;
+  }, [adjacency, pathSelection]);
+
+  const pathStatuses = useMemo(() => {
+    const statuses: Array<{ from: string; to: string; ok: boolean; color: string }> = [];
+    for (let i = 0; i < pathSelection.length - 1; i++) {
+      const from = pathSelection[i]!;
+      const to = pathSelection[i + 1]!;
+      const path = shortestPath(adjacency, from, to);
+      statuses.push({
+        from,
+        to,
+        ok: Boolean(path && path.length >= 2),
+        color: PATH_COLORS[i % PATH_COLORS.length]!,
+      });
+    }
+    return statuses;
+  }, [adjacency, pathSelection]);
+
   const initialNodes = useMemo(
-    () => layoutNodes(nodes, impacted, selectedId),
-    [nodes, impacted, selectedId],
+    () => layoutNodes(nodes, impacted, selectedId, pathSelection),
+    [nodes, impacted, selectedId, pathSelection],
   );
-  const visibleIds = useMemo(
-    () => new Set(initialNodes.map((n) => n.id)),
-    [initialNodes],
-  );
+  const visibleIds = useMemo(() => new Set(initialNodes.map((n) => n.id)), [initialNodes]);
   const initialEdges = useMemo(
-    () => layoutEdges(edges, visibleIds),
-    [edges, visibleIds],
+    () => layoutEdges(edges, visibleIds, litEdges),
+    [edges, visibleIds, litEdges],
   );
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(initialNodes);
@@ -178,30 +357,135 @@ export function ImpactGraph({
     setRfEdges(initialEdges);
   }, [initialNodes, initialEdges, setRfNodes, setRfEdges]);
 
+  const applySelection = useCallback(
+    (next: string[]) => {
+      setPathSelection(next);
+      if (next.length === 0) {
+        onClear?.();
+        return;
+      }
+      const root = next[0]!;
+      if (root !== selectedId) onSelect(root);
+    },
+    [onClear, onSelect, selectedId],
+  );
+
+  const handleNodeClick = useCallback(
+    (id: string) => {
+      setPathSelection((prev) => {
+        let next: string[];
+        if (prev.length > 0 && prev[prev.length - 1] === id) {
+          next = prev.slice(0, -1);
+        } else {
+          const existing = prev.indexOf(id);
+          if (existing >= 0) next = prev.slice(0, existing + 1);
+          else next = [...prev, id];
+        }
+
+        // Defer parent updates so we don't setState during render of this updater
+        queueMicrotask(() => {
+          if (next.length === 0) onClear?.();
+          else if (next[0] && next[0] !== selectedId) onSelect(next[0]);
+        });
+
+        return next;
+      });
+    },
+    [onClear, onSelect, selectedId],
+  );
+
+  const handleClear = useCallback(() => {
+    applySelection([]);
+  }, [applySelection]);
+
+  const nameFor = useCallback(
+    (id: string) => nodes.find((n) => n.id === id)?.name ?? id.split(":").pop() ?? id,
+    [nodes],
+  );
+
   return (
-    <ReactFlow
-      nodes={rfNodes}
-      edges={rfEdges}
-      nodeTypes={nodeTypes}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onNodeClick={(_, node) => onSelect(node.id)}
-      onPaneClick={() => onClear?.()}
-      fitView
-      minZoom={0.2}
-      maxZoom={1.6}
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background gap={20} color="#d5dee8" />
-      <MiniMap
-        pannable
-        zoomable
-        nodeColor={(n) => {
-          const severity = impacted.get(n.id) ?? "NEUTRAL";
-          return severityFill[severity];
-        }}
-      />
-      <Controls />
-    </ReactFlow>
+    <div className="impact-graph relative h-full w-full">
+      {pathSelection.length > 0 ? (
+        <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(420px,70%)]">
+          <div className="pointer-events-auto rounded-xl border border-[var(--line)] bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
+                Path select · click blocks to connect
+              </p>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="rounded-full px-2 py-0.5 text-[11px] text-[var(--teal)] hover:underline"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {pathSelection.map((id, index) => (
+                <span key={`${id}-${index}`} className="inline-flex items-center gap-1 text-[11px]">
+                  {index > 0 ? (
+                    <span
+                      className="font-mono text-[10px]"
+                      style={{ color: PATH_COLORS[(index - 1) % PATH_COLORS.length] }}
+                    >
+                      →
+                    </span>
+                  ) : null}
+                  <span
+                    className="rounded-full px-2 py-0.5 font-medium text-white"
+                    style={{ background: PATH_COLORS[index % PATH_COLORS.length] }}
+                  >
+                    {index + 1}. {nameFor(id)}
+                  </span>
+                </span>
+              ))}
+            </div>
+            {pathStatuses.some((s) => !s.ok) ? (
+              <p className="mt-1.5 font-mono text-[10px] text-[var(--critical)]">
+                No graph path between some selections — try a closer dependent.
+              </p>
+            ) : pathStatuses.length > 0 ? (
+              <p className="mt-1.5 font-mono text-[10px] text-[var(--ink-soft)]/70">
+                {pathStatuses.length} lit path{pathStatuses.length === 1 ? "" : "s"} between
+                selections
+              </p>
+            ) : (
+              <p className="mt-1.5 font-mono text-[10px] text-[var(--ink-soft)]/70">
+                Click another block to light up the connection
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      <ReactFlow
+        nodes={rfNodes}
+        edges={rfEdges}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={(_, node) => handleNodeClick(node.id)}
+        onPaneClick={handleClear}
+        fitView
+        minZoom={0.2}
+        maxZoom={1.6}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background gap={20} color="#d5dee8" />
+        <MiniMap
+          pannable
+          zoomable
+          nodeColor={(n) => {
+            const data = n.data as ImpactNodeData | undefined;
+            if (data && data.selectionIndex >= 0 && data.selectionColor) {
+              return data.selectionColor;
+            }
+            const severity = impacted.get(n.id) ?? "NEUTRAL";
+            return severityFill[severity];
+          }}
+        />
+        <Controls />
+      </ReactFlow>
+    </div>
   );
 }

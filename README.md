@@ -120,3 +120,28 @@ Unified diffs are compared as old-file AST vs new-file AST, emitting events such
 ### v0.5 — Framework & Resolution Coverage
 
 Dynamic `import()`, NestJS DI (`DEPENDS_ON`) + decorator routes (`HANDLED_BY`), and Prisma delegate `QUERIES` → `DATABASE_MODEL` edges. Goal on the real-world suite: resolution coverage ≥ 90% with precision ≥ 98%.
+
+### v0.6 — GitHub PR Integration
+
+Product flow for teams:
+
+```text
+PR opened / synchronized
+        ↓
+GitImpact analyzes diff
+        ↓
+semantic diff → blast radius → test gaps
+        ↓
+upsert PR comment
+```
+
+**Webhook:** `POST /api/webhooks/github` (events: `pull_request` opened / synchronize / reopened)
+
+**Manual:** `POST /api/pr/comment` or CLI:
+
+```bash
+gitimpact comment https://github.com/owner/repo/pull/123
+gitimpact comment https://github.com/owner/repo/pull/123 --dry-run
+```
+
+Requires `GITHUB_TOKEN`. Optional: `GITHUB_WEBHOOK_SECRET`, `GITIMPACT_PUBLIC_URL`.

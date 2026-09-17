@@ -11,7 +11,9 @@
     "@gitimpact/parser": "workspace:*",
     "@gitimpact/graph": "workspace:*",
     "@gitimpact/framework-detector": "workspace:*",
-    "@gitimpact/impact-engine": "workspace:*"
+    "@gitimpact/impact-engine": "workspace:*",
+    "@gitimpact/git": "workspace:*",
+    "@gitimpact/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

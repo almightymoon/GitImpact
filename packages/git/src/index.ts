@@ -338,3 +338,12 @@ export async function getChangedFilesBetween(
 }
 
 export { path };
+
+export {
+  verifyGitHubWebhookSignature,
+  listPullRequestIssueComments,
+  createPullRequestComment,
+  updateIssueComment,
+  upsertPullRequestComment,
+  type GitHubComment,
+} from "./github-comments.js";

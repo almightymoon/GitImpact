@@ -38,6 +38,11 @@ import type {
   PullRequestMeta,
   RepositoryMeta,
 } from "@gitimpact/shared";
+import {
+  formatPullRequestComment,
+  GITIMPACT_COMMENT_MARKER,
+  selectWhyPath,
+} from "./pr-comment.js";
 
 export interface StoredAnalysis {
   id: string;
@@ -135,12 +140,10 @@ function buildGraphFromParse(parsed: Awaited<ReturnType<typeof parseRepository>>
   return { graph, store, routes, frameworks };
 }
 
-function resolveChangedNodes(
-  store: GraphStore,
+function buildChangeRecords(
   prFiles: Array<{ filename: string; status?: string; patch?: string }>,
-  contentsByPath?: Map<string, string>,
-): GraphNode[] {
-  const changes: ChangeRecord[] = prFiles.map((file) => {
+): ChangeRecord[] {
+  return prFiles.map((file) => {
     const symbols = extractChangedSymbols(file.patch);
     return {
       filePath: file.filename,
@@ -151,6 +154,13 @@ function resolveChangedNodes(
       patch: file.patch,
     };
   });
+}
+
+function resolveChangedNodes(
+  store: GraphStore,
+  changes: ChangeRecord[],
+  contentsByPath?: Map<string, string>,
+): GraphNode[] {
   return mapChangesToSymbolNodes(store, changes, contentsByPath);
 }
 
@@ -237,19 +247,8 @@ export async function analyzePullRequest(
   });
   const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
-  const changes: ChangeRecord[] = prFiles.map((file) => {
-    const symbols = extractChangedSymbols(file.patch);
-    return {
-      filePath: file.filename,
-      changeType: classifyDiffHunk(file.patch, file.status),
-      symbolName: symbols[0],
-      symbols,
-      status: file.status,
-      patch: file.patch,
-    };
-  });
-
-  const changedNodes = resolveChangedNodes(store, prFiles, parsed.contentsByPath);
+  const changes = buildChangeRecords(prFiles);
+  const changedNodes = resolveChangedNodes(store, changes, parsed.contentsByPath);
   const impact = buildImpactReport(store, changedNodes, depth);
   const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
 
@@ -428,19 +427,8 @@ export async function analyzeDemoPullRequest(
     },
   ];
 
-  const changes: ChangeRecord[] = prFiles.map((file) => {
-    const symbols = extractChangedSymbols(file.patch);
-    return {
-      filePath: file.filename,
-      changeType: classifyDiffHunk(file.patch, file.status),
-      symbolName: symbols[0],
-      symbols,
-      status: file.status,
-      patch: file.patch,
-    };
-  });
-
-  const changedNodes = resolveChangedNodes(store, prFiles, parsed.contentsByPath);
+  const changes = buildChangeRecords(prFiles);
+  const changedNodes = resolveChangedNodes(store, changes, parsed.contentsByPath);
   const impact = buildImpactReport(store, changedNodes, depth);
   const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
 
@@ -474,4 +462,98 @@ export async function analyzeDemoPullRequest(
   return persist(stored);
 }
 
-export { parseGitHubUrl, toGitImpactPath, isDatabaseConfigured, explainImpactPath };
+export interface AnalyzeAndCommentResult {
+  analysis: StoredAnalysis;
+  commentBody: string;
+  commentUrl?: string;
+  commentCreated?: boolean;
+  posted: boolean;
+  skippedReason?: string;
+}
+
+/**
+ * v0.6 product flow: analyze a PR and upsert a deterministic GitImpact comment.
+ */
+export async function analyzeAndCommentOnPullRequest(options: {
+  owner: string;
+  repo: string;
+  number: number;
+  depth?: number;
+  cacheDir?: string;
+  maxFiles?: number;
+  postComment?: boolean;
+  analysisBaseUrl?: string;
+}): Promise<AnalyzeAndCommentResult> {
+  const { upsertPullRequestComment } = await import("@gitimpact/git");
+  const analysis = await analyzePullRequest(options.owner, options.repo, options.number, {
+    depth: options.depth,
+    cacheDir: options.cacheDir,
+    maxFiles: options.maxFiles,
+  });
+
+  if (!analysis.impact || !analysis.prOverview || !analysis.pullRequest) {
+    return {
+      analysis,
+      commentBody: "",
+      posted: false,
+      skippedReason: "Analysis produced no impact report",
+    };
+  }
+
+  const store = new GraphStore(analysis.graph);
+  const selected = selectWhyPath(analysis.impact);
+  const whyPath = selected
+    ? {
+        targetName: selected.targetName,
+        steps: explainImpactPath(store, selected.path),
+      }
+    : undefined;
+
+  const analysisUrl = options.analysisBaseUrl
+    ? `${options.analysisBaseUrl.replace(/\/$/, "")}${analysis.routePath}`
+    : undefined;
+
+  const commentBody = formatPullRequestComment({
+    pullRequest: analysis.pullRequest,
+    impact: analysis.impact,
+    overview: analysis.prOverview,
+    whyPath,
+    analysisUrl,
+  });
+
+  const shouldPost = options.postComment ?? Boolean(process.env.GITHUB_TOKEN);
+  if (!shouldPost) {
+    return {
+      analysis,
+      commentBody,
+      posted: false,
+      skippedReason: "postComment disabled or GITHUB_TOKEN missing",
+    };
+  }
+
+  const { comment, created } = await upsertPullRequestComment({
+    owner: options.owner,
+    repo: options.repo,
+    number: options.number,
+    body: commentBody,
+    marker: GITIMPACT_COMMENT_MARKER,
+  });
+
+  return {
+    analysis,
+    commentBody,
+    commentUrl: comment.html_url,
+    commentCreated: created,
+    posted: true,
+  };
+}
+
+export {
+  parseGitHubUrl,
+  toGitImpactPath,
+  isDatabaseConfigured,
+  explainImpactPath,
+  formatPullRequestComment,
+  GITIMPACT_COMMENT_MARKER,
+  selectWhyPath,
+};

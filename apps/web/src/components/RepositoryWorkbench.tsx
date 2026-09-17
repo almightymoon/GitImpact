@@ -13,6 +13,7 @@ import type {
   PullRequestImpactOverview,
 } from "@gitimpact/shared";
 import { ImpactGraph } from "@/components/ImpactGraph";
+import { StructureDiagram } from "@/components/StructureDiagram";
 import { AnalyzeForm } from "@/components/AnalyzeForm";
 import {
   PullRequestChangesPanel,
@@ -20,7 +21,7 @@ import {
   PullRequestOverviewPanel,
 } from "@/components/PullRequestPanels";
 
-type TabId = "overview" | "graph" | "changes" | "tests" | "apis";
+type TabId = "overview" | "graph" | "structure" | "changes" | "tests" | "apis";
 
 type AnalysisPayload = {
   id: string;
@@ -58,6 +59,7 @@ const severityColor: Record<string, string> = {
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "graph", label: "Graph" },
+  { id: "structure", label: "Structure" },
   { id: "changes", label: "Changes" },
   { id: "tests", label: "Tests" },
   { id: "apis", label: "APIs" },
@@ -117,7 +119,7 @@ export function RepositoryWorkbench({
   }, [load]);
 
   const fetchImpact = useCallback(
-    (nodeId: string, nextDepth = depth) => {
+    (nodeId: string, nextDepth = depth, options?: { stay?: boolean }) => {
       startTransition(async () => {
         const response = await fetch(
           `/api/repositories/${analysisId}?nodeId=${encodeURIComponent(nodeId)}&depth=${nextDepth}`,
@@ -126,7 +128,7 @@ export function RepositoryWorkbench({
         if (response.ok && payload.impact) {
           setImpact(payload.impact);
           setSelectedNodeId(nodeId);
-          setTab("graph");
+          if (!options?.stay) setTab("graph");
         }
       });
     },
@@ -195,6 +197,22 @@ export function RepositoryWorkbench({
 
   const showPrChrome = Boolean(data?.pullRequest || data?.prOverview || isPullRequest);
 
+  const visibleTabs = TABS;
+
+  const testNodes = useMemo(() => {
+    if (impact?.relatedTests?.length) return impact.relatedTests;
+    return data?.graph.nodes.filter((n) => n.type === "TEST") ?? [];
+  }, [impact?.relatedTests, data?.graph.nodes]);
+
+  const apiNodes = useMemo(() => {
+    if (impact?.affectedApis?.length) return impact.affectedApis;
+    return (
+      data?.graph.nodes.filter(
+        (n) => n.type === "API_ROUTE" || n.type === "CONTROLLER" || n.type === "SERVICE",
+      ) ?? []
+    );
+  }, [impact?.affectedApis, data?.graph.nodes]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -258,48 +276,62 @@ export function RepositoryWorkbench({
             </a>
           ) : null}
         </div>
-        {showPrChrome && (
-          <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-6 pb-3">
-            {TABS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`rounded-full px-3 py-1.5 text-sm transition ${
-                  tab === item.id
-                    ? "bg-[var(--ink)] text-white"
-                    : "text-[var(--ink-soft)] hover:bg-[var(--fog)]"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-6 pb-3">
+          {visibleTabs.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTab(item.id)}
+              className={`rounded-full px-3 py-1.5 text-sm transition ${
+                tab === item.id
+                  ? "bg-[var(--ink)] text-white"
+                  : "text-[var(--ink-soft)] hover:bg-[var(--fog)]"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </header>
 
-      {showPrChrome && tab === "overview" && data.prOverview ? (
+      {tab === "overview" ? (
         <div className="mx-auto max-w-[1400px]">
-          <PullRequestOverviewPanel
-            overview={data.prOverview}
-            impact={impact}
-            onSelectNode={fetchImpact}
-          />
+          {data.prOverview ? (
+            <PullRequestOverviewPanel
+              overview={data.prOverview}
+              impact={impact}
+              onSelectNode={fetchImpact}
+            />
+          ) : (
+            <RepoOverviewPanel
+              summary={data.summary}
+              repository={data.repository}
+              onOpenGraph={() => setTab("graph")}
+              onOpenDiagram={() => setTab("structure")}
+            />
+          )}
         </div>
       ) : null}
 
-      {showPrChrome && tab === "changes" && data.changes ? (
+      {tab === "changes" ? (
         <div className="mx-auto max-w-[1400px]">
-          <PullRequestChangesPanel changes={data.changes} onSelectFile={selectFile} />
+          {data.changes && data.changes.length > 0 ? (
+            <PullRequestChangesPanel changes={data.changes} onSelectFile={selectFile} />
+          ) : (
+            <EmptyTab
+              title="Changes"
+              message="No pull-request diff is attached to this analysis. Open a PR URL to see change-level impact."
+            />
+          )}
         </div>
       ) : null}
 
-      {showPrChrome && tab === "tests" ? (
+      {tab === "tests" ? (
         <div className="mx-auto max-w-[1400px]">
           <PullRequestNodeListPanel
-            title="Relevant tests"
-            empty="No directly associated tests were found for this change set."
-            nodes={impact?.relatedTests ?? []}
+            title={impact?.relatedTests?.length ? "Relevant tests" : "Tests in repository"}
+            empty="No tests were found in this analysis."
+            nodes={testNodes}
             onSelect={fetchImpact}
           />
           {(impact?.missingTests.length ?? 0) > 0 && (
@@ -315,18 +347,34 @@ export function RepositoryWorkbench({
         </div>
       ) : null}
 
-      {showPrChrome && tab === "apis" ? (
+      {tab === "apis" ? (
         <div className="mx-auto max-w-[1400px]">
           <PullRequestNodeListPanel
-            title="API-related impact"
-            empty="No API routes or controllers were linked to this change."
-            nodes={impact?.affectedApis ?? []}
+            title={impact?.affectedApis?.length ? "API-related impact" : "API surface"}
+            empty="No API routes or controllers were detected."
+            nodes={apiNodes}
             onSelect={fetchImpact}
           />
         </div>
       ) : null}
 
-      {(!showPrChrome || tab === "graph") && (
+      {tab === "structure" ? (
+        <div className="mx-auto max-w-[1400px] px-6 py-6">
+          <div className="h-[780px] overflow-hidden rounded-2xl border border-[var(--line)] bg-white/80">
+            <StructureDiagram
+              nodes={data.graph.nodes}
+              edges={data.graph.edges}
+              impacted={impactedIds}
+              selectedId={selectedNodeId}
+              onSelect={(id) => fetchImpact(id, depth, { stay: true })}
+              onClear={clearSelection}
+              repositoryName={`${data.repository.owner}/${data.repository.name}`}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {tab === "graph" && (
         <div className="mx-auto grid max-w-[1400px] gap-6 px-6 py-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)_minmax(0,300px)]">
           <aside className="min-w-0 space-y-4 overflow-hidden">
             <Stats summary={data.summary} />
@@ -624,6 +672,79 @@ function Metric({ label, value }: { label: string; value: number }) {
         {label}
       </dt>
       <dd className="font-display text-lg font-semibold">{value}</dd>
+    </div>
+  );
+}
+
+function EmptyTab({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="p-6">
+      <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-8">
+        <h3 className="font-display text-lg font-semibold">{title}</h3>
+        <p className="mt-2 max-w-xl text-sm text-[var(--ink-soft)]">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function RepoOverviewPanel({
+  summary,
+  repository,
+  onOpenGraph,
+  onOpenDiagram,
+}: {
+  summary: AnalysisSummary;
+  repository: AnalysisPayload["repository"];
+  onOpenGraph: () => void;
+  onOpenDiagram: () => void;
+}) {
+  const metrics: Array<[string, number]> = [
+    ["Files", summary.files],
+    ["Functions", summary.functions],
+    ["Classes", summary.classes],
+    ["Dependencies", summary.dependencies],
+    ["Tests", summary.tests],
+    ["API Routes", summary.apiRoutes],
+  ];
+
+  return (
+    <div className="space-y-6 p-6">
+      <div>
+        <h2 className="font-display text-2xl font-semibold">
+          {repository.owner}/{repository.name}
+        </h2>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">
+          {repository.defaultBranch}
+          {summary.frameworks.length > 0 ? ` · ${summary.frameworks.join(", ")}` : ""}
+        </p>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--ink-soft)]">
+          Repository analysis is ready. Explore the dependency graph, structure map, tests, and
+          API surface from the header.
+        </p>
+      </div>
+
+      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {metrics.map(([label, value]) => (
+          <Metric key={label} label={label} value={value} />
+        ))}
+      </dl>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onOpenGraph}
+          className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--ink-soft)]"
+        >
+          Open Graph
+        </button>
+        <button
+          type="button"
+          onClick={onOpenDiagram}
+          className="rounded-full border border-[var(--line)] px-4 py-2 text-sm hover:border-[var(--teal)]"
+        >
+          Open Structure
+        </button>
+      </div>
     </div>
   );
 }
