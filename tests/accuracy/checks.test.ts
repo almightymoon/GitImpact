@@ -5,6 +5,10 @@ import { runSecurityChecks } from "../../packages/analysis/src/checks/security.t
 import { runQualityChecks } from "../../packages/analysis/src/checks/quality.ts";
 import { runCicdChecks } from "../../packages/analysis/src/checks/cicd.ts";
 import { buildChecksReport } from "../../packages/analysis/src/checks/index.ts";
+import {
+  applyChecksConfig,
+  matchPathGlob,
+} from "../../packages/analysis/src/checks/config.ts";
 
 function file(partial: Partial<ParsedFile> & { path: string }): ParsedFile {
   return {
@@ -153,5 +157,58 @@ describe("checks report", () => {
     expect(report.prHighlights.changeImpact?.[0]).toContain("downstream");
     expect(report.prHighlights.cicd.some((b) => /Docker/i.test(b))).toBe(true);
     expect(report.summaries.length).toBe(5);
+    expect(report.findings.every((f) => f.whyItMatters && f.remediation)).toBe(true);
+  });
+});
+
+describe("checks config (.gitimpact.yml)", () => {
+  it("matches legacy path globs", () => {
+    expect(matchPathGlob("src/legacy/foo.ts", "src/legacy/**")).toBe(true);
+    expect(matchPathGlob("src/app/foo.ts", "src/legacy/**")).toBe(false);
+    expect(matchPathGlob("src/lib/util.ts", "src/*/util.ts")).toBe(true);
+  });
+
+  it("suppresses and remaps severity from config", () => {
+    const findings = [
+      {
+        id: "1",
+        ruleId: "high_complexity_function" as const,
+        category: "quality" as const,
+        severity: "medium" as const,
+        title: "Complex",
+        message: "too complex",
+        file: "src/legacy/old.ts",
+        confidence: "MEDIUM" as const,
+      },
+      {
+        id: "2",
+        ruleId: "dangerous_dependency" as const,
+        category: "dependencies" as const,
+        severity: "medium" as const,
+        title: "Dep",
+        message: "risky",
+        evidence: "request",
+        confidence: "MEDIUM" as const,
+      },
+    ];
+    const applied = applyChecksConfig(findings, {
+      checks: {
+        ignore: [
+          {
+            rule: "high_complexity_function",
+            path: "src/legacy/**",
+            reason: "legacy module scheduled for replacement",
+          },
+        ],
+        severity: {
+          dangerous_dependency: "high",
+        },
+      },
+    });
+    expect(applied.suppressed).toBe(1);
+    expect(applied.severityOverrides).toBe(1);
+    expect(applied.findings).toHaveLength(1);
+    expect(applied.findings[0]?.ruleId).toBe("dangerous_dependency");
+    expect(applied.findings[0]?.severity).toBe("high");
   });
 });

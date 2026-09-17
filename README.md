@@ -188,14 +188,32 @@ Apply DB migration: `packages/db/drizzle/0002_intelligence.sql`
 ### Roadmap
 
 ```text
-v0.8  Product UX & Repository Intelligence   ← current
+v0.9  Code Quality + Security + CI/CD Intelligence   ← shipped
         ↓
-v0.9  Code Quality + Security + CI/CD Intelligence
-        ↓
-v1.0  Public Beta / Production Hardening
+v1.0  Public Beta & Production Hardening            ← current
 ```
 
-**v0.9 (next):** deterministic security checks, code-quality findings, CI/CD & infra impact on PRs, and a **Checks** tab (not mixed into Tests) that powers a combined pre-merge quality report — still without AI.
+**v1.0 focus:** trust + operability for real teams — not another analyzer expansion.
+
+### v1.0 — Public Beta & Production Hardening
+
+- **Checks trust:** every finding has ruleId, severity, confidence, evidence, why-it-matters, remediation; `.gitimpact.yml` ignore + severity overrides
+- **Platform:** rate limiting, durable jobs (Redis/BullMQ), persistent analysis cache, repo-size quotas
+- **GitHub App:** install/onboarding flow, private-repo E2E, webhook retry / dead-letter
+- **Ops:** structured logging/observability, production error handling, Docker/deploy docs
+- **Product:** onboarding/tutorial, public docs, external-repo dogfooding, security review of GitImpact itself
+
+#### `.gitimpact.yml` (Checks config)
+
+```yaml
+checks:
+  ignore:
+    - rule: high_complexity_function
+      path: src/legacy/**
+      reason: legacy module scheduled for replacement
+  severity:
+    dangerous_dependency: high
+```
 
 ### v0.9 — Code Quality, Security & CI Intelligence
 
@@ -207,5 +225,6 @@ Answers: “What is risky about this code change besides dependency impact?”
 - **CI/CD & infra:** GitHub Actions, Docker, Kubernetes, Helm, Terraform, Argo CD — presence + PR-affected surfaces
 - **PR quality report:** combined Change Impact + Quality + Security + CI/Deployment bullets
 - **Structure:** infrastructure nodes (`INFRASTRUCTURE`) linked via `DEPLOYS` when detected
+- **Architecture map:** GitDiagram-style Structure bands (deployment / server / client / persistence / actors)
 
 Apply DB migration: `packages/db/drizzle/0003_checks.sql`

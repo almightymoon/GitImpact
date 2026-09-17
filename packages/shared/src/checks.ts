@@ -47,15 +47,35 @@ export interface CheckFinding {
   category: CheckCategory;
   severity: CheckSeverity;
   title: string;
+  /** What was detected (short) */
   message: string;
   file?: string;
   startLine?: number;
   endLine?: number;
   symbolName?: string;
+  /** Snippet or concrete match that triggered the rule */
   evidence?: string;
   /** Related graph node id when known */
   nodeId?: string;
   confidence: "HIGH" | "MEDIUM" | "LOW";
+  /** Why this finding matters for merge / ops risk */
+  whyItMatters?: string;
+  /** Suggested remediation / next action */
+  remediation?: string;
+}
+
+/** Repo-local Checks configuration (from `.gitimpact.yml`) */
+export interface GitImpactChecksConfig {
+  ignore?: Array<{
+    rule: CheckRuleId | string;
+    path?: string;
+    reason?: string;
+  }>;
+  severity?: Partial<Record<string, CheckSeverity>>;
+}
+
+export interface GitImpactConfig {
+  checks?: GitImpactChecksConfig;
 }
 
 export interface CheckCategorySummary {
@@ -85,4 +105,10 @@ export interface ChecksReport {
     cicd: string[];
   };
   generatedAt: string;
+  /** Applied `.gitimpact.yml` suppressions / severity overrides */
+  configApplied?: {
+    path?: string;
+    suppressed: number;
+    severityOverrides: number;
+  };
 }

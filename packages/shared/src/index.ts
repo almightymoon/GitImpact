@@ -419,6 +419,111 @@ export interface RepositoryIntelligence {
   analysisHealth: AnalysisHealth;
   openPullRequests: OpenPullRequestSummary[];
   openPrCount: number;
+  /** Paths used for GitDiagram-style Structure (docker, sql, html, …) */
+  architectureArtifacts?: string[];
+  /** Semantic architecture map for Structure view */
+  architecture?: ArchitectureMap;
+}
+
+export type ArchitectureBandId =
+  | "actors"
+  | "client"
+  | "server"
+  | "persistence"
+  | "deployment"
+  | "shared";
+
+export type ArchitectureLevel = "SYSTEM" | "COMPONENT" | "CODE";
+
+export type ArchitectureCategory =
+  | "external_actor"
+  | "external_service"
+  | "frontend"
+  | "backend"
+  | "api"
+  | "authentication"
+  | "data"
+  | "database"
+  | "storage"
+  | "queue"
+  | "deployment"
+  | "ci_cd"
+  | "shared"
+  | "other";
+
+export type EdgeImportance = "PRIMARY" | "SECONDARY" | "CONFIGURATION" | "DEPLOYMENT";
+
+export type ArchitectureMode =
+  | "architecture"
+  | "runtime"
+  | "data"
+  | "deployment"
+  | "all";
+
+export interface ArchitectureEvidence {
+  kind: string;
+  detail: string;
+}
+
+export interface ArchitectureComponent {
+  id: string;
+  band: ArchitectureBandId;
+  title: string;
+  role: string;
+  pathHint?: string;
+  files: string[];
+  shape: "box" | "actor" | "store";
+  /** Architecture Experience fields (optional for older maps) */
+  level?: ArchitectureLevel;
+  category?: ArchitectureCategory;
+  description?: string;
+  childIds?: string[];
+  parentId?: string;
+  fileCount?: number;
+  symbolCount?: number;
+  routeCount?: number;
+  testCount?: number;
+  graphNodeIds?: string[];
+}
+
+export interface ArchitectureEdge {
+  from: string;
+  to: string;
+  label: string;
+  importance?: EdgeImportance;
+  confidence?: ConfidenceLevel;
+  modes?: ArchitectureMode[];
+  evidence?: ArchitectureEvidence[];
+}
+
+export interface ArchitectureWalkthroughStep {
+  id: string;
+  title: string;
+  body: string;
+  componentIds?: string[];
+  edgeIds?: string[];
+  highlightNodeIds?: string[];
+  highlightEdgeIds?: string[];
+}
+
+export interface ArchitectureSummary {
+  layerCount: number;
+  componentCount: number;
+  apiRouteCount: number;
+  externalServiceCount: number;
+  deploymentSystemCount: number;
+  primaryFlowLabel: string;
+}
+
+export interface ArchitectureMap {
+  components: ArchitectureComponent[];
+  edges: ArchitectureEdge[];
+  narrative: string[];
+  primaryFlow?: string[];
+  walkthrough?: ArchitectureWalkthroughStep[];
+  summary?: ArchitectureSummary;
+  defaultMode?: ArchitectureMode;
+  repositoryType?: RepositoryType;
 }
 
 export interface AnalysisErrorPayload {
@@ -435,6 +540,8 @@ export type {
   CheckFinding,
   CheckCategorySummary,
   ChecksReport,
+  GitImpactConfig,
+  GitImpactChecksConfig,
 } from "./checks.js";
 
 export {

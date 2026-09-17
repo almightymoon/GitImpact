@@ -15,6 +15,10 @@ import {
   detectInfraSignals,
   detectRepositoryType,
 } from "./repository-type.js";
+import {
+  buildArchitectureExperience,
+  collectArchitectureArtifacts,
+} from "./architecture/index.js";
 
 async function findReadmeRaw(clonePath: string): Promise<string | undefined> {
   for (const name of ["README.md", "Readme.md", "readme.md", "README.MD"]) {
@@ -33,6 +37,7 @@ export async function buildRepositoryIntelligence(input: {
   clonePath?: string;
   files: ParsedFile[];
   graphNodes: GraphNode[];
+  graphEdges?: import("@gitimpact/shared").GraphEdge[];
   routes: DetectedRoute[];
   frameworks: string[];
   languages: Array<{ language: string; percentage: number }>;
@@ -83,6 +88,17 @@ export async function buildRepositoryIntelligence(input: {
     languages: input.languages,
   });
 
+  const architectureArtifacts = collectArchitectureArtifacts(filePaths);
+  const architecture = buildArchitectureExperience({
+    codeFiles: input.files.map((f) => ({ path: f.path })),
+    artifacts: architectureArtifacts,
+    infraSignals,
+    graphNodes: input.graphNodes,
+    graphEdges: input.graphEdges,
+    routes: input.routes,
+    repositoryType: type,
+  });
+
   return {
     repositoryType: type,
     typeLabel: label,
@@ -93,5 +109,7 @@ export async function buildRepositoryIntelligence(input: {
     analysisHealth: input.analysisHealth,
     openPullRequests,
     openPrCount: openPullRequests.length,
+    architectureArtifacts,
+    architecture,
   };
 }

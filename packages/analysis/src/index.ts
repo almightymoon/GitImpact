@@ -46,6 +46,10 @@ import {
   selectWhyPath,
 } from "./pr-comment.js";
 import { buildRepositoryIntelligence } from "./intelligence.js";
+import {
+  buildArchitectureExperience,
+  collectArchitectureArtifacts,
+} from "./architecture/index.js";
 import { classifyAnalysisError } from "./access-errors.js";
 import { buildChecksReport, buildInfrastructureNodes } from "./checks/index.js";
 
@@ -252,6 +256,7 @@ export async function analyzeRepositoryUrl(
     clonePath: repository.clonePath,
     files: parsed.files,
     graphNodes: graph.nodes,
+    graphEdges: graph.edges,
     routes,
     frameworks,
     languages: parsed.languages,
@@ -361,6 +366,7 @@ export async function analyzePullRequest(
     clonePath: repository.clonePath,
     files: parsed.files,
     graphNodes: graph.nodes,
+    graphEdges: graph.edges,
     routes,
     frameworks,
     languages: parsed.languages,
@@ -409,17 +415,61 @@ export async function analyzePullRequest(
   return persist(stored);
 }
 
+function enrichArchitectureIfMissing(analysis: StoredAnalysis): StoredAnalysis {
+  if (!analysis.intelligence) return analysis;
+  const existing = analysis.intelligence.architecture;
+  // Re-build when missing or when older maps lack the experience fields
+  if (existing?.components?.length && existing.summary && existing.walkthrough?.length) {
+    return analysis;
+  }
+
+  const filePaths = [
+    ...new Set([
+      ...analysis.graph.nodes.map((n) => n.file).filter(Boolean),
+      ...(analysis.intelligence.architectureArtifacts ?? []),
+      ...(analysis.intelligence.infraSignals?.map((s) => s.path) ?? []),
+    ]),
+  ];
+  const artifacts =
+    analysis.intelligence.architectureArtifacts?.length
+      ? analysis.intelligence.architectureArtifacts
+      : collectArchitectureArtifacts(filePaths);
+  const architecture = buildArchitectureExperience({
+    codeFiles: analysis.graph.nodes
+      .filter((n) => n.type === "FILE" || n.type === "CONFIG")
+      .map((n) => ({ path: n.file, type: n.type })),
+    artifacts,
+    infraSignals: analysis.intelligence.infraSignals,
+    graphNodes: analysis.graph.nodes,
+    graphEdges: analysis.graph.edges,
+    routes: analysis.routes,
+    repositoryType: analysis.intelligence.repositoryType,
+  });
+
+  const enriched: StoredAnalysis = {
+    ...analysis,
+    intelligence: {
+      ...analysis.intelligence,
+      architectureArtifacts: artifacts,
+      architecture,
+    },
+  };
+  getMemoryStore().set(analysis.id, enriched);
+  return enriched;
+}
+
 export async function getAnalysis(id: string): Promise<StoredAnalysis | undefined> {
   const memory = getMemoryStore().get(id);
-  if (memory) return memory;
+  if (memory) return enrichArchitectureIfMissing(memory);
 
   if (!isDatabaseConfigured()) return undefined;
   try {
     const fromDb = await loadAnalysisFromDb(id);
     if (!fromDb) return undefined;
     const hydrated: StoredAnalysis = { ...fromDb, persisted: true };
-    getMemoryStore().set(id, hydrated);
-    return hydrated;
+    const enriched = enrichArchitectureIfMissing(hydrated);
+    getMemoryStore().set(id, enriched);
+    return enriched;
   } catch (error) {
     console.error("[gitimpact] failed to load analysis", error);
     return undefined;
@@ -499,6 +549,7 @@ export async function analyzeLocalFixture(
     clonePath: fixtureDir,
     files: parsed.files,
     graphNodes: graph.nodes,
+    graphEdges: graph.edges,
     routes,
     frameworks,
     languages: parsed.languages,
@@ -598,6 +649,7 @@ export async function analyzeDemoPullRequest(
     clonePath: fixtureDir,
     files: parsed.files,
     graphNodes: graph.nodes,
+    graphEdges: graph.edges,
     routes,
     frameworks,
     languages: parsed.languages,

@@ -541,6 +541,7 @@ export function RepositoryWorkbench({
               onSelect={(id) => fetchImpact(id, depth, { stay: true })}
               onClear={clearSelection}
               repositoryName={`${data.repository.owner}/${data.repository.name}`}
+              architecture={data.intelligence?.architecture}
             />
           </div>
         </div>

@@ -9,6 +9,7 @@ export default defineConfig({
       "pr-workflow.test.ts",
       "ux-presentation.test.ts",
       "checks.test.ts",
+      "architecture-map.test.ts",
     ],
     exclude: ["cases/**", "node_modules/**"],
     testTimeout: 60_000,

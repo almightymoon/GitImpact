@@ -17,7 +17,7 @@ import {
   type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import type { GraphEdge, GraphNode } from "@gitimpact/shared";
+import type { ArchitectureMap, GraphEdge, GraphNode } from "@gitimpact/shared";
 
 const severityFill: Record<string, string> = {
   CRITICAL: "#9f1239",
@@ -25,6 +25,24 @@ const severityFill: Record<string, string> = {
   MEDIUM: "#0e7490",
   NEUTRAL: "#94a3b8",
 };
+
+/** GitDiagram-style bands (preferred when architecture map is present). */
+type ArchBandId = "actors" | "deployment" | "server" | "client" | "persistence" | "shared";
+
+const ARCH_BANDS: Array<{
+  id: ArchBandId;
+  label: string;
+  hint: string;
+  color: string;
+  soft: string;
+}> = [
+  { id: "deployment", label: "Deployment", hint: "Containers, CI, hosting, proxies", color: "#e11d48", soft: "#ffe4e6" },
+  { id: "server", label: "Server", hint: "Backend runtime and APIs", color: "#d97706", soft: "#fef3c7" },
+  { id: "persistence", label: "Persistence", hint: "Schemas, DB access, storage", color: "#059669", soft: "#d1fae5" },
+  { id: "client", label: "Browser client", hint: "HTML, UI, and client entry", color: "#2563eb", soft: "#dbeafe" },
+  { id: "actors", label: "External actors", hint: "People and clients outside the repo", color: "#64748b", soft: "#f1f5f9" },
+  { id: "shared", label: "Shared", hint: "Utilities and leftovers", color: "#475569", soft: "#e2e8f0" },
+];
 
 type BandId = "delivery" | "orchestration" | "pipeline" | "persistence" | "shared";
 
@@ -84,7 +102,7 @@ type SystemModule = {
 };
 
 type StructureNodeData = {
-  kind: "band" | "system";
+  kind: "band" | "system" | "group";
   title: string;
   subtitle: string;
   color: string;
@@ -96,6 +114,10 @@ type StructureNodeData = {
   severity: string;
   selected: boolean;
   fileId?: string;
+  shape?: "box" | "actor" | "store";
+  pathHint?: string;
+  width?: number;
+  height?: number;
 };
 
 function isFileLevel(node: GraphNode): boolean {
@@ -377,17 +399,21 @@ function systemSeverity(mod: SystemModule, impacted: Map<string, string>): strin
 function StructureNode({ data }: NodeProps) {
   const d = data as StructureNodeData;
 
-  if (d.kind === "band") {
+  if (d.kind === "band" || d.kind === "group") {
+    const w = d.width ?? 176;
+    const h = d.height ?? 120;
     return (
       <div
         style={{
-          width: 176,
-          minHeight: 120,
-          borderRadius: 16,
-          border: `1.5px solid ${d.color}44`,
+          width: w,
+          minHeight: h,
+          height: d.kind === "group" ? h : undefined,
+          borderRadius: 20,
+          border: `1.5px solid ${d.color}55`,
           background: d.soft,
-          padding: "12px 14px",
+          padding: "14px 16px",
           overflow: "visible",
+          boxSizing: "border-box",
         }}
       >
         <div
@@ -405,19 +431,78 @@ function StructureNode({ data }: NodeProps) {
         <div style={{ marginTop: 6, fontSize: 11, color: "#1c2a3a", opacity: 0.72, lineHeight: 1.35 }}>
           {d.subtitle}
         </div>
-        <div
-          style={{
-            marginTop: 10,
-            fontFamily: "IBM Plex Mono, ui-monospace, monospace",
-            fontSize: 11,
-            color: "#64748b",
-          }}
-        >
-          {d.count ?? 0} systems
-          {(d.impactedCount ?? 0) > 0 ? (
-            <span style={{ color: "#9f1239" }}> · {d.impactedCount}●</span>
-          ) : null}
-        </div>
+        {d.kind === "band" ? (
+          <div
+            style={{
+              marginTop: 10,
+              fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+              fontSize: 11,
+              color: "#64748b",
+            }}
+          >
+            {d.count ?? 0} systems
+            {(d.impactedCount ?? 0) > 0 ? (
+              <span style={{ color: "#9f1239" }}> · {d.impactedCount}●</span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  // External actor — circle
+  if (d.shape === "actor") {
+    return (
+      <div
+        title={`${d.title}\n${d.subtitle}`}
+        style={{
+          width: 132,
+          height: 132,
+          borderRadius: 999,
+          border: `2px solid ${d.color}`,
+          background: d.selected ? "#0b1220" : "#ffffff",
+          color: d.selected ? "#f7fafc" : "#0b1220",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: 10,
+          position: "relative",
+          boxShadow: "0 8px 22px rgba(11,18,32,0.07)",
+        }}
+      >
+        <Handle type="target" position={Position.Top} id="t" style={{ opacity: 0 }} />
+        <Handle type="source" position={Position.Bottom} id="b" style={{ opacity: 0 }} />
+        <Handle type="target" position={Position.Left} id="l" style={{ opacity: 0 }} />
+        <Handle type="source" position={Position.Right} id="r" style={{ opacity: 0 }} />
+        <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{d.title}</div>
+        <div style={{ marginTop: 4, fontSize: 10, opacity: 0.65 }}>{d.subtitle}</div>
+      </div>
+    );
+  }
+
+  // Datastore — cylinder-ish
+  if (d.shape === "store") {
+    return (
+      <div
+        title={`${d.title}\n${d.subtitle}`}
+        style={{
+          width: 180,
+          minHeight: 100,
+          borderRadius: "12px / 28px",
+          border: `2px solid ${d.color}`,
+          background: d.selected ? "#0b1220" : d.soft,
+          color: d.selected ? "#f7fafc" : "#0b1220",
+          padding: "16px 14px",
+          position: "relative",
+          boxShadow: "0 8px 22px rgba(11,18,32,0.07)",
+        }}
+      >
+        <Handle type="target" position={Position.Top} id="t" style={{ opacity: 0 }} />
+        <Handle type="source" position={Position.Bottom} id="b" style={{ opacity: 0 }} />
+        <div style={{ fontSize: 14, fontWeight: 700 }}>{d.title}</div>
+        <div style={{ marginTop: 4, fontSize: 11, opacity: 0.7 }}>{d.subtitle}</div>
       </div>
     );
   }
@@ -434,7 +519,7 @@ function StructureNode({ data }: NodeProps) {
       title={`${d.title}\n${d.root ?? ""}\n${d.subtitle}`}
       style={{
         width: 240,
-        minHeight: 168,
+        minHeight: 148,
         borderRadius: 16,
         border: `2px solid ${border}`,
         background: d.selected ? "#0b1220" : "#ffffff",
@@ -477,51 +562,60 @@ function StructureNode({ data }: NodeProps) {
           position: "absolute",
           inset: "10px auto 10px 0",
           width: 4,
-          borderRadius: 999,
+          borderRadius: 4,
           background: d.color,
         }}
       />
       <div style={{ paddingLeft: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.25 }}>{d.title}</div>
         <div
           style={{
-            fontFamily: "Syne, IBM Plex Sans, sans-serif",
-            fontSize: 15,
-            fontWeight: 700,
-            lineHeight: 1.2,
+            marginTop: 4,
+            fontSize: 12,
+            opacity: 0.72,
+            lineHeight: 1.35,
           }}
         >
-          {d.title}
-        </div>
-        <div style={{ marginTop: 4, fontSize: 11, lineHeight: 1.4, opacity: 0.78 }}>
           {d.subtitle}
         </div>
-        {d.root ? (
+        {d.pathHint ? (
           <div
             style={{
               marginTop: 8,
               fontFamily: "IBM Plex Mono, ui-monospace, monospace",
-              fontSize: 10,
+              fontSize: 11,
+              color: d.selected ? "#99f6e4" : d.color,
+            }}
+          >
+            [{d.pathHint.split("/").pop()}]
+          </div>
+        ) : d.root ? (
+          <div
+            style={{
+              marginTop: 8,
+              fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+              fontSize: 11,
               opacity: 0.55,
-              wordBreak: "break-all",
             }}
           >
             [{d.root}]
           </div>
         ) : null}
-        {d.keyFiles && d.keyFiles.length > 0 ? (
+        {(d.keyFiles?.length ?? 0) > 0 ? (
           <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none" }}>
-            {d.keyFiles.map((file) => (
+            {d.keyFiles!.slice(0, 4).map((f) => (
               <li
-                key={file}
+                key={f}
                 style={{
                   fontFamily: "IBM Plex Mono, ui-monospace, monospace",
-                  fontSize: 10,
-                  opacity: 0.75,
-                  marginTop: 4,
-                  wordBreak: "break-word",
+                  fontSize: 11,
+                  opacity: 0.7,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                · {file}
+                {f}
               </li>
             ))}
           </ul>
@@ -531,24 +625,14 @@ function StructureNode({ data }: NodeProps) {
             marginTop: 10,
             display: "flex",
             gap: 8,
-            alignItems: "center",
             fontFamily: "IBM Plex Mono, ui-monospace, monospace",
             fontSize: 10,
+            opacity: 0.55,
           }}
         >
-          <span style={{ opacity: 0.65 }}>{d.count ?? 0} files</span>
+          <span>{d.count ?? 0} files</span>
           {(d.impactedCount ?? 0) > 0 ? (
-            <span
-              style={{
-                borderRadius: 999,
-                background: "rgba(159,18,57,0.12)",
-                color: d.selected ? "#fecdd3" : "#9f1239",
-                padding: "2px 7px",
-                fontWeight: 600,
-              }}
-            >
-              {d.impactedCount} impact
-            </span>
+            <span style={{ color: "#9f1239" }}>{d.impactedCount} impact</span>
           ) : null}
         </div>
       </div>
@@ -557,6 +641,178 @@ function StructureNode({ data }: NodeProps) {
 }
 
 const nodeTypes = { structure: memo(StructureNode) };
+
+function buildArchitectureLayout(
+  architecture: ArchitectureMap,
+  selectedId: string | null,
+): {
+  nodes: Node[];
+  edges: Edge[];
+  systems: SystemModule[];
+  narrative: string[];
+  bandStats: Array<{ id: BandId; count: number; impacted: number }>;
+} {
+  const byBand = new Map<ArchBandId, typeof architecture.components>();
+  for (const band of ARCH_BANDS) byBand.set(band.id, []);
+  for (const component of architecture.components) {
+    const list = byBand.get(component.band as ArchBandId) ?? [];
+    list.push(component);
+    byBand.set(component.band as ArchBandId, list);
+  }
+
+  const activeBands = ARCH_BANDS.filter((b) => (byBand.get(b.id)?.length ?? 0) > 0);
+  const rfNodes: Node[] = [];
+  const bandStats: Array<{ id: BandId; count: number; impacted: number }> = [];
+
+  let y = 0;
+  const cardW = 252;
+
+  // Synthetic SystemModule list for sidebar file counts
+  const systems: SystemModule[] = architecture.components.map((c) => ({
+    id: c.id,
+    root: c.pathHint ?? c.title,
+    title: c.title,
+    role: c.role,
+    band: "shared",
+    files: c.files.map((f) => ({
+      id: `FILE:${f}`,
+      type: "FILE" as const,
+      name: f.split("/").pop() ?? f,
+      file: f,
+    })),
+    keyFiles: c.files.map((f) => f.split("/").pop() ?? f).slice(0, 4),
+    impactedCount: 0,
+  }));
+
+  for (const band of activeBands) {
+    const members = byBand.get(band.id) ?? [];
+    bandStats.push({
+      id: "shared",
+      count: members.length,
+      impacted: 0,
+    });
+
+    const padX = 20;
+    const padTop = 48;
+    const padBottom = 24;
+    const innerGap = 28;
+    const memberWidths = members.map((m) =>
+      m.shape === "actor" ? 140 : m.shape === "store" ? 190 : cardW,
+    );
+    const contentW = memberWidths.reduce((a, w, i) => a + w + (i > 0 ? innerGap : 0), 0);
+    const groupW = Math.max(280, contentW + padX * 2);
+    const rowH = band.id === "actors" ? 150 : 200;
+    const groupH = padTop + rowH + padBottom;
+
+    rfNodes.push({
+      id: `band:${band.id}`,
+      type: "structure",
+      className: "structure-node",
+      position: { x: 40, y },
+      data: {
+        kind: "group",
+        title: band.label,
+        subtitle: band.hint,
+        color: band.color,
+        soft: band.soft,
+        count: members.length,
+        impactedCount: 0,
+        severity: "NEUTRAL",
+        selected: false,
+        width: groupW,
+        height: groupH,
+      } satisfies StructureNodeData,
+      draggable: false,
+      selectable: false,
+      zIndex: 0,
+    });
+
+    let x = 40 + padX;
+    members.forEach((mod, index) => {
+      const selected =
+        selectedId != null &&
+        mod.files.some((f) => selectedId === `FILE:${f}` || selectedId.endsWith(f));
+
+      const width = memberWidths[index] ?? cardW;
+      rfNodes.push({
+        id: `sys:${mod.id}`,
+        type: "structure",
+        className: "structure-node",
+        position: { x, y: y + padTop },
+        data: {
+          kind: "system",
+          title: mod.title,
+          subtitle: mod.role,
+          color: band.color,
+          soft: band.soft,
+          count: mod.files.length,
+          impactedCount: 0,
+          keyFiles: mod.files.map((f) => f.split("/").pop() ?? f).slice(0, 4),
+          root: mod.pathHint,
+          pathHint: mod.pathHint,
+          shape: mod.shape,
+          severity: "NEUTRAL",
+          selected,
+          fileId: mod.files[0] ? `FILE:${mod.files[0]}` : undefined,
+        } satisfies StructureNodeData,
+        zIndex: 2,
+      });
+      x += width + innerGap;
+    });
+
+    y += groupH + 48;
+  }
+
+  const rfEdges: Edge[] = architecture.edges.map((edge) => ({
+    id: `arch:${edge.from}->${edge.to}:${edge.label}`,
+    source: `sys:${edge.from}`,
+    target: `sys:${edge.to}`,
+    sourceHandle: "b",
+    targetHandle: "t",
+    type: "smoothstep",
+    label: edge.label,
+    animated: true,
+    style: {
+      stroke: "#64748b",
+      strokeWidth: 1.8,
+      strokeDasharray: "6 4",
+      opacity: 0.85,
+    },
+    labelStyle: {
+      fontSize: 10,
+      fill: "#475569",
+      fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+    },
+    labelBgStyle: { fill: "#f7fafc", fillOpacity: 0.92 },
+    labelBgPadding: [4, 6] as [number, number],
+    labelBgBorderRadius: 6,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: "#64748b",
+      width: 18,
+      height: 18,
+    },
+    zIndex: 1,
+  }));
+
+  // Map arch band stats for sidebar using ARCH_BANDS labels via custom path
+  const archBandStats = activeBands.map((b) => ({
+    id: b.id as unknown as BandId,
+    count: byBand.get(b.id)?.length ?? 0,
+    impacted: 0,
+    label: b.label,
+    color: b.color,
+  }));
+
+  return {
+    nodes: rfNodes,
+    edges: rfEdges,
+    systems,
+    narrative: architecture.narrative,
+    bandStats: archBandStats,
+    archBandMeta: activeBands,
+  } as ReturnType<typeof buildLayout> & { archBandMeta?: typeof ARCH_BANDS };
+}
 
 function buildNarrative(
   activeBands: typeof BANDS,
@@ -926,6 +1182,7 @@ export function StructureDiagram({
   onSelect,
   onClear,
   repositoryName,
+  architecture,
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -934,14 +1191,17 @@ export function StructureDiagram({
   onSelect: (id: string) => void;
   onClear?: () => void;
   repositoryName?: string;
+  architecture?: ArchitectureMap;
 }) {
   // Full structure by default; impact paints on top without hiding systems.
   const [focusImpacted, setFocusImpacted] = useState(false);
 
-  const layout = useMemo(
-    () => buildLayout(nodes, edges, impacted, selectedId, focusImpacted),
-    [nodes, edges, impacted, selectedId, focusImpacted],
-  );
+  const layout = useMemo(() => {
+    if (architecture && architecture.components.length > 0) {
+      return buildArchitectureLayout(architecture, selectedId);
+    }
+    return buildLayout(nodes, edges, impacted, selectedId, focusImpacted);
+  }, [architecture, nodes, edges, impacted, selectedId, focusImpacted]);
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(layout.nodes);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(layout.edges);
@@ -1013,23 +1273,41 @@ export function StructureDiagram({
             Architecture bands
           </p>
           <ul className="mt-2 space-y-2">
-            {layout.bandStats.map((stat) => {
-              const band = BANDS.find((b) => b.id === stat.id)!;
-              return (
-                <li key={stat.id} className="flex items-center gap-2 text-xs">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ background: band.color }}
-                    aria-hidden
-                  />
-                  <span className="font-medium">{band.label}</span>
-                  <span className="ml-auto font-mono text-[var(--ink-soft)]/70">{stat.count}</span>
-                  {stat.impacted > 0 ? (
-                    <span className="font-mono text-[var(--critical)]">{stat.impacted}●</span>
-                  ) : null}
-                </li>
-              );
-            })}
+            {(
+              architecture && architecture.components.length > 0
+                ? ARCH_BANDS.filter((b) =>
+                    architecture.components.some((c) => c.band === b.id),
+                  ).map((band) => ({
+                    id: band.id,
+                    label: band.label,
+                    color: band.color,
+                    count: architecture.components.filter((c) => c.band === band.id).length,
+                    impacted: 0,
+                  }))
+                : layout.bandStats.map((stat) => {
+                    const band = BANDS.find((b) => b.id === stat.id)!;
+                    return {
+                      id: stat.id,
+                      label: band.label,
+                      color: band.color,
+                      count: stat.count,
+                      impacted: stat.impacted,
+                    };
+                  })
+            ).map((stat) => (
+              <li key={stat.id} className="flex items-center gap-2 text-xs">
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: stat.color }}
+                  aria-hidden
+                />
+                <span className="font-medium">{stat.label}</span>
+                <span className="ml-auto font-mono text-[var(--ink-soft)]/70">{stat.count}</span>
+                {stat.impacted > 0 ? (
+                  <span className="font-mono text-[var(--critical)]">{stat.impacted}●</span>
+                ) : null}
+              </li>
+            ))}
           </ul>
         </div>
         <div className="mt-auto px-4 py-3">
@@ -1053,8 +1331,9 @@ export function StructureDiagram({
             </span>
           </div>
           <p className="mt-3 font-mono text-[10px] leading-relaxed text-[var(--ink-soft)]/70">
-            Systems from real packages/folders. Solid arrows = resolved imports; dashed =
-            architecture flow.
+            {architecture && architecture.components.length > 0
+              ? "GitDiagram-style map: components from file roles (entries, schemas, deploy configs). Dashed arrows = semantic links (configures, hosts, owns…)."
+              : "Systems from packages/folders. Solid arrows = resolved imports; dashed = architecture flow."}
           </p>
         </div>
       </aside>

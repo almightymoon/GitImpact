@@ -14,6 +14,8 @@ import type {
 import { runSecurityChecks, markAuthSensitiveChanges } from "./security.js";
 import { runQualityChecks } from "./quality.js";
 import { runCicdChecks } from "./cicd.js";
+import { enrichFindingGuidance } from "./rule-catalog.js";
+import { applyChecksConfig, loadGitImpactConfig } from "./config.js";
 
 const SEVERITIES: CheckSeverity[] = ["critical", "high", "medium", "low", "info"];
 
@@ -67,7 +69,7 @@ export async function buildChecksReport(input: {
   });
 
   // Filter PR-scoped quality noise: when PR analysis, emphasize changed files for some rules
-  let findings = [...security, ...quality, ...cicd];
+  let findings = [...security, ...quality, ...cicd].map(enrichFindingGuidance);
   if (input.changes?.length) {
     const changed = new Set(input.changes.map((c) => c.filePath.replace(/\\/g, "/")));
     findings = findings.map((f) => {
@@ -80,6 +82,10 @@ export async function buildChecksReport(input: {
       return f;
     });
   }
+
+  const { config, path: configPath } = await loadGitImpactConfig(input.clonePath);
+  const applied = applyChecksConfig(findings, config);
+  findings = applied.findings;
 
   findings.sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
 
@@ -99,6 +105,14 @@ export async function buildChecksReport(input: {
     totals,
     prHighlights: buildPrHighlights(findings, input.impact, input.prOverview),
     generatedAt: new Date().toISOString(),
+    configApplied:
+      configPath || applied.suppressed || applied.severityOverrides
+        ? {
+            path: configPath,
+            suppressed: applied.suppressed,
+            severityOverrides: applied.severityOverrides,
+          }
+        : undefined,
   };
 }
 

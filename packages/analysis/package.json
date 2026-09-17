@@ -18,13 +18,14 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@gitimpact/shared": "workspace:*",
+    "@gitimpact/db": "workspace:*",
+    "@gitimpact/framework-detector": "workspace:*",
     "@gitimpact/git": "workspace:*",
-    "@gitimpact/parser": "workspace:*",
     "@gitimpact/graph": "workspace:*",
     "@gitimpact/impact-engine": "workspace:*",
-    "@gitimpact/framework-detector": "workspace:*",
-    "@gitimpact/db": "workspace:*"
+    "@gitimpact/parser": "workspace:*",
+    "@gitimpact/shared": "workspace:*",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

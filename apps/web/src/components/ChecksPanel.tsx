@@ -103,6 +103,24 @@ export function ChecksPanel({
         ))}
       </div>
 
+      {checks.configApplied &&
+      (checks.configApplied.suppressed > 0 || checks.configApplied.severityOverrides > 0) ? (
+        <p className="rounded-xl border border-[var(--line)] bg-[var(--fog)]/50 px-3 py-2 font-mono text-[11px] text-[var(--ink-soft)]">
+          Config {checks.configApplied.path ?? ".gitimpact.yml"}:{" "}
+          {checks.configApplied.suppressed > 0
+            ? `${checks.configApplied.suppressed} suppressed`
+            : null}
+          {checks.configApplied.suppressed > 0 && checks.configApplied.severityOverrides > 0
+            ? " · "
+            : null}
+          {checks.configApplied.severityOverrides > 0
+            ? `${checks.configApplied.severityOverrides} severity override${
+                checks.configApplied.severityOverrides === 1 ? "" : "s"
+              }`
+            : null}
+        </p>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-2">
         {checks.summaries
           .filter((s) => category === "all" || s.category === category)
@@ -179,7 +197,34 @@ function FindingCard({
           {finding.evidence}
         </pre>
       ) : null}
+      {(finding.whyItMatters || finding.remediation) && (
+        <dl className="mt-3 space-y-2 rounded-xl border border-[var(--line)]/80 bg-[var(--fog)]/40 px-3 py-2.5">
+          {finding.whyItMatters ? (
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
+                Why this matters
+              </dt>
+              <dd className="mt-0.5 text-sm leading-relaxed text-[var(--ink-soft)]">
+                {finding.whyItMatters}
+              </dd>
+            </div>
+          ) : null}
+          {finding.remediation ? (
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
+                Suggested action
+              </dt>
+              <dd className="mt-0.5 text-sm leading-relaxed text-[var(--ink-soft)]">
+                {finding.remediation}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
+        <span className="rounded-full bg-[var(--fog)] px-2.5 py-0.5 font-mono text-[10px] text-[var(--ink-soft)]">
+          {finding.ruleId}
+        </span>
         {finding.file ? (
           <button
             type="button"
