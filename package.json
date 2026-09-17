@@ -1,0 +1,23 @@
+{
+  "name": "gitimpact",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Know what breaks before you merge — blast-radius analysis for code changes",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "build:packages": "pnpm --filter @gitimpact/shared build && pnpm --filter @gitimpact/git build && pnpm --filter @gitimpact/parser build && pnpm --filter @gitimpact/graph build && pnpm --filter @gitimpact/impact-engine build && pnpm --filter @gitimpact/analysis build && pnpm --filter @gitimpact/cli build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
