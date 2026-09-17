@@ -20,6 +20,9 @@ importers:
       '@gitimpact/analysis':
         specifier: workspace:*
         version: link:../../packages/analysis
+      '@gitimpact/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@gitimpact/git':
         specifier: workspace:*
         version: link:../../packages/git
@@ -203,6 +206,9 @@ importers:
 
   tests/accuracy:
     dependencies:
+      '@gitimpact/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@gitimpact/framework-detector':
         specifier: workspace:*
         version: link:../../packages/framework-detector

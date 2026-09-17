@@ -323,22 +323,6 @@ export function ImpactGraph({
     return map;
   }, [adjacency, pathSelection]);
 
-  const pathStatuses = useMemo(() => {
-    const statuses: Array<{ from: string; to: string; ok: boolean; color: string }> = [];
-    for (let i = 0; i < pathSelection.length - 1; i++) {
-      const from = pathSelection[i]!;
-      const to = pathSelection[i + 1]!;
-      const path = shortestPath(adjacency, from, to);
-      statuses.push({
-        from,
-        to,
-        ok: Boolean(path && path.length >= 2),
-        color: PATH_COLORS[i % PATH_COLORS.length]!,
-      });
-    }
-    return statuses;
-  }, [adjacency, pathSelection]);
-
   const initialNodes = useMemo(
     () => layoutNodes(nodes, impacted, selectedId, pathSelection),
     [nodes, impacted, selectedId, pathSelection],
@@ -357,46 +341,21 @@ export function ImpactGraph({
     setRfEdges(initialEdges);
   }, [initialNodes, initialEdges, setRfNodes, setRfEdges]);
 
-  const applySelection = useCallback(
-    (next: string[]) => {
-      setPathSelection(next);
-      if (next.length === 0) {
-        onClear?.();
-        return;
-      }
-      const root = next[0]!;
-      if (root !== selectedId) onSelect(root);
-    },
-    [onClear, onSelect, selectedId],
-  );
-
   const handleNodeClick = useCallback(
     (id: string) => {
-      setPathSelection((prev) => {
-        let next: string[];
-        if (prev.length > 0 && prev[prev.length - 1] === id) {
-          next = prev.slice(0, -1);
-        } else {
-          const existing = prev.indexOf(id);
-          if (existing >= 0) next = prev.slice(0, existing + 1);
-          else next = [...prev, id];
-        }
-
-        // Defer parent updates so we don't setState during render of this updater
-        queueMicrotask(() => {
-          if (next.length === 0) onClear?.();
-          else if (next[0] && next[0] !== selectedId) onSelect(next[0]);
-        });
-
-        return next;
+      // Replace selection — do not push browser history for node picks
+      setPathSelection([id]);
+      queueMicrotask(() => {
+        if (id !== selectedId) onSelect(id);
       });
     },
-    [onClear, onSelect, selectedId],
+    [onSelect, selectedId],
   );
 
   const handleClear = useCallback(() => {
-    applySelection([]);
-  }, [applySelection]);
+    setPathSelection([]);
+    onClear?.();
+  }, [onClear]);
 
   const nameFor = useCallback(
     (id: string) => nodes.find((n) => n.id === id)?.name ?? id.split(":").pop() ?? id,
@@ -410,50 +369,17 @@ export function ImpactGraph({
           <div className="pointer-events-auto rounded-xl border border-[var(--line)] bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
             <div className="flex items-center justify-between gap-2">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
-                Path select · click blocks to connect
+                Selected · click empty space to deselect
               </p>
               <button
                 type="button"
                 onClick={handleClear}
                 className="rounded-full px-2 py-0.5 text-[11px] text-[var(--teal)] hover:underline"
               >
-                Clear
+                Deselect
               </button>
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              {pathSelection.map((id, index) => (
-                <span key={`${id}-${index}`} className="inline-flex items-center gap-1 text-[11px]">
-                  {index > 0 ? (
-                    <span
-                      className="font-mono text-[10px]"
-                      style={{ color: PATH_COLORS[(index - 1) % PATH_COLORS.length] }}
-                    >
-                      →
-                    </span>
-                  ) : null}
-                  <span
-                    className="rounded-full px-2 py-0.5 font-medium text-white"
-                    style={{ background: PATH_COLORS[index % PATH_COLORS.length] }}
-                  >
-                    {index + 1}. {nameFor(id)}
-                  </span>
-                </span>
-              ))}
-            </div>
-            {pathStatuses.some((s) => !s.ok) ? (
-              <p className="mt-1.5 font-mono text-[10px] text-[var(--critical)]">
-                No graph path between some selections — try a closer dependent.
-              </p>
-            ) : pathStatuses.length > 0 ? (
-              <p className="mt-1.5 font-mono text-[10px] text-[var(--ink-soft)]/70">
-                {pathStatuses.length} lit path{pathStatuses.length === 1 ? "" : "s"} between
-                selections
-              </p>
-            ) : (
-              <p className="mt-1.5 font-mono text-[10px] text-[var(--ink-soft)]/70">
-                Click another block to light up the connection
-              </p>
-            )}
+            <p className="mt-1.5 text-[11px] font-medium">{nameFor(pathSelection[0]!)}</p>
           </div>
         </div>
       ) : null}

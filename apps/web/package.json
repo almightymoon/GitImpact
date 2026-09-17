@@ -13,6 +13,7 @@
   "dependencies": {
     "@gitimpact/analysis": "workspace:*",
     "@gitimpact/git": "workspace:*",
+    "@gitimpact/db": "workspace:*",
     "@gitimpact/shared": "workspace:*",
     "@xyflow/react": "^12.6.4",
     "next": "^15.3.3",

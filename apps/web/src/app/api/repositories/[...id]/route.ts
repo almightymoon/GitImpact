@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getAnalysis, getNodeImpact, searchAnalysis, getImpactPathExplanation } from "@gitimpact/analysis";
+import {
+  getAnalysis,
+  getNodeImpact,
+  getNodeInspector,
+  searchAnalysis,
+  getImpactPathExplanation,
+} from "@gitimpact/analysis";
 
 export const runtime = "nodejs";
 
@@ -18,11 +24,15 @@ export async function GET(request: Request, { params }: Params) {
   const q = searchParams.get("q");
   const why = searchParams.get("why");
   const from = searchParams.get("from") ?? undefined;
+  const inspect = searchParams.get("inspect");
 
   const analysis = await getAnalysis(id);
   if (!analysis) {
     return NextResponse.json(
-      { error: "Analysis not found. Re-run analyze from the home page." },
+      {
+        error: "Analysis not found. Re-run analyze from the home page.",
+        code: "NOT_FOUND",
+      },
       { status: 404 },
     );
   }
@@ -37,6 +47,14 @@ export async function GET(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Impact path not found" }, { status: 404 });
     }
     return NextResponse.json({ path });
+  }
+
+  if (inspect) {
+    const inspector = await getNodeInspector(id, inspect, depth);
+    if (!inspector) {
+      return NextResponse.json({ error: "Node not found" }, { status: 404 });
+    }
+    return NextResponse.json({ inspector });
   }
 
   if (nodeId) {
@@ -69,7 +87,10 @@ export async function GET(request: Request, { params }: Params) {
         e.type === "CALLS" ||
         e.type === "CONFIGURES" ||
         e.type === "DEPENDS_ON" ||
-        e.type === "CONTAINS") &&
+        e.type === "CONTAINS" ||
+        e.type === "HANDLED_BY" ||
+        e.type === "FETCHES" ||
+        e.type === "TESTS") &&
       fileIds.has(e.from) &&
       fileIds.has(e.to),
   );
@@ -91,6 +112,7 @@ export async function GET(request: Request, { params }: Params) {
       defaultBranch: analysis.repository.defaultBranch,
     },
     summary: analysis.summary,
+    intelligence: analysis.intelligence,
     pullRequest: analysis.pullRequest,
     changes: analysis.changes,
     impact: analysis.impact,

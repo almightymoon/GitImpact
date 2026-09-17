@@ -465,28 +465,66 @@ export class TypeScriptParser implements LanguageParser {
   }
 }
 
-export async function listCodeFiles(rootDir: string): Promise<string[]> {
-  const results: string[] = [];
+export async function inventoryRepositoryFiles(rootDir: string): Promise<{
+  codeFiles: string[];
+  filesIgnored: number;
+  filesUnsupported: number;
+  allRelativeFiles: string[];
+}> {
+  const codeFiles: string[] = [];
+  const allRelativeFiles: string[] = [];
+  let filesIgnored = 0;
+  let filesUnsupported = 0;
 
   async function walk(current: string, relative = ""): Promise<void> {
-    const entries = await readdir(current, { withFileTypes: true });
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
     for (const entry of entries) {
       const rel = relative ? path.join(relative, entry.name) : entry.name;
-      if (shouldIgnore(rel)) continue;
+      const normalized = rel.replace(/\\/g, "/");
+      if (shouldIgnore(rel)) {
+        filesIgnored += 1;
+        continue;
+      }
       const absolute = path.join(current, entry.name);
       if (entry.isDirectory()) {
         await walk(absolute, rel);
-      } else if (entry.isFile() && isCodeFile(rel)) {
-        const info = await stat(absolute);
-        if (info.size <= 1_500_000) {
-          results.push(rel.replace(/\\/g, "/"));
+      } else if (entry.isFile()) {
+        allRelativeFiles.push(normalized);
+        if (isCodeFile(rel)) {
+          try {
+            const info = await stat(absolute);
+            if (info.size <= 1_500_000) {
+              codeFiles.push(normalized);
+            } else {
+              filesUnsupported += 1;
+            }
+          } catch {
+            filesUnsupported += 1;
+          }
+        } else if (
+          !/\.(md|json|ya?ml|toml|lock|svg|png|jpg|gif|webp|ico|woff2?|ttf|css|scss|html|txt|env|example)$/i.test(
+            normalized,
+          )
+        ) {
+          filesUnsupported += 1;
         }
       }
     }
   }
 
   await walk(rootDir);
-  return results.sort();
+  codeFiles.sort();
+  return { codeFiles, filesIgnored, filesUnsupported, allRelativeFiles };
+}
+
+export async function listCodeFiles(rootDir: string): Promise<string[]> {
+  const { codeFiles } = await inventoryRepositoryFiles(rootDir);
+  return codeFiles;
 }
 
 /**
@@ -505,13 +543,27 @@ export async function parseRepository(
   frameworks: string[];
   contentsByPath: Map<string, string>;
   packageDeps: Record<string, string>;
+  analysisHealth: {
+    filesDiscovered: number;
+    filesParsed: number;
+    filesIgnored: number;
+    filesUnsupported: number;
+    parseFailures: number;
+    maxFilesCap?: number;
+    truncated: boolean;
+  };
+  allRelativeFiles: string[];
 }> {
-  const relativePaths = await listCodeFiles(rootDir);
-  const limited = relativePaths.slice(0, options?.maxFiles ?? 2_500);
+  const inventory = await inventoryRepositoryFiles(rootDir);
+  const relativePaths = inventory.codeFiles;
+  const maxFiles = options?.maxFiles ?? 2_500;
+  const limited = relativePaths.slice(0, maxFiles);
+  const truncated = relativePaths.length > limited.length;
   const contentsByPath = new Map<string, string>();
   const knownFiles = new Set(limited);
   const pathAliases =
     options?.pathAliases ?? (await readPathAliases(rootDir));
+  let parseFailures = 0;
 
   const project = new Project({
     useInMemoryFileSystem: true,
@@ -540,6 +592,7 @@ export async function parseRepository(
       contentsByPath.set(relativePath, content);
       project.createSourceFile(relativePath, content, { overwrite: true });
     } catch {
+      parseFailures += 1;
       continue;
     }
   }
@@ -574,6 +627,7 @@ export async function parseRepository(
       }
       files.push(parsed);
     } catch {
+      parseFailures += 1;
       continue;
     }
   }
@@ -587,6 +641,16 @@ export async function parseRepository(
     frameworks,
     contentsByPath,
     packageDeps,
+    allRelativeFiles: inventory.allRelativeFiles,
+    analysisHealth: {
+      filesDiscovered: relativePaths.length,
+      filesParsed: files.length,
+      filesIgnored: inventory.filesIgnored,
+      filesUnsupported: inventory.filesUnsupported,
+      parseFailures,
+      maxFilesCap: maxFiles,
+      truncated,
+    },
   };
 }
 

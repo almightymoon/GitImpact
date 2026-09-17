@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { analyzeRepositoryUrl, parseGitHubUrl, toGitImpactPath } from "@gitimpact/analysis";
+import {
+  analyzeRepositoryUrl,
+  classifyAnalysisError,
+  parseGitHubUrl,
+  toGitImpactPath,
+} from "@gitimpact/analysis";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -11,7 +16,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "repository is required" }, { status: 400 });
     }
 
-    // Validate early for clearer errors
     const parsed = parseGitHubUrl(body.repository);
     const analysis = await analyzeRepositoryUrl(body.repository, {
       depth: body.depth ?? 3,
@@ -22,6 +26,7 @@ export async function POST(request: Request) {
       id: analysis.id,
       routePath: analysis.routePath || toGitImpactPath(parsed),
       summary: analysis.summary,
+      intelligence: analysis.intelligence,
       repository: {
         owner: analysis.repository.owner,
         name: analysis.repository.name,
@@ -43,7 +48,21 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Analysis failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const classified = classifyAnalysisError(error);
+    const status =
+      classified.code === "PRIVATE_REPOSITORY" || classified.code === "ACCESS_DENIED"
+        ? 403
+        : classified.code === "NOT_FOUND"
+          ? 404
+          : 500;
+    return NextResponse.json(
+      {
+        error: classified.message,
+        code: classified.code,
+        detail: classified.detail,
+        action: classified.action,
+      },
+      { status },
+    );
   }
 }

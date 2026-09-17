@@ -1,22 +1,12 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { githubApiHeaders } from "./github-api.js";
+import { resolveGitHubToken } from "./github-app.js";
 
 export interface GitHubComment {
   id: number;
   body: string;
   user?: { login?: string };
   html_url?: string;
-}
-
-function githubHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "User-Agent": "GitImpact/0.6",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-  if (process.env.GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  }
-  return headers;
 }
 
 /**
@@ -47,12 +37,14 @@ export async function listPullRequestIssueComments(
   owner: string,
   repo: string,
   number: number,
+  token?: string,
 ): Promise<GitHubComment[]> {
+  const auth = token ?? (await resolveGitHubToken());
   const comments: GitHubComment[] = [];
   for (let page = 1; page <= 5; page += 1) {
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/issues/${number}/comments?per_page=100&page=${page}`,
-      { headers: githubHeaders() },
+      { headers: githubApiHeaders(auth) },
     );
     if (!response.ok) {
       throw new Error(
@@ -71,13 +63,15 @@ export async function createPullRequestComment(
   repo: string,
   number: number,
   body: string,
+  token?: string,
 ): Promise<GitHubComment> {
+  const auth = token ?? (await resolveGitHubToken());
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/issues/${number}/comments`,
     {
       method: "POST",
       headers: {
-        ...githubHeaders(),
+        ...githubApiHeaders(auth),
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ body }),
@@ -97,13 +91,15 @@ export async function updateIssueComment(
   repo: string,
   commentId: number,
   body: string,
+  token?: string,
 ): Promise<GitHubComment> {
+  const auth = token ?? (await resolveGitHubToken());
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/issues/comments/${commentId}`,
     {
       method: "PATCH",
       headers: {
-        ...githubHeaders(),
+        ...githubApiHeaders(auth),
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ body }),
@@ -127,18 +123,22 @@ export async function upsertPullRequestComment(options: {
   number: number;
   body: string;
   marker: string;
+  token?: string;
 }): Promise<{ comment: GitHubComment; created: boolean }> {
   const { owner, repo, number, body, marker } = options;
-  if (!process.env.GITHUB_TOKEN) {
-    throw new Error("GITHUB_TOKEN is required to post PR comments");
+  const token = options.token ?? (await resolveGitHubToken());
+  if (!token) {
+    throw new Error(
+      "GitHub auth required to post PR comments (GitHub App installation token or GITHUB_TOKEN)",
+    );
   }
 
-  const existing = await listPullRequestIssueComments(owner, repo, number);
+  const existing = await listPullRequestIssueComments(owner, repo, number, token);
   const prior = existing.find((comment) => comment.body?.includes(marker));
   if (prior) {
-    const comment = await updateIssueComment(owner, repo, prior.id, body);
+    const comment = await updateIssueComment(owner, repo, prior.id, body, token);
     return { comment, created: false };
   }
-  const comment = await createPullRequestComment(owner, repo, number, body);
+  const comment = await createPullRequestComment(owner, repo, number, body, token);
   return { comment, created: true };
 }

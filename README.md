@@ -144,4 +144,43 @@ gitimpact comment https://github.com/owner/repo/pull/123
 gitimpact comment https://github.com/owner/repo/pull/123 --dry-run
 ```
 
-Requires `GITHUB_TOKEN`. Optional: `GITHUB_WEBHOOK_SECRET`, `GITIMPACT_PUBLIC_URL`.
+Requires `GITHUB_APP_ID` + `GITHUB_APP_PRIVATE_KEY` (preferred) or `GITHUB_TOKEN` (dev). Optional: `GITHUB_WEBHOOK_SECRET`, `GITIMPACT_PUBLIC_URL`, `GITIMPACT_API_KEY`.
+
+### v0.7 — GitHub App & Production PR Workflow
+
+Production-oriented PR pipeline:
+
+```text
+GitHub App installed → installation_id stored
+        ↓
+Webhook (X-GitHub-Delivery claimed once)
+        ↓
+202 Accepted + background job
+        ↓
+Installation access token
+        ↓
+Analyze private/public repo
+        ↓
+Upsert PR comment + neutral Check Run
+```
+
+- **App auth:** short-lived installation tokens (no long-lived PAT required)
+- **Idempotency:** `webhook_deliveries.delivery_id` rejects duplicate deliveries
+- **Async:** webhook returns `202` immediately; analysis runs in-process queue
+- **Checks:** `GitImpact` check run concludes `neutral` (informational, does not block merges)
+- **Manual endpoint:** `POST /api/pr/comment` requires `Authorization: Bearer <GITIMPACT_API_KEY>` to post; unauthenticated callers get dry-run only
+
+Apply DB migration: `packages/db/drizzle/0001_github_app.sql`
+
+### v0.8 — Product UX & Repository Intelligence
+
+Turns analysis into an understandable product surface:
+
+- **Overview:** repository type, README digest, architecture summary, modules, analysis health
+- **Private repos:** clear access-error states (never silent empty graphs)
+- **Graph:** relationship inspector, blast-radius explanation, copyable impact summary
+- **PRs:** open PR listing + “potential impact if merged” detail
+- **Semantic changes / Tests / APIs:** human labels, why-flagged gaps, API chains, infra empty states
+- **Navigation:** empty-canvas click deselects (no fake back-navigation)
+
+Apply DB migration: `packages/db/drizzle/0002_intelligence.sql`

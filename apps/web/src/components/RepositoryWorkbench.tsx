@@ -5,23 +5,38 @@ import Link from "next/link";
 import type {
   AnalysisSummary,
   ChangeRecord,
-  ComplexityFactor,
+  DetectedRoute,
   GraphEdge,
   GraphNode,
   ImpactPathStep,
   ImpactReport,
   PullRequestImpactOverview,
+  RepositoryIntelligence,
 } from "@gitimpact/shared";
 import { ImpactGraph } from "@/components/ImpactGraph";
 import { StructureDiagram } from "@/components/StructureDiagram";
 import { AnalyzeForm } from "@/components/AnalyzeForm";
+import { AccessErrorPanel } from "@/components/AccessErrorPanel";
+import { RepoOverviewPanel } from "@/components/RepoOverviewPanel";
+import { PullRequestsPanel } from "@/components/PullRequestsPanel";
+import { SemanticChangesPanel } from "@/components/SemanticChangesPanel";
+import { TestsPanel } from "@/components/TestsPanel";
+import { ApisPanel } from "@/components/ApisPanel";
+import { NodeInspectorPanel } from "@/components/NodeInspectorPanel";
+import { EmptyState } from "@/components/EmptyState";
+import { HelpTip, HELP } from "@/components/HelpTip";
 import {
-  PullRequestChangesPanel,
-  PullRequestNodeListPanel,
   PullRequestOverviewPanel,
 } from "@/components/PullRequestPanels";
 
-type TabId = "overview" | "graph" | "structure" | "changes" | "tests" | "apis";
+type TabId =
+  | "overview"
+  | "graph"
+  | "structure"
+  | "prs"
+  | "changes"
+  | "tests"
+  | "apis";
 
 type AnalysisPayload = {
   id: string;
@@ -32,6 +47,7 @@ type AnalysisPayload = {
     defaultBranch: string;
   };
   summary: AnalysisSummary;
+  intelligence?: RepositoryIntelligence;
   pullRequest?: {
     number: number;
     title: string;
@@ -42,27 +58,51 @@ type AnalysisPayload = {
   changes?: ChangeRecord[];
   impact?: ImpactReport;
   prOverview?: PullRequestImpactOverview;
+  routes?: DetectedRoute[];
   graph: {
     nodes: GraphNode[];
     edges: GraphEdge[];
   };
   error?: string;
+  code?: string;
+  detail?: string;
 };
 
-const severityColor: Record<string, string> = {
-  CRITICAL: "var(--critical)",
-  HIGH: "var(--high)",
-  MEDIUM: "var(--medium)",
-  NEUTRAL: "var(--neutral)",
+type InspectorPayload = {
+  node: GraphNode;
+  directDependencies: Array<{
+    node: GraphNode;
+    edgeType: string;
+    confidence: string;
+    direction: "outgoing";
+  }>;
+  directDependents: Array<{
+    node: GraphNode;
+    edgeType: string;
+    confidence: string;
+    direction: "incoming";
+  }>;
+  relatedApis: GraphNode[];
+  relatedTests: GraphNode[];
+  impact: ImpactReport;
 };
 
-const TABS: Array<{ id: TabId; label: string }> = [
+const TABS_REPO: Array<{ id: TabId; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "graph", label: "Graph" },
   { id: "structure", label: "Structure" },
-  { id: "changes", label: "Changes" },
+  { id: "prs", label: "PRs" },
   { id: "tests", label: "Tests" },
   { id: "apis", label: "APIs" },
+];
+
+const TABS_PR: Array<{ id: TabId; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "graph", label: "Graph" },
+  { id: "changes", label: "Semantic Changes" },
+  { id: "tests", label: "Tests" },
+  { id: "apis", label: "APIs" },
+  { id: "structure", label: "Structure" },
 ];
 
 export function RepositoryWorkbench({
@@ -77,15 +117,21 @@ export function RepositoryWorkbench({
   isPullRequest?: boolean;
 }) {
   const [data, setData] = useState<AnalysisPayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{
+    message: string;
+    code?: string;
+    detail?: string;
+    action?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [impact, setImpact] = useState<ImpactReport | null>(null);
+  const [inspector, setInspector] = useState<InspectorPayload | null>(null);
   const [whyPath, setWhyPath] = useState<ImpactPathStep[] | null>(null);
   const [whyTarget, setWhyTarget] = useState<string | null>(null);
   const [depth, setDepth] = useState(3);
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<TabId>(isPullRequest ? "overview" : "graph");
+  const [tab, setTab] = useState<TabId>("overview");
   const [pending, startTransition] = useTransition();
 
   const load = useCallback(async () => {
@@ -95,7 +141,11 @@ export function RepositoryWorkbench({
       const response = await fetch(`/api/repositories/${analysisId}`);
       const payload = (await response.json()) as AnalysisPayload;
       if (!response.ok) {
-        setError(payload.error ?? "Failed to load analysis");
+        setError({
+          message: payload.error ?? "Failed to load analysis",
+          code: payload.code,
+          detail: payload.detail,
+        });
         setData(null);
         return;
       }
@@ -104,11 +154,9 @@ export function RepositoryWorkbench({
         setImpact(payload.impact);
         setSelectedNodeId(payload.impact.changedNodes[0]?.id ?? null);
       }
-      if (payload.prOverview || payload.pullRequest) {
-        setTab("overview");
-      }
+      setTab("overview");
     } catch {
-      setError("Failed to load analysis");
+      setError({ message: "Failed to load analysis", code: "ANALYSIS_FAILED" });
     } finally {
       setLoading(false);
     }
@@ -121,14 +169,28 @@ export function RepositoryWorkbench({
   const fetchImpact = useCallback(
     (nodeId: string, nextDepth = depth, options?: { stay?: boolean }) => {
       startTransition(async () => {
-        const response = await fetch(
-          `/api/repositories/${analysisId}?nodeId=${encodeURIComponent(nodeId)}&depth=${nextDepth}`,
-        );
-        const payload = (await response.json()) as { impact?: ImpactReport; error?: string };
-        if (response.ok && payload.impact) {
-          setImpact(payload.impact);
+        const [impactRes, inspectRes] = await Promise.all([
+          fetch(
+            `/api/repositories/${analysisId}?nodeId=${encodeURIComponent(nodeId)}&depth=${nextDepth}`,
+          ),
+          fetch(
+            `/api/repositories/${analysisId}?inspect=${encodeURIComponent(nodeId)}&depth=${nextDepth}`,
+          ),
+        ]);
+        const impactPayload = (await impactRes.json()) as {
+          impact?: ImpactReport;
+          error?: string;
+        };
+        const inspectPayload = (await inspectRes.json()) as {
+          inspector?: InspectorPayload;
+        };
+        if (impactRes.ok && impactPayload.impact) {
+          setImpact(impactPayload.impact);
           setSelectedNodeId(nodeId);
           if (!options?.stay) setTab("graph");
+        }
+        if (inspectRes.ok && inspectPayload.inspector) {
+          setInspector(inspectPayload.inspector);
         }
       });
     },
@@ -144,10 +206,11 @@ export function RepositoryWorkbench({
 
   const clearSelection = useCallback(() => {
     setSelectedNodeId(null);
-    setImpact(null);
+    setImpact(data?.impact ?? null);
+    setInspector(null);
     setWhyPath(null);
     setWhyTarget(null);
-  }, []);
+  }, [data?.impact]);
 
   const showWhy = useCallback(
     (targetNodeId: string) => {
@@ -196,22 +259,17 @@ export function RepositoryWorkbench({
   }, [data, query]);
 
   const showPrChrome = Boolean(data?.pullRequest || data?.prOverview || isPullRequest);
+  const visibleTabs = showPrChrome ? TABS_PR : TABS_REPO;
+  const selectedNode =
+    inspector?.node ??
+    data?.graph.nodes.find((n) => n.id === selectedNodeId) ??
+    null;
 
-  const visibleTabs = TABS;
-
-  const testNodes = useMemo(() => {
-    if (impact?.relatedTests?.length) return impact.relatedTests;
-    return data?.graph.nodes.filter((n) => n.type === "TEST") ?? [];
-  }, [impact?.relatedTests, data?.graph.nodes]);
-
-  const apiNodes = useMemo(() => {
-    if (impact?.affectedApis?.length) return impact.affectedApis;
-    return (
-      data?.graph.nodes.filter(
-        (n) => n.type === "API_ROUTE" || n.type === "CONTROLLER" || n.type === "SERVICE",
-      ) ?? []
-    );
-  }, [impact?.affectedApis, data?.graph.nodes]);
+  const testRelated =
+    impact?.relatedTests ??
+    data?.graph.nodes.filter((n) => n.type === "TEST") ??
+    [];
+  const testGaps = impact?.missingTests ?? [];
 
   if (loading) {
     return (
@@ -222,6 +280,25 @@ export function RepositoryWorkbench({
   }
 
   if (error || !data) {
+    if (
+      error?.code === "PRIVATE_REPOSITORY" ||
+      error?.code === "ACCESS_DENIED" ||
+      /private|authorization|denied/i.test(error?.message ?? "")
+    ) {
+      return (
+        <AccessErrorPanel
+          title={title}
+          githubUrl={githubUrl}
+          error={{
+            code: (error?.code as "PRIVATE_REPOSITORY") ?? "PRIVATE_REPOSITORY",
+            message:
+              error?.message ?? "GitImpact cannot access this private repository.",
+            detail: error?.detail,
+            action: "connect_github",
+          }}
+        />
+      );
+    }
     return (
       <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6">
         <Link href="/" className="font-display text-lg font-bold">
@@ -229,14 +306,24 @@ export function RepositoryWorkbench({
         </Link>
         <h1 className="mt-8 font-display text-3xl font-semibold">{title}</h1>
         <p className="mt-3 text-[var(--ink-soft)]">
-          {error ?? "No cached analysis found for this URL."}
+          {error?.message ?? "No cached analysis found for this URL."}
         </p>
+        {error?.detail ? (
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">{error.detail}</p>
+        ) : null}
         <div className="mt-8">
-          <AnalyzeForm initialUrl={githubUrl.replace("https://", "").replace("local://", "")} />
+          <AnalyzeForm
+            initialUrl={githubUrl.replace("https://", "").replace("local://", "")}
+          />
         </div>
       </main>
     );
   }
+
+  // Empty analysis with zero parsed files — treat as access/empty issue when appropriate
+  const emptyAnalysis =
+    data.summary.files === 0 &&
+    (data.intelligence?.analysisHealth.filesDiscovered ?? 0) === 0;
 
   return (
     <main className="min-h-screen">
@@ -247,7 +334,10 @@ export function RepositoryWorkbench({
               GitImpact
             </Link>
             <div className="min-w-0 overflow-hidden">
-              <p className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm text-[var(--ink)]" title={title}>
+              <p
+                className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm text-[var(--ink)]"
+                title={title}
+              >
                 {title}
               </p>
               {data.pullRequest ? (
@@ -259,8 +349,10 @@ export function RepositoryWorkbench({
                 </p>
               ) : (
                 <p className="text-xs text-[var(--ink-soft)]/80">
-                  {data.repository.defaultBranch} ·{" "}
-                  {data.summary.frameworks.join(", ") || "detected stack"}
+                  {data.intelligence?.typeLabel ?? data.repository.defaultBranch}
+                  {data.summary.frameworks.length
+                    ? ` · ${data.summary.frameworks.join(", ")}`
+                    : ""}
                 </p>
               )}
             </div>
@@ -294,72 +386,128 @@ export function RepositoryWorkbench({
         </div>
       </header>
 
+      {emptyAnalysis ? (
+        <div className="mx-auto max-w-[1400px] p-6">
+          <EmptyState
+            title="No supported source files were parsed"
+            message="This may be an empty repository, an unsupported language stack, or an access problem. Check Overview analysis health and repository type."
+            action={
+              <button
+                type="button"
+                onClick={() => setTab("overview")}
+                className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm text-white"
+              >
+                Open Overview
+              </button>
+            }
+          />
+        </div>
+      ) : null}
+
       {tab === "overview" ? (
         <div className="mx-auto max-w-[1400px]">
           {data.prOverview ? (
             <PullRequestOverviewPanel
               overview={data.prOverview}
-              impact={impact}
+              impact={impact ?? data.impact}
               onSelectNode={fetchImpact}
+              onOpenGraph={() => setTab("graph")}
+              onOpenTests={() => setTab("tests")}
+              onOpenApis={() => setTab("apis")}
             />
           ) : (
             <RepoOverviewPanel
               summary={data.summary}
               repository={data.repository}
+              intelligence={data.intelligence}
               onOpenGraph={() => setTab("graph")}
-              onOpenDiagram={() => setTab("structure")}
+              onOpenStructure={() => setTab("structure")}
+              onOpenPrs={() => setTab("prs")}
+              onOpenApis={() => setTab("apis")}
             />
           )}
+        </div>
+      ) : null}
+
+      {tab === "prs" ? (
+        <div className="mx-auto max-w-[1400px]">
+          <PullRequestsPanel
+            repository={data.repository}
+            intelligence={data.intelligence}
+          />
         </div>
       ) : null}
 
       {tab === "changes" ? (
         <div className="mx-auto max-w-[1400px]">
-          {data.changes && data.changes.length > 0 ? (
-            <PullRequestChangesPanel changes={data.changes} onSelectFile={selectFile} />
-          ) : (
-            <EmptyTab
-              title="Changes"
-              message="No pull-request diff is attached to this analysis. Open a PR URL to see change-level impact."
-            />
-          )}
+          <SemanticChangesPanel
+            changes={data.changes ?? []}
+            onSelectFile={selectFile}
+          />
         </div>
       ) : null}
 
       {tab === "tests" ? (
         <div className="mx-auto max-w-[1400px]">
-          <PullRequestNodeListPanel
-            title={impact?.relatedTests?.length ? "Relevant tests" : "Tests in repository"}
-            empty="No tests were found in this analysis."
-            nodes={testNodes}
+          <TestsPanel
+            relatedTests={testRelated}
+            missingTests={testGaps}
+            changedNodes={impact?.changedNodes ?? data.impact?.changedNodes ?? []}
+            changes={data.changes}
+            impact={impact ?? data.impact}
+            repositoryType={data.intelligence?.repositoryType}
             onSelect={fetchImpact}
+            onOpenGraph={() => setTab("graph")}
           />
-          {(impact?.missingTests.length ?? 0) > 0 && (
-            <div className="border-t border-[var(--line)]">
-              <PullRequestNodeListPanel
-                title="Potential coverage gaps"
-                empty=""
-                nodes={impact?.missingTests ?? []}
-                onSelect={fetchImpact}
-              />
-            </div>
-          )}
         </div>
       ) : null}
 
       {tab === "apis" ? (
         <div className="mx-auto max-w-[1400px]">
-          <PullRequestNodeListPanel
-            title={impact?.affectedApis?.length ? "API-related impact" : "API surface"}
-            empty="No API routes or controllers were detected."
-            nodes={apiNodes}
-            onSelect={fetchImpact}
+          <ApisPanel
+            routes={data.routes ?? []}
+            nodes={data.graph.nodes}
+            edges={data.graph.edges}
+            repositoryType={data.intelligence?.repositoryType}
+            infraLabels={data.intelligence?.infraSignals.map(
+              (s) => `${s.label} (${s.path})`,
+            )}
+            onSelectRoute={(route) => {
+              const match =
+                data.graph.nodes.find(
+                  (n) => n.type === "API_ROUTE" && n.file === route.file,
+                ) ??
+                data.graph.nodes.find(
+                  (n) =>
+                    n.name === route.handlerName ||
+                    n.name === `${route.handlerClass}.${route.handlerName}`,
+                );
+              if (match) fetchImpact(match.id);
+            }}
+            onOpenGraph={() => setTab("graph")}
+            onOpenTests={() => setTab("tests")}
           />
         </div>
       ) : null}
 
       {tab === "structure" ? (
         <div className="mx-auto max-w-[1400px] px-6 py-6">
+          {data.intelligence?.analysisHealth ? (
+            <div className="mb-4 rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
+                Repository analysis
+              </p>
+              <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                {data.intelligence.analysisHealth.filesDiscovered} files discovered ·{" "}
+                {data.intelligence.analysisHealth.filesParsed} parsed ·{" "}
+                {data.intelligence.analysisHealth.filesIgnored} ignored ·{" "}
+                {data.intelligence.analysisHealth.filesUnsupported} unsupported
+                {data.intelligence.analysisHealth.parseFailures
+                  ? ` · ${data.intelligence.analysisHealth.parseFailures} parse failures`
+                  : ""}
+              </p>
+            </div>
+          ) : null}
           <div className="h-[780px] overflow-hidden rounded-2xl border border-[var(--line)] bg-white/80">
             <StructureDiagram
               nodes={data.graph.nodes}
@@ -375,13 +523,21 @@ export function RepositoryWorkbench({
       ) : null}
 
       {tab === "graph" && (
-        <div className="mx-auto grid max-w-[1400px] gap-6 px-6 py-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)_minmax(0,300px)]">
+        <div className="mx-auto grid max-w-[1400px] gap-6 px-6 py-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)_minmax(0,320px)]">
           <aside className="min-w-0 space-y-4 overflow-hidden">
-            <Stats summary={data.summary} />
+            <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-4">
+              <h3 className="font-display text-base font-semibold">Repository</h3>
+              <dl className="mt-3 grid grid-cols-2 gap-2">
+                <Metric label="Files" value={data.summary.files} />
+                <Metric label="Functions" value={data.summary.functions} />
+                <Metric label="Tests" value={data.summary.tests} />
+                <Metric label="APIs" value={data.summary.apiRoutes} />
+              </dl>
+            </div>
             <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/70 p-4">
               <div className="flex items-center justify-between gap-2">
                 <label className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
-                  Search files
+                  Search
                 </label>
                 {selectedNodeId ? (
                   <button
@@ -389,7 +545,7 @@ export function RepositoryWorkbench({
                     onClick={clearSelection}
                     className="shrink-0 text-[11px] text-[var(--teal)] hover:underline"
                   >
-                    Show all
+                    Deselect
                   </button>
                 ) : null}
               </div>
@@ -427,16 +583,18 @@ export function RepositoryWorkbench({
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-lg font-semibold">
-                  {selectedNodeId
-                    ? "Blast radius"
-                    : showPrChrome
-                      ? "Pull Request Impact Graph"
-                      : "Dependency Graph"}
+                  {selectedNodeId ? (
+                    <HelpTip label="Blast radius" text={HELP.blastRadius} />
+                  ) : showPrChrome ? (
+                    "Pull request impact graph"
+                  ) : (
+                    "Dependency graph"
+                  )}
                 </h2>
                 <p className="truncate text-xs text-[var(--ink-soft)]/70">
                   {selectedNodeId
-                    ? "Focused on selected file · return to full repository graph anytime"
-                    : `Click a node to compute blast radius · depth ${depth}`}
+                    ? "Components potentially affected by this change · click empty space to deselect"
+                    : `Click a node to inspect relationships · depth ${depth}`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-3">
@@ -444,9 +602,9 @@ export function RepositoryWorkbench({
                   <button
                     type="button"
                     onClick={clearSelection}
-                    className="rounded-full bg-[var(--ink)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--ink-soft)]"
+                    className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs font-medium hover:border-[var(--teal)]"
                   >
-                    ← Back to overview
+                    Deselect
                   </button>
                 ) : null}
                 <label className="font-mono text-[11px] text-[var(--ink-soft)]">Depth</label>
@@ -475,193 +633,40 @@ export function RepositoryWorkbench({
             </div>
           </section>
 
-          <aside className="min-w-0 space-y-4 overflow-hidden">
-            <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/70 p-4">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-display text-base font-semibold">Change Impact</h3>
-                {selectedNodeId ? (
-                  <button
-                    type="button"
-                    onClick={clearSelection}
-                    className="shrink-0 rounded-full border border-[var(--line)] px-2.5 py-1 text-[11px] text-[var(--ink-soft)] hover:border-[var(--teal)] hover:text-[var(--ink)]"
-                  >
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-              {pending ? (
-                <p className="mt-3 font-mono text-xs text-[var(--ink-soft)]">Computing…</p>
-              ) : impact ? (
-                <div className="mt-3 min-w-0 space-y-3 overflow-hidden">
-                  <p className="break-words text-sm leading-relaxed text-[var(--ink-soft)]">
-                    {impact.summary}
-                  </p>
-                  <dl className="grid grid-cols-2 gap-2 text-sm">
-                    <Metric label="Affected files" value={impact.affectedFiles.length} />
-                    <Metric label="Direct" value={impact.directImpact.length} />
-                    <Metric label="Indirect" value={impact.indirectImpact.length} />
-                    <Metric label="APIs" value={impact.affectedApis.length} />
-                    <Metric label="Tests" value={impact.relatedTests.length} />
-                    <Metric label="Gaps" value={impact.missingTests.length} />
-                  </dl>
-                  <ComplexityPanel
-                    score={impact.complexityScore}
-                    factors={impact.complexityBreakdown ?? []}
-                  />
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-[var(--ink-soft)]">
-                  Select a file to see its blast radius.
-                </p>
-              )}
-            </div>
-
-            {impact && (
-              <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/70 p-4">
-                <h3 className="font-display text-base font-semibold">Dependents</h3>
-                <ul className="mt-3 max-h-[280px] space-y-2 overflow-x-hidden overflow-y-auto">
-                  {[...impact.directImpact, ...impact.indirectImpact].slice(0, 40).map((item) => (
-                    <li key={item.node.id} className="flex min-w-0 items-start gap-2 text-xs">
-                      <span
-                        className="mt-1 h-2 w-2 shrink-0 rounded-full"
-                        style={{ background: severityColor[item.severity] }}
-                      />
-                      <div className="min-w-0 flex-1 overflow-hidden">
-                        <button
-                          type="button"
-                          title={item.node.file}
-                          className="w-full overflow-hidden text-left hover:text-[var(--teal)]"
-                          onClick={() => fetchImpact(item.node.id)}
-                        >
-                          <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-medium">
-                            {item.node.name}
-                          </span>
-                          <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[var(--ink-soft)]/70">
-                            d{item.depth} · {item.node.type}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => showWhy(item.node.id)}
-                          className="mt-1 text-[10px] text-[var(--teal)] hover:underline"
-                        >
-                          Why is this affected?
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {whyPath && whyPath.length > 0 && (
-              <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--teal)]/40 bg-white/80 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-display text-base font-semibold">Why affected</h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWhyPath(null);
-                      setWhyTarget(null);
-                    }}
-                    className="text-[11px] text-[var(--ink-soft)] hover:text-[var(--ink)]"
-                  >
-                    Close
-                  </button>
-                </div>
-                <p className="mt-1 font-mono text-[10px] text-[var(--ink-soft)]/70">
-                  Deterministic dependency path · not AI-inferred
-                </p>
-                <ol className="mt-3 space-y-2">
-                  {whyPath.map((step, index) => (
-                    <li key={`${step.nodeId}-${index}`} className="min-w-0 text-xs">
-                      {index > 0 && step.edgeType ? (
-                        <p className="mb-1 font-mono text-[10px] text-[var(--teal)]">
-                          ↑ {step.edgeType}
-                        </p>
-                      ) : (
-                        <p className="mb-1 font-mono text-[10px] text-[var(--critical)]">
-                          changed
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        className={`w-full overflow-hidden rounded-lg px-2 py-1.5 text-left hover:bg-[var(--fog)] ${
-                          step.nodeId === whyTarget ? "bg-[var(--fog)]" : ""
-                        }`}
-                        onClick={() => fetchImpact(step.nodeId)}
-                      >
-                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-medium">
-                          {step.name}
-                        </span>
-                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[var(--ink-soft)]/70">
-                          {step.type} · {step.file}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-          </aside>
+          <NodeInspectorPanel
+            selectedNode={selectedNode}
+            impact={impact}
+            whyPath={whyPath}
+            whyTarget={whyTarget}
+            pending={pending}
+            analysisUrl={
+              typeof window !== "undefined"
+                ? `${window.location.origin}${data.id.startsWith("/") ? "" : "/"}${
+                    showPrChrome
+                      ? `/${data.repository.owner}/${data.repository.name}/pull/${data.pullRequest?.number}`
+                      : `/${data.repository.owner}/${data.repository.name}`
+                  }`
+                : undefined
+            }
+            relations={
+              inspector
+                ? {
+                    directDependencies: inspector.directDependencies,
+                    directDependents: inspector.directDependents,
+                  }
+                : null
+            }
+            onSelect={fetchImpact}
+            onShowWhy={showWhy}
+            onClear={clearSelection}
+            onCloseWhy={() => {
+              setWhyPath(null);
+              setWhyTarget(null);
+            }}
+          />
         </div>
       )}
     </main>
-  );
-}
-
-function ComplexityPanel({
-  score,
-  factors,
-}: {
-  score: number;
-  factors: ComplexityFactor[];
-}) {
-  return (
-    <div>
-      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
-        Change Complexity
-      </p>
-      <p className="mt-1 font-display text-lg font-semibold">{score}/100</p>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--fog)]">
-        <div className="h-full rounded-full bg-[var(--teal)]" style={{ width: `${score}%` }} />
-      </div>
-      {factors.length > 0 && (
-        <ul className="mt-3 space-y-1.5">
-          {factors.map((factor) => (
-            <li
-              key={factor.label}
-              className="flex items-start justify-between gap-2 font-mono text-[10px] text-[var(--ink-soft)]"
-            >
-              <span className="min-w-0">
-                <span className="text-[var(--ink)]">+{factor.points}</span> {factor.label}
-                <span className="mt-0.5 block text-[9px] opacity-70">{factor.detail}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function Stats({ summary }: { summary: AnalysisSummary }) {
-  const items = [
-    ["Files", summary.files],
-    ["Functions", summary.functions],
-    ["Dependencies", summary.dependencies],
-    ["Tests", summary.tests],
-  ] as const;
-
-  return (
-    <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-4">
-      <h3 className="font-display text-base font-semibold">Repository</h3>
-      <dl className="mt-3 grid grid-cols-2 gap-2">
-        {items.map(([label, value]) => (
-          <Metric key={label} label={label} value={value} />
-        ))}
-      </dl>
-    </div>
   );
 }
 
@@ -672,79 +677,6 @@ function Metric({ label, value }: { label: string; value: number }) {
         {label}
       </dt>
       <dd className="font-display text-lg font-semibold">{value}</dd>
-    </div>
-  );
-}
-
-function EmptyTab({ title, message }: { title: string; message: string }) {
-  return (
-    <div className="p-6">
-      <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-8">
-        <h3 className="font-display text-lg font-semibold">{title}</h3>
-        <p className="mt-2 max-w-xl text-sm text-[var(--ink-soft)]">{message}</p>
-      </div>
-    </div>
-  );
-}
-
-function RepoOverviewPanel({
-  summary,
-  repository,
-  onOpenGraph,
-  onOpenDiagram,
-}: {
-  summary: AnalysisSummary;
-  repository: AnalysisPayload["repository"];
-  onOpenGraph: () => void;
-  onOpenDiagram: () => void;
-}) {
-  const metrics: Array<[string, number]> = [
-    ["Files", summary.files],
-    ["Functions", summary.functions],
-    ["Classes", summary.classes],
-    ["Dependencies", summary.dependencies],
-    ["Tests", summary.tests],
-    ["API Routes", summary.apiRoutes],
-  ];
-
-  return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h2 className="font-display text-2xl font-semibold">
-          {repository.owner}/{repository.name}
-        </h2>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          {repository.defaultBranch}
-          {summary.frameworks.length > 0 ? ` · ${summary.frameworks.join(", ")}` : ""}
-        </p>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--ink-soft)]">
-          Repository analysis is ready. Explore the dependency graph, structure map, tests, and
-          API surface from the header.
-        </p>
-      </div>
-
-      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {metrics.map(([label, value]) => (
-          <Metric key={label} label={label} value={value} />
-        ))}
-      </dl>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onOpenGraph}
-          className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--ink-soft)]"
-        >
-          Open Graph
-        </button>
-        <button
-          type="button"
-          onClick={onOpenDiagram}
-          className="rounded-full border border-[var(--line)] px-4 py-2 text-sm hover:border-[var(--teal)]"
-        >
-          Open Structure
-        </button>
-      </div>
     </div>
   );
 }

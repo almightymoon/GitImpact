@@ -969,9 +969,9 @@ export function StructureDiagram({
     return count;
   }, [impacted]);
 
-  const showBack = Boolean(selectedId || focusImpacted);
+  const showDeselect = Boolean(selectedId || focusImpacted);
 
-  const handleBack = () => {
+  const handleDeselect = () => {
     setFocusImpacted(false);
     onClear?.();
     window.setTimeout(() => flow?.fitView({ padding: 0.16, duration: 220 }), 60);
@@ -990,13 +990,13 @@ export function StructureDiagram({
                 {repositoryName ?? "Repository"} structure
               </h2>
             </div>
-            {showBack ? (
+            {showDeselect ? (
               <button
                 type="button"
-                onClick={handleBack}
-                className="shrink-0 rounded-full bg-[var(--ink)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--ink-soft)]"
+                onClick={handleDeselect}
+                className="shrink-0 rounded-full border border-[var(--line)] px-3 py-1.5 text-xs font-medium hover:border-[var(--teal)]"
               >
-                ← Back
+                Deselect
               </button>
             ) : null}
           </div>
@@ -1060,17 +1060,6 @@ export function StructureDiagram({
       </aside>
 
       <div className="relative min-h-0 flex-1 bg-[var(--mist)]/35">
-        {showBack ? (
-          <div className="absolute left-3 top-3 z-10">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="rounded-full bg-[var(--ink)] px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-[var(--ink-soft)]"
-            >
-              ← Back to full structure
-            </button>
-          </div>
-        ) : null}
         <ReactFlow
           nodes={rfNodes}
           edges={rfEdges}
@@ -1083,7 +1072,7 @@ export function StructureDiagram({
             const fileId = (node.data as StructureNodeData).fileId;
             if (fileId) onSelect(fileId);
           }}
-          onPaneClick={handleBack}
+          onPaneClick={handleDeselect}
           fitView
           fitViewOptions={{ padding: 0.16 }}
           minZoom={0.12}

@@ -7,11 +7,15 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   const router = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    setErrorDetail(null);
+    setErrorCode(null);
     const value = url
       .trim()
       .replace(/\.git$/i, "")
@@ -30,11 +34,15 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
         });
         const data = (await response.json()) as {
           error?: string;
+          detail?: string;
+          code?: string;
           routePath?: string;
           id?: string;
         };
         if (!response.ok) {
           setError(data.error ?? "Analysis failed");
+          setErrorDetail(data.detail ?? null);
+          setErrorCode(data.code ?? null);
           return;
         }
         if (data.routePath) {
@@ -45,6 +53,9 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
       }
     });
   }
+
+  const isPrivate =
+    errorCode === "PRIVATE_REPOSITORY" || errorCode === "ACCESS_DENIED";
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-xl">
@@ -67,10 +78,20 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
         </button>
       </div>
       {error ? (
-        <p className="mt-3 text-sm leading-relaxed text-[var(--critical)]">{error}</p>
+        <div className="mt-3 rounded-xl border border-[var(--critical)]/25 bg-[#fff5f5] px-3 py-2">
+          <p className="text-sm leading-relaxed text-[var(--critical)]">{error}</p>
+          {errorDetail ? (
+            <p className="mt-1 text-xs leading-relaxed text-[var(--ink-soft)]">{errorDetail}</p>
+          ) : null}
+          {isPrivate ? (
+            <p className="mt-2 text-xs text-[var(--ink-soft)]">
+              Private repository support requires GitHub authorization.
+            </p>
+          ) : null}
+        </div>
       ) : (
         <p className="mt-3 font-mono text-xs text-[var(--ink-soft)]/60">
-          MVP: public repos · TypeScript / JavaScript
+          Public repos work without auth · TypeScript / JavaScript
         </p>
       )}
     </form>

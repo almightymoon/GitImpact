@@ -325,3 +325,117 @@ export const SECRET_PATTERNS = [
   /id_rsa/,
   /secret/i,
 ] as const;
+
+/** Broad repository classification for UX (deterministic heuristics). */
+export type RepositoryType =
+  | "APPLICATION"
+  | "LIBRARY"
+  | "MONOREPO"
+  | "API_SERVICE"
+  | "FRONTEND"
+  | "BACKEND"
+  | "FULLSTACK"
+  | "INFRASTRUCTURE"
+  | "DEVOPS"
+  | "GITOPS"
+  | "UNKNOWN";
+
+export type AnalysisIssueCode =
+  | "EMPTY_REPOSITORY"
+  | "PRIVATE_REPOSITORY"
+  | "ACCESS_DENIED"
+  | "ANALYSIS_FAILED"
+  | "NO_SUPPORTED_FILES"
+  | "NOT_FOUND";
+
+export interface AnalysisHealth {
+  filesDiscovered: number;
+  filesParsed: number;
+  filesIgnored: number;
+  filesUnsupported: number;
+  parseFailures: number;
+  maxFilesCap?: number;
+  truncated: boolean;
+}
+
+export interface ReadmeDigest {
+  title?: string;
+  description?: string;
+  installation?: string;
+  architecture?: string;
+  technologies: string[];
+  features: string[];
+  rawAvailable: boolean;
+  rawExcerpt?: string;
+}
+
+export interface InfraSignal {
+  kind:
+    | "docker"
+    | "terraform"
+    | "kubernetes"
+    | "helm"
+    | "argocd"
+    | "github_actions"
+    | "workflow"
+    | "config";
+  label: string;
+  path: string;
+}
+
+export interface ImportantModule {
+  path: string;
+  label: string;
+  fileCount: number;
+  role?: string;
+}
+
+export interface OpenPullRequestSummary {
+  number: number;
+  title: string;
+  author?: string;
+  headBranch: string;
+  baseBranch: string;
+  createdAt?: string;
+  updatedAt?: string;
+  draft: boolean;
+  url: string;
+  filesChanged?: number;
+  /** Populated when a prior PR analysis exists in cache */
+  complexityScore?: number;
+  changedSymbols?: number;
+  affectedApis?: number;
+  relevantTests?: number;
+  potentialTestGaps?: number;
+}
+
+export interface RepositoryIntelligence {
+  repositoryType: RepositoryType;
+  typeLabel: string;
+  architectureSummary: string;
+  readme?: ReadmeDigest;
+  importantModules: ImportantModule[];
+  infraSignals: InfraSignal[];
+  analysisHealth: AnalysisHealth;
+  openPullRequests: OpenPullRequestSummary[];
+  openPrCount: number;
+}
+
+export interface AnalysisErrorPayload {
+  code: AnalysisIssueCode;
+  message: string;
+  detail?: string;
+  action?: "connect_github" | "retry" | "none";
+}
+
+export {
+  relationLabel,
+  formatRelationshipChain,
+  formatPlainImpactPath,
+  formatImpactSummaryMarkdown,
+  formatBlastRadiusExplanation,
+  explainTestGap,
+  explainMissingTestForSymbol,
+  humanizeSemanticEvent,
+  formatSemanticEventDetail,
+} from "./presentation.js";

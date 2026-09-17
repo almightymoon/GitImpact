@@ -69,7 +69,10 @@ export function toGitImpactPath(parsed: ParsedGitHubUrl): string {
   return `/${parsed.owner}/${parsed.repo}`;
 }
 
-export function repositoryCloneUrl(owner: string, repo: string): string {
+export function repositoryCloneUrl(owner: string, repo: string, token?: string): string {
+  if (token) {
+    return `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
+  }
   return `https://github.com/${owner}/${repo}.git`;
 }
 
@@ -91,10 +94,11 @@ export async function cloneOrUpdateRepository(options: {
   repo: string;
   cacheDir: string;
   branch?: string;
+  token?: string;
 }): Promise<RepositoryMeta> {
-  const { owner, repo, cacheDir, branch } = options;
+  const { owner, repo, cacheDir, branch, token } = options;
   const clonePath = path.join(cacheDir, owner, repo);
-  const url = repositoryCloneUrl(owner, repo);
+  const url = repositoryCloneUrl(owner, repo, token);
 
   await ensureDir(path.dirname(clonePath));
 
@@ -178,10 +182,11 @@ export async function fetchPullRequestHead(options: {
   number: number;
   cacheDir: string;
   headBranch?: string;
+  token?: string;
 }): Promise<RepositoryMeta> {
-  const { owner, repo, number, cacheDir, headBranch } = options;
+  const { owner, repo, number, cacheDir, headBranch, token } = options;
   const clonePath = path.join(cacheDir, owner, `${repo}-pr-${number}`);
-  const url = repositoryCloneUrl(owner, repo);
+  const url = repositoryCloneUrl(owner, repo, token);
 
   await ensureDir(path.dirname(clonePath));
 
@@ -220,16 +225,14 @@ export async function getPullRequestMeta(
   owner: string,
   repo: string,
   number: number,
+  token?: string,
 ): Promise<PullRequestMeta> {
+  const { githubApiHeaders } = await import("./github-api.js");
+  const { resolveGitHubToken } = await import("./github-app.js");
+  const auth = token ?? (await resolveGitHubToken());
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`;
   const response = await fetch(apiUrl, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "GitImpact/0.1",
-      ...(process.env.GITHUB_TOKEN
-        ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-        : {}),
-    },
+    headers: githubApiHeaders(auth),
   });
 
   if (!response.ok) {
@@ -261,6 +264,7 @@ export async function getPullRequestFiles(
   owner: string,
   repo: string,
   number: number,
+  token?: string,
 ): Promise<
   Array<{
     filename: string;
@@ -270,6 +274,9 @@ export async function getPullRequestFiles(
     deletions?: number;
   }>
 > {
+  const { githubApiHeaders } = await import("./github-api.js");
+  const { resolveGitHubToken } = await import("./github-app.js");
+  const auth = token ?? (await resolveGitHubToken());
   const files: Array<{
     filename: string;
     status: string;
@@ -281,13 +288,7 @@ export async function getPullRequestFiles(
   for (let page = 1; page <= 10; page += 1) {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${number}/files?per_page=100&page=${page}`;
     const response = await fetch(apiUrl, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "GitImpact/0.1",
-        ...(process.env.GITHUB_TOKEN
-          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-          : {}),
-      },
+      headers: githubApiHeaders(auth),
     });
 
     if (!response.ok) {
@@ -347,3 +348,27 @@ export {
   upsertPullRequestComment,
   type GitHubComment,
 } from "./github-comments.js";
+
+export {
+  isGitHubAppConfigured,
+  getGitHubAppConfig,
+  createGitHubAppJwt,
+  createInstallationAccessToken,
+  resolveGitHubToken,
+  type InstallationToken,
+  type GitHubAppConfig,
+} from "./github-app.js";
+
+export {
+  createCheckRun,
+  completeCheckRun,
+  formatCheckRunSummary,
+  type CheckRun,
+  type CheckConclusion,
+} from "./check-runs.js";
+
+export { githubApiHeaders } from "./github-api.js";
+
+export {
+  listOpenPullRequests,
+} from "./pull-requests.js";

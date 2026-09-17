@@ -36,6 +36,7 @@ import type {
   ParsedFile,
   PullRequestImpactOverview,
   PullRequestMeta,
+  RepositoryIntelligence,
   RepositoryMeta,
 } from "@gitimpact/shared";
 import {
@@ -43,6 +44,8 @@ import {
   GITIMPACT_COMMENT_MARKER,
   selectWhyPath,
 } from "./pr-comment.js";
+import { buildRepositoryIntelligence } from "./intelligence.js";
+import { classifyAnalysisError } from "./access-errors.js";
 
 export interface StoredAnalysis {
   id: string;
@@ -56,6 +59,7 @@ export interface StoredAnalysis {
   impact?: ImpactReport;
   prOverview?: PullRequestImpactOverview;
   routes?: DetectedRoute[];
+  intelligence?: RepositoryIntelligence;
   persisted?: boolean;
 }
 
@@ -196,6 +200,33 @@ export async function analyzeRepositoryUrl(
   });
   const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
+  const intelligence = await buildRepositoryIntelligence({
+    owner: parsedUrl.owner,
+    repo: parsedUrl.repo,
+    clonePath: repository.clonePath,
+    files: parsed.files,
+    graphNodes: graph.nodes,
+    routes,
+    frameworks,
+    languages: parsed.languages,
+    packageDeps: parsed.packageDeps,
+    analysisHealth: parsed.analysisHealth,
+    allRelativeFiles: parsed.allRelativeFiles,
+  });
+
+  // Attach cached PR impact metrics when available
+  for (const pr of intelligence.openPullRequests) {
+    const cached = getMemoryStore().get(analysisId(parsedUrl.owner, parsedUrl.repo, pr.number));
+    if (cached?.prOverview) {
+      pr.complexityScore = cached.prOverview.complexityScore;
+      pr.changedSymbols = cached.prOverview.functionsModified;
+      pr.affectedApis = cached.prOverview.apiRoutesAffected;
+      pr.relevantTests = cached.prOverview.relevantTests;
+      pr.potentialTestGaps = cached.prOverview.potentialMissingTests;
+      pr.filesChanged = cached.prOverview.filesChanged;
+    }
+  }
+
   const stored: StoredAnalysis = {
     id: analysisId(parsedUrl.owner, parsedUrl.repo),
     createdAt: new Date().toISOString(),
@@ -211,6 +242,7 @@ export async function analyzeRepositoryUrl(
     graph,
     routePath: toGitImpactPath(parsedUrl),
     routes,
+    intelligence,
   };
 
   return persist(stored);
@@ -220,14 +252,28 @@ export async function analyzePullRequest(
   owner: string,
   repo: string,
   number: number,
-  options?: { depth?: number; cacheDir?: string; maxFiles?: number },
+  options?: {
+    depth?: number;
+    cacheDir?: string;
+    maxFiles?: number;
+    installationId?: number;
+    token?: string;
+  },
 ): Promise<StoredAnalysis> {
   const cacheDir = options?.cacheDir ?? defaultCacheDir();
   const depth = options?.depth ?? 3;
 
+  const { resolveGitHubToken } = await import("@gitimpact/git");
+  const { findInstallationIdForOwner } = await import("@gitimpact/db");
+
+  const installationId =
+    options?.installationId ?? (await findInstallationIdForOwner(owner));
+  const token =
+    options?.token ?? (await resolveGitHubToken({ installationId }));
+
   const [pullRequest, prFiles] = await Promise.all([
-    getPullRequestMeta(owner, repo, number),
-    getPullRequestFiles(owner, repo, number),
+    getPullRequestMeta(owner, repo, number, token),
+    getPullRequestFiles(owner, repo, number, token),
   ]);
 
   const repository = await fetchPullRequestHead({
@@ -236,6 +282,7 @@ export async function analyzePullRequest(
     number,
     cacheDir,
     headBranch: pullRequest.headBranch,
+    token,
   });
 
   if (!repository.clonePath) {
@@ -251,6 +298,22 @@ export async function analyzePullRequest(
   const changedNodes = resolveChangedNodes(store, changes, parsed.contentsByPath);
   const impact = buildImpactReport(store, changedNodes, depth);
   const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
+
+  const intelligence = await buildRepositoryIntelligence({
+    owner,
+    repo,
+    clonePath: repository.clonePath,
+    files: parsed.files,
+    graphNodes: graph.nodes,
+    routes,
+    frameworks,
+    languages: parsed.languages,
+    packageDeps: parsed.packageDeps,
+    analysisHealth: parsed.analysisHealth,
+    allRelativeFiles: parsed.allRelativeFiles,
+    token,
+    skipOpenPrs: true,
+  });
 
   const stored: StoredAnalysis = {
     id: analysisId(owner, repo, number),
@@ -271,6 +334,7 @@ export async function analyzePullRequest(
     impact,
     prOverview,
     routes,
+    intelligence,
   };
 
   return persist(stored);
@@ -360,6 +424,21 @@ export async function analyzeLocalFixture(
 
   const impact = seed ? buildImpactReport(store, [seed], depth) : undefined;
 
+  const intelligence = await buildRepositoryIntelligence({
+    owner: "demo",
+    repo: "tiny-fixture",
+    clonePath: fixtureDir,
+    files: parsed.files,
+    graphNodes: graph.nodes,
+    routes,
+    frameworks,
+    languages: parsed.languages,
+    packageDeps: parsed.packageDeps,
+    analysisHealth: parsed.analysisHealth,
+    allRelativeFiles: parsed.allRelativeFiles,
+    skipOpenPrs: true,
+  });
+
   const stored: StoredAnalysis = {
     id,
     createdAt: new Date().toISOString(),
@@ -382,6 +461,7 @@ export async function analyzeLocalFixture(
     routePath: "/demo/tiny-fixture",
     impact,
     routes,
+    intelligence,
   };
 
   return persist(stored);
@@ -432,6 +512,21 @@ export async function analyzeDemoPullRequest(
   const impact = buildImpactReport(store, changedNodes, depth);
   const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
 
+  const intelligence = await buildRepositoryIntelligence({
+    owner: "demo",
+    repo: "tiny-fixture",
+    clonePath: fixtureDir,
+    files: parsed.files,
+    graphNodes: graph.nodes,
+    routes,
+    frameworks,
+    languages: parsed.languages,
+    packageDeps: parsed.packageDeps,
+    analysisHealth: parsed.analysisHealth,
+    allRelativeFiles: parsed.allRelativeFiles,
+    skipOpenPrs: true,
+  });
+
   const stored: StoredAnalysis = {
     id: analysisId("demo", "tiny-fixture", 1),
     createdAt: new Date().toISOString(),
@@ -457,6 +552,7 @@ export async function analyzeDemoPullRequest(
     impact,
     prOverview,
     routes,
+    intelligence,
   };
 
   return persist(stored);
@@ -483,12 +579,23 @@ export async function analyzeAndCommentOnPullRequest(options: {
   maxFiles?: number;
   postComment?: boolean;
   analysisBaseUrl?: string;
+  installationId?: number;
+  token?: string;
 }): Promise<AnalyzeAndCommentResult> {
-  const { upsertPullRequestComment } = await import("@gitimpact/git");
+  const { upsertPullRequestComment, resolveGitHubToken } = await import("@gitimpact/git");
+  const { findInstallationIdForOwner } = await import("@gitimpact/db");
+
+  const installationId =
+    options.installationId ?? (await findInstallationIdForOwner(options.owner));
+  const token =
+    options.token ?? (await resolveGitHubToken({ installationId }));
+
   const analysis = await analyzePullRequest(options.owner, options.repo, options.number, {
     depth: options.depth,
     cacheDir: options.cacheDir,
     maxFiles: options.maxFiles,
+    installationId,
+    token,
   });
 
   if (!analysis.impact || !analysis.prOverview || !analysis.pullRequest) {
@@ -521,13 +628,22 @@ export async function analyzeAndCommentOnPullRequest(options: {
     analysisUrl,
   });
 
-  const shouldPost = options.postComment ?? Boolean(process.env.GITHUB_TOKEN);
+  const shouldPost = options.postComment ?? Boolean(token);
   if (!shouldPost) {
     return {
       analysis,
       commentBody,
       posted: false,
-      skippedReason: "postComment disabled or GITHUB_TOKEN missing",
+      skippedReason: "postComment disabled or GitHub auth missing",
+    };
+  }
+
+  if (!token) {
+    return {
+      analysis,
+      commentBody,
+      posted: false,
+      skippedReason: "GitHub App installation token or GITHUB_TOKEN required to post",
     };
   }
 
@@ -537,6 +653,7 @@ export async function analyzeAndCommentOnPullRequest(options: {
     number: options.number,
     body: commentBody,
     marker: GITIMPACT_COMMENT_MARKER,
+    token,
   });
 
   return {
@@ -548,6 +665,86 @@ export async function analyzeAndCommentOnPullRequest(options: {
   };
 }
 
+export async function getNodeInspector(
+  analysisIdValue: string,
+  nodeId: string,
+  depth = 3,
+): Promise<
+  | {
+      node: GraphNode;
+      directDependencies: Array<{
+        node: GraphNode;
+        edgeType: string;
+        confidence: string;
+        direction: "outgoing";
+      }>;
+      directDependents: Array<{
+        node: GraphNode;
+        edgeType: string;
+        confidence: string;
+        direction: "incoming";
+      }>;
+      relatedApis: GraphNode[];
+      relatedTests: GraphNode[];
+      impact: ImpactReport;
+    }
+  | undefined
+> {
+  const analysis = await getAnalysis(analysisIdValue);
+  if (!analysis) return undefined;
+  const store = new GraphStore(analysis.graph);
+  const node = store.getNode(nodeId) ?? store.findFileNode(nodeId);
+  if (!node) return undefined;
+
+  const outgoing = store.getOutgoing(node.id);
+  const incoming = store.getIncoming(node.id);
+  const directDependencies = outgoing
+    .map((edge) => {
+      const target = store.getNode(edge.to);
+      if (!target) return null;
+      return {
+        node: target,
+        edgeType: edge.type,
+        confidence: edge.confidence,
+        direction: "outgoing" as const,
+      };
+    })
+    .filter(Boolean) as Array<{
+    node: GraphNode;
+    edgeType: string;
+    confidence: string;
+    direction: "outgoing";
+  }>;
+
+  const directDependents = incoming
+    .map((edge) => {
+      const source = store.getNode(edge.from);
+      if (!source) return null;
+      return {
+        node: source,
+        edgeType: edge.type,
+        confidence: edge.confidence,
+        direction: "incoming" as const,
+      };
+    })
+    .filter(Boolean) as Array<{
+    node: GraphNode;
+    edgeType: string;
+    confidence: string;
+    direction: "incoming";
+  }>;
+
+  const impact = buildImpactReport(store, [node], depth);
+  return {
+    node,
+    directDependencies,
+    directDependents,
+    relatedApis: impact.affectedApis,
+    relatedTests: impact.relatedTests,
+    impact,
+  };
+}
+
 export {
   parseGitHubUrl,
   toGitImpactPath,
@@ -556,4 +753,18 @@ export {
   formatPullRequestComment,
   GITIMPACT_COMMENT_MARKER,
   selectWhyPath,
+  classifyAnalysisError,
 };
+
+export {
+  formatImpactSummaryMarkdown,
+  formatBlastRadiusExplanation,
+  formatRelationshipChain,
+  humanizeSemanticEvent,
+  formatSemanticEventDetail,
+  explainTestGap,
+  relationLabel,
+} from "@gitimpact/shared";
+
+export { enqueuePrAnalysis, type PrAnalysisJob } from "./queue.js";
+export { processPrAnalysisJob } from "./pr-workflow.js";

@@ -13,7 +13,8 @@
     "@gitimpact/framework-detector": "workspace:*",
     "@gitimpact/impact-engine": "workspace:*",
     "@gitimpact/git": "workspace:*",
-    "@gitimpact/shared": "workspace:*"
+    "@gitimpact/shared": "workspace:*",
+    "@gitimpact/db": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

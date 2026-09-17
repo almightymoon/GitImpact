@@ -7,6 +7,7 @@ import type {
   ImpactReport,
   PullRequestImpactOverview,
   PullRequestMeta,
+  RepositoryIntelligence,
   RepositoryMeta,
 } from "@gitimpact/shared";
 import { getDb, isDatabaseConfigured } from "./client.js";
@@ -24,6 +25,7 @@ export interface PersistedAnalysis {
   impact?: ImpactReport;
   prOverview?: PullRequestImpactOverview;
   routes?: DetectedRoute[];
+  intelligence?: RepositoryIntelligence;
 }
 
 function repoId(owner: string, name: string): string {
@@ -78,6 +80,7 @@ export async function saveAnalysis(analysis: PersistedAnalysis): Promise<void> {
       changes: analysis.changes ?? null,
       pullRequest: analysis.pullRequest ?? null,
       routes: analysis.routes ?? null,
+      intelligence: analysis.intelligence ?? null,
       createdAt: new Date(analysis.createdAt),
       updatedAt: now,
     })
@@ -92,6 +95,7 @@ export async function saveAnalysis(analysis: PersistedAnalysis): Promise<void> {
         changes: analysis.changes ?? null,
         pullRequest: analysis.pullRequest ?? null,
         routes: analysis.routes ?? null,
+        intelligence: analysis.intelligence ?? null,
         updatedAt: now,
       },
     });
@@ -130,9 +134,20 @@ export async function loadAnalysis(id: string): Promise<PersistedAnalysis | null
     impact: (row.impact as ImpactReport | null) ?? undefined,
     prOverview: (row.prOverview as PullRequestImpactOverview | null) ?? undefined,
     routes: (row.routes as DetectedRoute[] | null) ?? undefined,
+    intelligence: (row.intelligence as RepositoryIntelligence | null) ?? undefined,
   };
 }
 
 export { isDatabaseConfigured };
-export { analyses, repositories } from "./schema.js";
+export { analyses, repositories, githubInstallations, webhookDeliveries } from "./schema.js";
 export { getDb, createDb, closeDb } from "./client.js";
+export {
+  claimWebhookDelivery,
+  updateWebhookDelivery,
+  upsertGitHubInstallation,
+  deleteGitHubInstallation,
+  findInstallationIdForOwner,
+  __resetDeliveryMemoryForTests,
+  type DeliveryStatus,
+  type DeliveryRecord,
+} from "./installations.js";
