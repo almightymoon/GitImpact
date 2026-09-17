@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ConnectGitHubButton } from "@/components/ConnectGitHubButton";
 
 export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   const router = useRouter();
@@ -9,7 +10,25 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [installUrl, setInstallUrl] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const isPrivate =
+    errorCode === "PRIVATE_REPOSITORY" || errorCode === "ACCESS_DENIED";
+
+  useEffect(() => {
+    if (!isPrivate) return;
+    let cancelled = false;
+    void fetch("/api/github/app")
+      .then((r) => r.json())
+      .then((data: { installUrl?: string | null }) => {
+        if (!cancelled) setInstallUrl(data.installUrl ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [isPrivate]);
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -54,9 +73,6 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
     });
   }
 
-  const isPrivate =
-    errorCode === "PRIVATE_REPOSITORY" || errorCode === "ACCESS_DENIED";
-
   return (
     <form onSubmit={onSubmit} className="w-full max-w-xl">
       <label className="mb-2 block font-mono text-xs uppercase tracking-[0.14em] text-[var(--ink-soft)]/70">
@@ -84,9 +100,12 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
             <p className="mt-1 text-xs leading-relaxed text-[var(--ink-soft)]">{errorDetail}</p>
           ) : null}
           {isPrivate ? (
-            <p className="mt-2 text-xs text-[var(--ink-soft)]">
-              Private repository support requires GitHub authorization.
-            </p>
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-[var(--ink-soft)]">
+                Private repositories require GitHub App authorization.
+              </p>
+              <ConnectGitHubButton installUrl={installUrl} appConfigured />
+            </div>
           ) : null}
         </div>
       ) : (

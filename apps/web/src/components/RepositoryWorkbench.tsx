@@ -5,6 +5,7 @@ import Link from "next/link";
 import type {
   AnalysisSummary,
   ChangeRecord,
+  ChecksReport,
   DetectedRoute,
   GraphEdge,
   GraphNode,
@@ -28,6 +29,7 @@ import { HelpTip, HELP } from "@/components/HelpTip";
 import {
   PullRequestOverviewPanel,
 } from "@/components/PullRequestPanels";
+import { ChecksPanel, PrQualityReport } from "@/components/ChecksPanel";
 
 type TabId =
   | "overview"
@@ -36,7 +38,8 @@ type TabId =
   | "prs"
   | "changes"
   | "tests"
-  | "apis";
+  | "apis"
+  | "checks";
 
 type AnalysisPayload = {
   id: string;
@@ -48,6 +51,7 @@ type AnalysisPayload = {
   };
   summary: AnalysisSummary;
   intelligence?: RepositoryIntelligence;
+  checks?: ChecksReport;
   pullRequest?: {
     number: number;
     title: string;
@@ -92,6 +96,7 @@ const TABS_REPO: Array<{ id: TabId; label: string }> = [
   { id: "graph", label: "Graph" },
   { id: "structure", label: "Structure" },
   { id: "prs", label: "PRs" },
+  { id: "checks", label: "Checks" },
   { id: "tests", label: "Tests" },
   { id: "apis", label: "APIs" },
 ];
@@ -100,6 +105,7 @@ const TABS_PR: Array<{ id: TabId; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "graph", label: "Graph" },
   { id: "changes", label: "Semantic Changes" },
+  { id: "checks", label: "Checks" },
   { id: "tests", label: "Tests" },
   { id: "apis", label: "APIs" },
   { id: "structure", label: "Structure" },
@@ -407,14 +413,19 @@ export function RepositoryWorkbench({
       {tab === "overview" ? (
         <div className="mx-auto max-w-[1400px]">
           {data.prOverview ? (
-            <PullRequestOverviewPanel
-              overview={data.prOverview}
-              impact={impact ?? data.impact}
-              onSelectNode={fetchImpact}
-              onOpenGraph={() => setTab("graph")}
-              onOpenTests={() => setTab("tests")}
-              onOpenApis={() => setTab("apis")}
-            />
+            <div className="space-y-6 p-6 pt-0">
+              <div className="pt-6">
+                <PrQualityReport checks={data.checks} />
+              </div>
+              <PullRequestOverviewPanel
+                overview={data.prOverview}
+                impact={impact ?? data.impact}
+                onSelectNode={fetchImpact}
+                onOpenGraph={() => setTab("graph")}
+                onOpenTests={() => setTab("tests")}
+                onOpenApis={() => setTab("apis")}
+              />
+            </div>
           ) : (
             <RepoOverviewPanel
               summary={data.summary}
@@ -443,6 +454,16 @@ export function RepositoryWorkbench({
           <SemanticChangesPanel
             changes={data.changes ?? []}
             onSelectFile={selectFile}
+          />
+        </div>
+      ) : null}
+
+      {tab === "checks" ? (
+        <div className="mx-auto max-w-[1400px]">
+          <ChecksPanel
+            checks={data.checks}
+            onSelectFile={selectFile}
+            onOpenGraph={() => setTab("graph")}
           />
         </div>
       ) : null}
@@ -498,12 +519,15 @@ export function RepositoryWorkbench({
                 Repository analysis
               </p>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                {data.intelligence.analysisHealth.filesDiscovered} files discovered ·{" "}
+                {data.intelligence.analysisHealth.filesDiscovered} code files found ·{" "}
                 {data.intelligence.analysisHealth.filesParsed} parsed ·{" "}
-                {data.intelligence.analysisHealth.filesIgnored} ignored ·{" "}
+                {data.intelligence.analysisHealth.filesIgnored} ignored paths ·{" "}
                 {data.intelligence.analysisHealth.filesUnsupported} unsupported
                 {data.intelligence.analysisHealth.parseFailures
                   ? ` · ${data.intelligence.analysisHealth.parseFailures} parse failures`
+                  : ""}
+                {data.intelligence.analysisHealth.truncated
+                  ? ` · capped at ${data.intelligence.analysisHealth.maxFilesCap}`
                   : ""}
               </p>
             </div>

@@ -219,12 +219,12 @@ export function RepoOverviewPanel({
           <p className="mt-1 text-sm text-[var(--ink-soft)]">
             Analysis completeness — why the graph or structure may look smaller than the full repo.
           </p>
-          <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {(
               [
-                ["Discovered", health.filesDiscovered],
+                ["Code files found", health.filesDiscovered],
                 ["Parsed", health.filesParsed],
-                ["Ignored", health.filesIgnored],
+                ["Ignored paths", health.filesIgnored],
                 ["Unsupported", health.filesUnsupported],
                 ["Parse failures", health.parseFailures],
               ] as Array<[string, number]>

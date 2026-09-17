@@ -1,7 +1,10 @@
 "use client";
 
 import type { ChangeRecord } from "@gitimpact/shared";
-import { formatSemanticEventDetail, humanizeSemanticEvent } from "@gitimpact/shared";
+import {
+  formatSemanticEventDetail,
+  humanizeChangeCategory,
+} from "@gitimpact/shared";
 import { EmptyState } from "@/components/EmptyState";
 
 export function SemanticChangesPanel({
@@ -53,7 +56,7 @@ export function SemanticChangesPanel({
                     {formatted.label}
                   </span>
                   <span className="font-mono text-[10px] text-[var(--ink-soft)]">
-                    {event.changeType}
+                    {humanizeChangeCategory(event.changeType)}
                   </span>
                 </div>
                 <p className="mt-2 font-display text-base font-semibold">{formatted.subject}</p>
@@ -104,7 +107,7 @@ export function SemanticChangesPanel({
                 </p>
               </button>
               <span className="shrink-0 rounded-full bg-[var(--fog)] px-2 py-1 font-mono text-[10px]">
-                {humanizeSemanticEvent(change.changeType)}
+                {humanizeChangeCategory(change.changeType)}
               </span>
             </li>
           ))}

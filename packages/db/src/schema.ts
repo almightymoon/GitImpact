@@ -46,6 +46,7 @@ export const analyses = pgTable(
     pullRequest: jsonb("pull_request").$type<unknown>(),
     routes: jsonb("routes").$type<unknown>(),
     intelligence: jsonb("intelligence").$type<unknown>(),
+    checks: jsonb("checks").$type<unknown>(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

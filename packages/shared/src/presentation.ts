@@ -187,6 +187,30 @@ export function humanizeSemanticEvent(kind: string): string {
     .join(" ");
 }
 
+const CHANGE_CATEGORY_LABELS: Record<string, string> = {
+  STRUCTURAL: "Structural",
+  INTERFACE: "Interface",
+  BEHAVIORAL: "Behavioral",
+  CONFIGURATION: "Configuration",
+};
+
+/** Human labels for ChangeCategory (STRUCTURAL → Structural, etc.) */
+export function humanizeChangeCategory(category: string): string {
+  if (CHANGE_CATEGORY_LABELS[category]) return CHANGE_CATEGORY_LABELS[category];
+  return humanizeSemanticEvent(category);
+}
+
+const IMPACT_LEVEL_LABELS: Record<string, string> = {
+  Low: "Low",
+  Moderate: "Moderate",
+  Elevated: "Elevated",
+  Critical: "Critical",
+};
+
+export function humanizeImpactLevel(level: string): string {
+  return IMPACT_LEVEL_LABELS[level] ?? humanizeSemanticEvent(level);
+}
+
 export function formatSemanticEventDetail(event: {
   kind: string;
   name: string;

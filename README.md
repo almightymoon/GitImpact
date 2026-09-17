@@ -184,3 +184,28 @@ Turns analysis into an understandable product surface:
 - **Navigation:** empty-canvas click deselects (no fake back-navigation)
 
 Apply DB migration: `packages/db/drizzle/0002_intelligence.sql`
+
+### Roadmap
+
+```text
+v0.8  Product UX & Repository Intelligence   ← current
+        ↓
+v0.9  Code Quality + Security + CI/CD Intelligence
+        ↓
+v1.0  Public Beta / Production Hardening
+```
+
+**v0.9 (next):** deterministic security checks, code-quality findings, CI/CD & infra impact on PRs, and a **Checks** tab (not mixed into Tests) that powers a combined pre-merge quality report — still without AI.
+
+### v0.9 — Code Quality, Security & CI Intelligence
+
+Answers: “What is risky about this code change besides dependency impact?”
+
+- **Checks tab:** Security · Code Quality · Dependencies · CI/CD · Infrastructure
+- **Security:** secret patterns, env mishandling, auth-sensitive paths, dangerous deps, risky sinks
+- **Quality:** complexity, large functions/classes, unused exports, circular imports, `any`, empty catches
+- **CI/CD & infra:** GitHub Actions, Docker, Kubernetes, Helm, Terraform, Argo CD — presence + PR-affected surfaces
+- **PR quality report:** combined Change Impact + Quality + Security + CI/Deployment bullets
+- **Structure:** infrastructure nodes (`INFRASTRUCTURE`) linked via `DEPLOYS` when detected
+
+Apply DB migration: `packages/db/drizzle/0003_checks.sql`

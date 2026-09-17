@@ -4,6 +4,7 @@ import type {
   ImpactReport,
   PullRequestImpactOverview,
 } from "@gitimpact/shared";
+import { humanizeChangeCategory } from "@gitimpact/shared";
 import { HelpTip, HELP } from "@/components/HelpTip";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -91,7 +92,7 @@ export function PullRequestOverviewPanel({
             {(Object.entries(overview.changeBreakdown) as Array<[string, number]>).map(
               ([type, count]) => (
                 <li key={type} className="flex justify-between font-mono text-xs">
-                  <span>{type}</span>
+                  <span>{humanizeChangeCategory(type)}</span>
                   <span>{count}</span>
                 </li>
               ),

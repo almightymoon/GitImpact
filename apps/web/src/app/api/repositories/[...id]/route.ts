@@ -78,7 +78,8 @@ export async function GET(request: Request, { params }: Params) {
       n.type === "API_ROUTE" ||
       n.type === "CONFIG" ||
       n.type === "DATABASE_MODEL" ||
-      n.type === "HOOK",
+      n.type === "HOOK" ||
+      n.type === "INFRASTRUCTURE",
   );
   const fileIds = new Set(fileNodes.map((n) => n.id));
   const graphEdges = analysis.graph.edges.filter(
@@ -90,7 +91,8 @@ export async function GET(request: Request, { params }: Params) {
         e.type === "CONTAINS" ||
         e.type === "HANDLED_BY" ||
         e.type === "FETCHES" ||
-        e.type === "TESTS") &&
+        e.type === "TESTS" ||
+        e.type === "DEPLOYS") &&
       fileIds.has(e.from) &&
       fileIds.has(e.to),
   );
@@ -118,6 +120,7 @@ export async function GET(request: Request, { params }: Params) {
     impact: analysis.impact,
     prOverview: analysis.prOverview,
     routes: analysis.routes?.slice(0, 200) ?? [],
+    checks: analysis.checks,
     graph: {
       nodes: cappedNodes,
       edges: cappedEdges,

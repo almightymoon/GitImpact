@@ -177,6 +177,41 @@ describe("semantic event labels", () => {
     expect(detail.subject).toBe("AuthService.login");
     expect(detail.detail).toContain("organizationId");
   });
+
+  it("humanizes change categories like STRUCTURAL", async () => {
+    const { humanizeChangeCategory } = await import("@gitimpact/shared");
+    expect(humanizeChangeCategory("STRUCTURAL")).toBe("Structural");
+    expect(humanizeChangeCategory("INTERFACE")).toBe("Interface");
+    expect(humanizeChangeCategory("BEHAVIORAL")).toBe("Behavioral");
+    expect(humanizeChangeCategory("CONFIGURATION")).toBe("Configuration");
+  });
+});
+
+describe("copy summary slack/discord friendliness", () => {
+  it("emits plain text without html or internal node ids", () => {
+    const impact: ImpactReport = {
+      changedNodes: [],
+      directImpact: [],
+      indirectImpact: [],
+      affectedFiles: ["src/a.ts"],
+      affectedApis: [],
+      relatedTests: [],
+      missingTests: [],
+      maxDepth: 3,
+      complexityScore: 12,
+      complexityBreakdown: [],
+      summary: "ok",
+    };
+    const text = formatImpactSummaryMarkdown({
+      componentName: "AuthService.login()",
+      impact,
+      analysisUrl: "https://example.com/acme/app",
+    });
+    expect(text).not.toMatch(/<[^>]+>/);
+    expect(text).toContain("\n");
+    expect(text).toContain("AuthService.login()");
+    expect(text).toContain("Complexity: 12/100");
+  });
 });
 
 describe("test gap explanation", () => {
@@ -204,5 +239,24 @@ describe("relation labels", () => {
   it("maps CALLS to readable text", () => {
     expect(relationLabel("CALLS")).toBe("calls");
     expect(relationLabel("HANDLED_BY")).toBe("handled by");
+  });
+});
+
+describe("analysis health stats", () => {
+  it("reports discovered/parsed counts consistently for a fixture", async () => {
+    const path = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const { parseRepository } = await import("@gitimpact/parser");
+    const root = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "cases/function-import",
+    );
+    const parsed = await parseRepository(root, { maxFiles: 50 });
+    expect(parsed.analysisHealth.filesDiscovered).toBeGreaterThan(0);
+    expect(parsed.analysisHealth.filesParsed).toBe(parsed.files.length);
+    expect(parsed.analysisHealth.filesParsed).toBeLessThanOrEqual(
+      parsed.analysisHealth.filesDiscovered,
+    );
+    expect(parsed.analysisHealth.truncated).toBe(false);
   });
 });

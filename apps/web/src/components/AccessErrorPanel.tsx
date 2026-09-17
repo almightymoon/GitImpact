@@ -1,7 +1,9 @@
 "use client";
 
 import type { AnalysisErrorPayload } from "@gitimpact/shared";
+import { useEffect, useState } from "react";
 import { AnalyzeForm } from "@/components/AnalyzeForm";
+import { ConnectGitHubButton } from "@/components/ConnectGitHubButton";
 
 export function AccessErrorPanel({
   error,
@@ -14,6 +16,26 @@ export function AccessErrorPanel({
 }) {
   const isPrivate =
     error.code === "PRIVATE_REPOSITORY" || error.code === "ACCESS_DENIED";
+  const [installUrl, setInstallUrl] = useState<string | null>(null);
+  const [appConfigured, setAppConfigured] = useState(false);
+
+  useEffect(() => {
+    if (!isPrivate) return;
+    let cancelled = false;
+    void fetch("/api/github/app")
+      .then((r) => r.json())
+      .then((data: { installUrl?: string | null; configured?: boolean }) => {
+        if (cancelled) return;
+        setInstallUrl(data.installUrl ?? null);
+        setAppConfigured(Boolean(data.configured));
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPrivate]);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6">
@@ -34,14 +56,15 @@ export function AccessErrorPanel({
           <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{error.detail}</p>
         ) : null}
         {isPrivate ? (
-          <div className="mt-4 space-y-2 text-sm text-[var(--ink-soft)]">
-            <p>Public repositories work without authentication.</p>
-            <p>
-              Private repository support requires GitHub authorization (GitHub App installation).
-            </p>
-            <p className="rounded-xl bg-white/80 px-3 py-2 font-mono text-xs">
-              Private repository support requires GitHub authorization.
-            </p>
+          <div className="mt-4 space-y-4 text-sm text-[var(--ink-soft)]">
+            <ul className="list-disc space-y-1 pl-5">
+              <li>Public repositories work without authentication.</li>
+              <li>
+                Private repositories require installing the GitImpact GitHub App so we can create
+                short-lived installation tokens.
+              </li>
+            </ul>
+            <ConnectGitHubButton installUrl={installUrl} appConfigured={appConfigured} />
           </div>
         ) : null}
       </div>

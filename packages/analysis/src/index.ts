@@ -29,6 +29,7 @@ import {
 import type {
   AnalysisSummary,
   ChangeRecord,
+  ChecksReport,
   DependencyGraph,
   DetectedRoute,
   GraphNode,
@@ -46,6 +47,7 @@ import {
 } from "./pr-comment.js";
 import { buildRepositoryIntelligence } from "./intelligence.js";
 import { classifyAnalysisError } from "./access-errors.js";
+import { buildChecksReport, buildInfrastructureNodes } from "./checks/index.js";
 
 export interface StoredAnalysis {
   id: string;
@@ -60,6 +62,7 @@ export interface StoredAnalysis {
   prOverview?: PullRequestImpactOverview;
   routes?: DetectedRoute[];
   intelligence?: RepositoryIntelligence;
+  checks?: ChecksReport;
   persisted?: boolean;
 }
 
@@ -142,6 +145,49 @@ function buildGraphFromParse(parsed: Awaited<ReturnType<typeof parseRepository>>
   const graph = buildGraph(parsed.files, routes);
   const store = new GraphStore(graph);
   return { graph, store, routes, frameworks };
+}
+
+async function finalizeChecks(
+  graph: DependencyGraph,
+  input: {
+    files: ParsedFile[];
+    contentsByPath: Map<string, string>;
+    packageDeps?: Record<string, string>;
+    clonePath?: string;
+    allRelativeFiles?: string[];
+    infraSignals?: RepositoryIntelligence["infraSignals"];
+    changes?: ChangeRecord[];
+    impact?: ImpactReport;
+    prOverview?: PullRequestImpactOverview;
+  },
+): Promise<{ graph: DependencyGraph; checks: ChecksReport }> {
+  const checks = await buildChecksReport({
+    files: input.files,
+    contentsByPath: input.contentsByPath,
+    graph,
+    packageDeps: input.packageDeps,
+    clonePath: input.clonePath,
+    allRelativeFiles: input.allRelativeFiles,
+    infraSignals: input.infraSignals,
+    changes: input.changes,
+    impact: input.impact,
+    prOverview: input.prOverview,
+  });
+
+  const infra = buildInfrastructureNodes({
+    infraSignals: input.infraSignals ?? [],
+    findings: checks.findings,
+  });
+  if (infra.nodes.length > 0) {
+    return {
+      graph: {
+        nodes: [...graph.nodes, ...infra.nodes],
+        edges: [...graph.edges, ...infra.edges],
+      },
+      checks,
+    };
+  }
+  return { graph, checks };
 }
 
 function buildChangeRecords(
@@ -227,22 +273,32 @@ export async function analyzeRepositoryUrl(
     }
   }
 
+  const finalized = await finalizeChecks(graph, {
+    files: parsed.files,
+    contentsByPath: parsed.contentsByPath,
+    packageDeps: parsed.packageDeps,
+    clonePath: repository.clonePath,
+    allRelativeFiles: parsed.allRelativeFiles,
+    infraSignals: intelligence.infraSignals,
+  });
+
   const stored: StoredAnalysis = {
     id: analysisId(parsedUrl.owner, parsedUrl.repo),
     createdAt: new Date().toISOString(),
     repository,
     summary: buildSummary(
       parsed.files,
-      graph,
+      finalized.graph,
       store,
       parsed.languages,
       frameworks,
       routes.length,
     ),
-    graph,
+    graph: finalized.graph,
     routePath: toGitImpactPath(parsedUrl),
     routes,
     intelligence,
+    checks: finalized.checks,
   };
 
   return persist(stored);
@@ -315,19 +371,31 @@ export async function analyzePullRequest(
     skipOpenPrs: true,
   });
 
+  const finalized = await finalizeChecks(graph, {
+    files: parsed.files,
+    contentsByPath: parsed.contentsByPath,
+    packageDeps: parsed.packageDeps,
+    clonePath: repository.clonePath,
+    allRelativeFiles: parsed.allRelativeFiles,
+    infraSignals: intelligence.infraSignals,
+    changes,
+    impact,
+    prOverview,
+  });
+
   const stored: StoredAnalysis = {
     id: analysisId(owner, repo, number),
     createdAt: new Date().toISOString(),
     repository,
     summary: buildSummary(
       parsed.files,
-      graph,
+      finalized.graph,
       store,
       parsed.languages,
       frameworks,
       routes.length,
     ),
-    graph,
+    graph: finalized.graph,
     routePath: `/${owner}/${repo}/pull/${number}`,
     pullRequest,
     changes,
@@ -335,6 +403,7 @@ export async function analyzePullRequest(
     prOverview,
     routes,
     intelligence,
+    checks: finalized.checks,
   };
 
   return persist(stored);
@@ -439,6 +508,16 @@ export async function analyzeLocalFixture(
     skipOpenPrs: true,
   });
 
+  const finalized = await finalizeChecks(graph, {
+    files: parsed.files,
+    contentsByPath: parsed.contentsByPath,
+    packageDeps: parsed.packageDeps,
+    clonePath: fixtureDir,
+    allRelativeFiles: parsed.allRelativeFiles,
+    infraSignals: intelligence.infraSignals,
+    impact,
+  });
+
   const stored: StoredAnalysis = {
     id,
     createdAt: new Date().toISOString(),
@@ -451,17 +530,18 @@ export async function analyzeLocalFixture(
     },
     summary: buildSummary(
       parsed.files,
-      graph,
+      finalized.graph,
       store,
       parsed.languages,
       frameworks,
       routes.length,
     ),
-    graph,
+    graph: finalized.graph,
     routePath: "/demo/tiny-fixture",
     impact,
     routes,
     intelligence,
+    checks: finalized.checks,
   };
 
   return persist(stored);
@@ -527,6 +607,18 @@ export async function analyzeDemoPullRequest(
     skipOpenPrs: true,
   });
 
+  const finalized = await finalizeChecks(graph, {
+    files: parsed.files,
+    contentsByPath: parsed.contentsByPath,
+    packageDeps: parsed.packageDeps,
+    clonePath: fixtureDir,
+    allRelativeFiles: parsed.allRelativeFiles,
+    infraSignals: intelligence.infraSignals,
+    changes,
+    impact,
+    prOverview,
+  });
+
   const stored: StoredAnalysis = {
     id: analysisId("demo", "tiny-fixture", 1),
     createdAt: new Date().toISOString(),
@@ -539,13 +631,13 @@ export async function analyzeDemoPullRequest(
     },
     summary: buildSummary(
       parsed.files,
-      graph,
+      finalized.graph,
       store,
       parsed.languages,
       frameworks,
       routes.length,
     ),
-    graph,
+    graph: finalized.graph,
     routePath: "/demo/tiny-fixture/pull/1",
     pullRequest,
     changes,
@@ -553,6 +645,7 @@ export async function analyzeDemoPullRequest(
     prOverview,
     routes,
     intelligence,
+    checks: finalized.checks,
   };
 
   return persist(stored);
@@ -765,6 +858,8 @@ export {
   explainTestGap,
   relationLabel,
 } from "@gitimpact/shared";
+
+export { buildChecksReport, buildInfrastructureNodes } from "./checks/index.js";
 
 export { enqueuePrAnalysis, type PrAnalysisJob } from "./queue.js";
 export { processPrAnalysisJob } from "./pr-workflow.js";

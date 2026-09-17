@@ -8,6 +8,7 @@ export default defineConfig({
       "webhook-signature.test.ts",
       "pr-workflow.test.ts",
       "ux-presentation.test.ts",
+      "checks.test.ts",
     ],
     exclude: ["cases/**", "node_modules/**"],
     testTimeout: 60_000,

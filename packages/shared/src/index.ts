@@ -428,6 +428,15 @@ export interface AnalysisErrorPayload {
   action?: "connect_github" | "retry" | "none";
 }
 
+export type {
+  CheckSeverity,
+  CheckCategory,
+  CheckRuleId,
+  CheckFinding,
+  CheckCategorySummary,
+  ChecksReport,
+} from "./checks.js";
+
 export {
   relationLabel,
   formatRelationshipChain,
@@ -437,5 +446,7 @@ export {
   explainTestGap,
   explainMissingTestForSymbol,
   humanizeSemanticEvent,
+  humanizeChangeCategory,
+  humanizeImpactLevel,
   formatSemanticEventDetail,
 } from "./presentation.js";

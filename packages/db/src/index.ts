@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type {
   AnalysisSummary,
   ChangeRecord,
+  ChecksReport,
   DependencyGraph,
   DetectedRoute,
   ImpactReport,
@@ -26,6 +27,7 @@ export interface PersistedAnalysis {
   prOverview?: PullRequestImpactOverview;
   routes?: DetectedRoute[];
   intelligence?: RepositoryIntelligence;
+  checks?: ChecksReport;
 }
 
 function repoId(owner: string, name: string): string {
@@ -81,6 +83,7 @@ export async function saveAnalysis(analysis: PersistedAnalysis): Promise<void> {
       pullRequest: analysis.pullRequest ?? null,
       routes: analysis.routes ?? null,
       intelligence: analysis.intelligence ?? null,
+      checks: analysis.checks ?? null,
       createdAt: new Date(analysis.createdAt),
       updatedAt: now,
     })
@@ -96,6 +99,7 @@ export async function saveAnalysis(analysis: PersistedAnalysis): Promise<void> {
         pullRequest: analysis.pullRequest ?? null,
         routes: analysis.routes ?? null,
         intelligence: analysis.intelligence ?? null,
+        checks: analysis.checks ?? null,
         updatedAt: now,
       },
     });
@@ -135,6 +139,7 @@ export async function loadAnalysis(id: string): Promise<PersistedAnalysis | null
     prOverview: (row.prOverview as PullRequestImpactOverview | null) ?? undefined,
     routes: (row.routes as DetectedRoute[] | null) ?? undefined,
     intelligence: (row.intelligence as RepositoryIntelligence | null) ?? undefined,
+    checks: (row.checks as ChecksReport | null) ?? undefined,
   };
 }
 
