@@ -1,0 +1,9 @@
+{
+  "description": "Aliased imports resolve through the original symbol",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/foo.ts:foo"
+    }
+  ]
+}

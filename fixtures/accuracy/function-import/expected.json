@@ -1,0 +1,9 @@
+{
+  "description": "Named import calls resolve to the exporting function",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/foo.ts:foo"
+    }
+  ]
+}

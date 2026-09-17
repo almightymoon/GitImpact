@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@gitimpact/shared": "workspace:*",
-    "@gitimpact/graph": "workspace:*"
+    "@gitimpact/graph": "workspace:*",
+    "@gitimpact/parser": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.3"

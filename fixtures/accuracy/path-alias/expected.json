@@ -1,0 +1,12 @@
+{
+  "description": "Path alias @/ imports resolve to the aliased source file",
+  "pathAliases": {
+    "@/*": ["src/*"]
+  },
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "METHOD:src/services/auth.ts:AuthService.login"
+    }
+  ]
+}

@@ -201,6 +201,7 @@ export interface ChangeRecord {
   symbolName?: string;
   symbols?: string[];
   status?: string;
+  patch?: string;
   oldValue?: string;
   newValue?: string;
   startLine?: number;

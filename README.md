@@ -80,7 +80,14 @@ cli                           Local CLI
 3. Never execute repository code
 4. Confidence levels on relationships
 
-### v0.2 — Symbol resolution
+### Accuracy suite
+
+```bash
+pnpm build:packages
+pnpm test:accuracy
+```
+
+Fixtures live under `fixtures/accuracy/` and assert exact CALLS edges (e.g. `UserService.save` ≠ `OrderService.save`).
 
 Call graphs resolve through the TypeScript type checker (repository-level `ts-morph` Project), not name heuristics:
 
@@ -93,4 +100,7 @@ Graph semantics:
 - `FILE/CLASS → * : CONTAINS`
 - `FILE → exported symbol : EXPORTS`
 - `FUNCTION/METHOD → FUNCTION/METHOD : CALLS` (resolved)
-# GitImpact
+
+### v0.3 — Diff-to-AST
+
+Changed line ranges from Git patches map to the smallest enclosing FUNCTION/METHOD/CLASS via AST — not declaration-line regex alone.

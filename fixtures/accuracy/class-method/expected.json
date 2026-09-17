@@ -1,0 +1,13 @@
+{
+  "description": "Instance method calls resolve to the declaring class method",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:login",
+      "to": "METHOD:src/auth.service.ts:AuthService.authenticate"
+    },
+    {
+      "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "to": "METHOD:src/auth.service.ts:AuthService.issueToken"
+    }
+  ]
+}

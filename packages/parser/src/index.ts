@@ -419,7 +419,10 @@ export async function listCodeFiles(rootDir: string): Promise<string[]> {
  */
 export async function parseRepository(
   rootDir: string,
-  options?: { maxFiles?: number },
+  options?: {
+    maxFiles?: number;
+    pathAliases?: Record<string, string[]>;
+  },
 ): Promise<{
   files: ParsedFile[];
   languages: LanguageStats[];
@@ -431,6 +434,8 @@ export async function parseRepository(
   const limited = relativePaths.slice(0, options?.maxFiles ?? 2_500);
   const contentsByPath = new Map<string, string>();
   const knownFiles = new Set(limited);
+  const pathAliases =
+    options?.pathAliases ?? (await readPathAliases(rootDir));
 
   const project = new Project({
     useInMemoryFileSystem: true,
@@ -447,6 +452,8 @@ export async function parseRepository(
       noEmit: true,
       allowSyntheticDefaultImports: true,
       resolveJsonModule: true,
+      baseUrl: ".",
+      paths: pathAliases,
     },
   });
 
@@ -455,7 +462,6 @@ export async function parseRepository(
     try {
       const content = await readFile(absolute, "utf8");
       contentsByPath.set(relativePath, content);
-      // Use stable posix-like paths so imports resolve across the virtual FS
       project.createSourceFile(relativePath, content, { overwrite: true });
     } catch {
       continue;
@@ -471,16 +477,22 @@ export async function parseRepository(
     const sourceFile = project.getSourceFile(relativePath);
     if (!sourceFile) continue;
     try {
-      files.push(
-        parseSourceFileDetailed(
-          sourceFile,
-          content,
-          relativePath,
-          rootDir,
-          knownFiles,
-          checker,
-        ),
+      const parsed = parseSourceFileDetailed(
+        sourceFile,
+        content,
+        relativePath,
+        rootDir,
+        knownFiles,
+        checker,
       );
+      // Fill unresolved relative/alias imports via path maps
+      for (const imp of parsed.imports) {
+        if (imp.resolvedPath) continue;
+        imp.resolvedPath =
+          resolveImportPath(relativePath, imp.moduleSpecifier, knownFiles) ??
+          resolveAliasImport(imp.moduleSpecifier, pathAliases, knownFiles);
+      }
+      files.push(parsed);
     } catch {
       continue;
     }
@@ -496,6 +508,64 @@ export async function parseRepository(
     contentsByPath,
     packageDeps,
   };
+}
+
+async function readPathAliases(rootDir: string): Promise<Record<string, string[]>> {
+  try {
+    const raw = await readFile(path.join(rootDir, "tsconfig.json"), "utf8");
+    // Strip simple trailing commas / comments for fixture tsconfigs
+    const cleaned = raw.replace(/,\s*([}\]])/g, "$1").replace(/\/\/.*$/gm, "");
+    const json = JSON.parse(cleaned) as {
+      compilerOptions?: { paths?: Record<string, string[]> };
+    };
+    return json.compilerOptions?.paths ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function resolveAliasImport(
+  moduleSpecifier: string,
+  aliases: Record<string, string[]>,
+  knownFiles: Set<string>,
+): string | undefined {
+  for (const [pattern, targets] of Object.entries(aliases)) {
+    if (pattern.endsWith("/*")) {
+      const prefix = pattern.slice(0, -1); // keep trailing behavior: "@/*" -> "@/"
+      const aliasRoot = pattern.slice(0, -2); // "@"
+      if (!moduleSpecifier.startsWith(aliasRoot + "/")) continue;
+      const rest = moduleSpecifier.slice(aliasRoot.length + 1);
+      for (const target of targets) {
+        const base = target.endsWith("/*") ? target.slice(0, -1) + rest : target;
+        const hit = resolveImportPath(".", "./" + base.replace(/^\.\//, ""), knownFiles)
+          ?? tryKnown(base.replace(/^\.\//, ""), knownFiles);
+        if (hit) return hit;
+      }
+      void prefix;
+    } else if (moduleSpecifier === pattern) {
+      for (const target of targets) {
+        const normalized = target.replace(/^\.\//, "");
+        const hit = tryKnown(normalized, knownFiles);
+        if (hit) return hit;
+      }
+    }
+  }
+  return undefined;
+}
+
+function tryKnown(candidate: string, knownFiles: Set<string>): string | undefined {
+  const variants = [
+    candidate,
+    `${candidate}.ts`,
+    `${candidate}.tsx`,
+    `${candidate}.js`,
+    `${candidate}/index.ts`,
+    `${candidate}/index.tsx`,
+  ];
+  for (const v of variants) {
+    if (knownFiles.has(v)) return v;
+  }
+  return undefined;
 }
 
 async function readPackageDeps(rootDir: string): Promise<Record<string, string>> {
@@ -593,3 +663,10 @@ export function resolveImportPath(
 }
 
 export type { ConfidenceLevel, TypeFormatFlags };
+export {
+  parseChangedLinesFromPatch,
+  findEnclosingSymbols,
+  mapPatchToEnclosingSymbols,
+  enclosingSymbolToNodeId,
+  type EnclosingSymbol,
+} from "./diff-to-ast.js";

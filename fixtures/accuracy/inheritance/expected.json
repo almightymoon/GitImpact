@@ -1,0 +1,13 @@
+{
+  "description": "Inherited method calls from subclass methods resolve to base declaration when possible",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "METHOD:src/auth.ts:AuthService.login"
+    },
+    {
+      "from": "METHOD:src/auth.ts:AuthService.login",
+      "to": "METHOD:src/auth.ts:BaseAuth.createSession"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "duplicate-method-names",
+  "private": true,
+  "type": "module"
+}

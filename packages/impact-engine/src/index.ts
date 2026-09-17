@@ -1,4 +1,8 @@
 import { GraphStore } from "@gitimpact/graph";
+import {
+  enclosingSymbolToNodeId,
+  mapPatchToEnclosingSymbols,
+} from "@gitimpact/parser";
 import type {
   ChangeCategory,
   ChangeRecord,
@@ -321,15 +325,45 @@ export function mapChangedFilesToNodes(
 export function mapChangesToSymbolNodes(
   store: GraphStore,
   changes: ChangeRecord[],
+  contentsByPath?: Map<string, string>,
 ): GraphNode[] {
   const nodes: GraphNode[] = [];
 
   for (const change of changes) {
+    const content = contentsByPath?.get(change.filePath);
+    let mappedFromAst = false;
+
+    // Diff-to-AST: changed line ranges → smallest enclosing symbol
+    if (content && change.patch) {
+      const enclosing = mapPatchToEnclosingSymbols(
+        change.filePath,
+        content,
+        change.patch,
+      );
+      for (const symbol of enclosing) {
+        const id = enclosingSymbolToNodeId(symbol);
+        const node = store.getNode(id);
+        if (node) {
+          nodes.push(node);
+          mappedFromAst = true;
+        } else {
+          const found = store.findSymbolNodes(change.filePath, symbol.name);
+          if (found.length) {
+            nodes.push(...found);
+            mappedFromAst = true;
+          }
+        }
+      }
+    }
+
+    if (mappedFromAst) continue;
+
+    // Fallback: regex symbol names from the patch
     const symbols = change.symbols?.length
       ? change.symbols
       : change.symbolName
         ? [change.symbolName]
-        : [];
+        : extractChangedSymbols(change.patch);
 
     if (symbols.length > 0) {
       for (const symbol of symbols) {
@@ -338,7 +372,6 @@ export function mapChangesToSymbolNodes(
       continue;
     }
 
-    // Fall back to file-level only when no symbol could be extracted from the diff
     const fileNode = store.findFileNode(change.filePath);
     if (fileNode) nodes.push(fileNode);
   }

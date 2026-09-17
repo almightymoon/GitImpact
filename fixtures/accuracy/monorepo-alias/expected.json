@@ -1,0 +1,13 @@
+{
+  "description": "Workspace package aliases resolve into the monorepo package source",
+  "pathAliases": {
+    "@company/shared": ["packages/shared/src/index.ts"],
+    "@company/shared/*": ["packages/shared/src/*"]
+  },
+  "mustCall": [
+    {
+      "from": "FUNCTION:apps/api/src/caller.ts:caller",
+      "to": "FUNCTION:packages/shared/src/index.ts:sharedUtil"
+    }
+  ]
+}

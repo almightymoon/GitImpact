@@ -1,0 +1,9 @@
+{
+  "description": "Default-exported class methods resolve correctly",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "METHOD:src/auth.ts:AuthService.login"
+    }
+  ]
+}

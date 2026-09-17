@@ -1,0 +1,15 @@
+{
+  "description": "Identical method names on different classes must resolve to the correct declaration",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:run",
+      "to": "METHOD:src/user-service.ts:UserService.save"
+    }
+  ],
+  "mustNotCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:run",
+      "to": "METHOD:src/order-service.ts:OrderService.save"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Next.js app router handlers call into resolved auth symbols",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/app/api/login/route.ts:POST",
+      "to": "FUNCTION:src/lib/auth.ts:authenticate"
+    }
+  ],
+  "mustDetectRoutes": [
+    {
+      "method": "POST",
+      "path": "/api/login"
+    }
+  ]
+}

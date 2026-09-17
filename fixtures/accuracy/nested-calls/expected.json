@@ -1,0 +1,19 @@
+{
+  "description": "Nested call chains create exact CALLS edges at each level",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/chain.ts:top",
+      "to": "FUNCTION:src/chain.ts:middle"
+    },
+    {
+      "from": "FUNCTION:src/chain.ts:middle",
+      "to": "FUNCTION:src/chain.ts:leaf"
+    }
+  ],
+  "mustNotCall": [
+    {
+      "from": "FUNCTION:src/chain.ts:top",
+      "to": "FUNCTION:src/chain.ts:leaf"
+    }
+  ]
+}

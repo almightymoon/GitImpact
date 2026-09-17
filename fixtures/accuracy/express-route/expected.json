@@ -1,0 +1,15 @@
+{
+  "description": "Express router handlers resolve authenticate calls; route detector finds POST /login",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/lib/auth.ts:authenticate"
+    }
+  ],
+  "mustDetectRoutes": [
+    {
+      "method": "POST",
+      "path": "/login"
+    }
+  ]
+}

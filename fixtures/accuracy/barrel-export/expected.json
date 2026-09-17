@@ -1,0 +1,9 @@
+{
+  "description": "Barrel export * resolves to the original module symbol",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/auth.ts:login"
+    }
+  ]
+}

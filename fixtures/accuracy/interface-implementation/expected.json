@@ -1,0 +1,16 @@
+{
+  "description": "Calls through interface-typed parameters still resolve when concrete methods are invoked in-repo",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/tokens.ts:issueWith"
+    }
+  ],
+  "softMustCall": [
+    {
+      "from": "FUNCTION:src/tokens.ts:issueWith",
+      "to": "METHOD:src/tokens.ts:JwtIssuer.issue",
+      "note": "May be UNRESOLVED/MEDIUM when only the interface signature is visible"
+    }
+  ]
+}

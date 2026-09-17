@@ -1,0 +1,17 @@
+{
+  "description": "Internal logic diffs map to enclosing method via line ranges, not declaration regex",
+  "diffCases": [
+    {
+      "file": "src/auth.service.ts",
+      "patch": "@@ -1,8 +1,8 @@\n export class AuthService {\n   generateToken(payload: string) {\n-    const secret = \"old-secret\";\n-    return sign(payload, oldSecret);\n+    const secret = \"new-secret\";\n+    return sign(payload, secret);\n   }\n }\n",
+      "mustEnclose": [
+        {
+          "kind": "METHOD",
+          "name": "generateToken",
+          "className": "AuthService"
+        }
+      ],
+      "mustNotEncloseOnly": ["sign"]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "description": "Test files create TESTS edges to imported production modules",
+  "mustEdge": [
+    {
+      "from": "FILE:src/math.test.ts",
+      "to": "FILE:src/math.ts",
+      "type": "TESTS"
+    }
+  ],
+  "softMustCall": [
+    {
+      "fromContains": "src/math.test.ts",
+      "to": "FUNCTION:src/math.ts:add",
+      "note": "Calls inside it()/test() callbacks are not yet extracted as first-class function nodes"
+    }
+  ]
+}

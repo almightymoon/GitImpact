@@ -1,0 +1,9 @@
+{
+  "description": "Re-exported symbols resolve to the original declaration",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/auth.ts:authenticate"
+    }
+  ]
+}

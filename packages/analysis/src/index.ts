@@ -138,6 +138,7 @@ function buildGraphFromParse(parsed: Awaited<ReturnType<typeof parseRepository>>
 function resolveChangedNodes(
   store: GraphStore,
   prFiles: Array<{ filename: string; status?: string; patch?: string }>,
+  contentsByPath?: Map<string, string>,
 ): GraphNode[] {
   const changes: ChangeRecord[] = prFiles.map((file) => {
     const symbols = extractChangedSymbols(file.patch);
@@ -147,9 +148,10 @@ function resolveChangedNodes(
       symbolName: symbols[0],
       symbols,
       status: file.status,
+      patch: file.patch,
     };
   });
-  return mapChangesToSymbolNodes(store, changes);
+  return mapChangesToSymbolNodes(store, changes, contentsByPath);
 }
 
 export async function analyzeRepositoryUrl(
@@ -243,10 +245,11 @@ export async function analyzePullRequest(
       symbolName: symbols[0],
       symbols,
       status: file.status,
+      patch: file.patch,
     };
   });
 
-  const changedNodes = resolveChangedNodes(store, prFiles);
+  const changedNodes = resolveChangedNodes(store, prFiles, parsed.contentsByPath);
   const impact = buildImpactReport(store, changedNodes, depth);
   const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
 
@@ -433,10 +436,11 @@ export async function analyzeDemoPullRequest(
       symbolName: symbols[0],
       symbols,
       status: file.status,
+      patch: file.patch,
     };
   });
 
-  const changedNodes = resolveChangedNodes(store, prFiles);
+  const changedNodes = resolveChangedNodes(store, prFiles, parsed.contentsByPath);
   const impact = buildImpactReport(store, changedNodes, depth);
   const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
 
