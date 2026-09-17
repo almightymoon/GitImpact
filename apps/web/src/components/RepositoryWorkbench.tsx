@@ -5,8 +5,10 @@ import Link from "next/link";
 import type {
   AnalysisSummary,
   ChangeRecord,
+  ComplexityFactor,
   GraphEdge,
   GraphNode,
+  ImpactPathStep,
   ImpactReport,
   PullRequestImpactOverview,
 } from "@gitimpact/shared";
@@ -77,6 +79,8 @@ export function RepositoryWorkbench({
   const [loading, setLoading] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [impact, setImpact] = useState<ImpactReport | null>(null);
+  const [whyPath, setWhyPath] = useState<ImpactPathStep[] | null>(null);
+  const [whyTarget, setWhyTarget] = useState<string | null>(null);
   const [depth, setDepth] = useState(3);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<TabId>(isPullRequest ? "overview" : "graph");
@@ -139,7 +143,28 @@ export function RepositoryWorkbench({
   const clearSelection = useCallback(() => {
     setSelectedNodeId(null);
     setImpact(null);
+    setWhyPath(null);
+    setWhyTarget(null);
   }, []);
+
+  const showWhy = useCallback(
+    (targetNodeId: string) => {
+      startTransition(async () => {
+        const params = new URLSearchParams({ why: targetNodeId });
+        if (selectedNodeId) params.set("from", selectedNodeId);
+        const response = await fetch(`/api/repositories/${analysisId}?${params}`);
+        const payload = (await response.json()) as {
+          path?: ImpactPathStep[];
+          error?: string;
+        };
+        if (response.ok && payload.path) {
+          setWhyPath(payload.path);
+          setWhyTarget(targetNodeId);
+        }
+      });
+    },
+    [analysisId, selectedNodeId],
+  );
 
   const impactedIds = useMemo(() => {
     if (!impact) return new Map<string, string>();
@@ -431,6 +456,10 @@ export function RepositoryWorkbench({
                     <Metric label="Tests" value={impact.relatedTests.length} />
                     <Metric label="Gaps" value={impact.missingTests.length} />
                   </dl>
+                  <ComplexityPanel
+                    score={impact.complexityScore}
+                    factors={impact.complexityBreakdown ?? []}
+                  />
                 </div>
               ) : (
                 <p className="mt-3 text-sm text-[var(--ink-soft)]">
@@ -442,35 +471,129 @@ export function RepositoryWorkbench({
             {impact && (
               <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/70 p-4">
                 <h3 className="font-display text-base font-semibold">Dependents</h3>
-                <ul className="mt-3 max-h-[360px] space-y-2 overflow-x-hidden overflow-y-auto">
+                <ul className="mt-3 max-h-[280px] space-y-2 overflow-x-hidden overflow-y-auto">
                   {[...impact.directImpact, ...impact.indirectImpact].slice(0, 40).map((item) => (
                     <li key={item.node.id} className="flex min-w-0 items-start gap-2 text-xs">
                       <span
                         className="mt-1 h-2 w-2 shrink-0 rounded-full"
                         style={{ background: severityColor[item.severity] }}
                       />
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <button
+                          type="button"
+                          title={item.node.file}
+                          className="w-full overflow-hidden text-left hover:text-[var(--teal)]"
+                          onClick={() => fetchImpact(item.node.id)}
+                        >
+                          <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-medium">
+                            {item.node.name}
+                          </span>
+                          <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[var(--ink-soft)]/70">
+                            d{item.depth} · {item.node.type}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => showWhy(item.node.id)}
+                          className="mt-1 text-[10px] text-[var(--teal)] hover:underline"
+                        >
+                          Why is this affected?
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {whyPath && whyPath.length > 0 && (
+              <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--teal)]/40 bg-white/80 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-display text-base font-semibold">Why affected</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWhyPath(null);
+                      setWhyTarget(null);
+                    }}
+                    className="text-[11px] text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                  >
+                    Close
+                  </button>
+                </div>
+                <p className="mt-1 font-mono text-[10px] text-[var(--ink-soft)]/70">
+                  Deterministic dependency path · not AI-inferred
+                </p>
+                <ol className="mt-3 space-y-2">
+                  {whyPath.map((step, index) => (
+                    <li key={`${step.nodeId}-${index}`} className="min-w-0 text-xs">
+                      {index > 0 && step.edgeType ? (
+                        <p className="mb-1 font-mono text-[10px] text-[var(--teal)]">
+                          ↑ {step.edgeType}
+                        </p>
+                      ) : (
+                        <p className="mb-1 font-mono text-[10px] text-[var(--critical)]">
+                          changed
+                        </p>
+                      )}
                       <button
                         type="button"
-                        title={item.node.file}
-                        className="min-w-0 flex-1 overflow-hidden text-left hover:text-[var(--teal)]"
-                        onClick={() => fetchImpact(item.node.id)}
+                        className={`w-full overflow-hidden rounded-lg px-2 py-1.5 text-left hover:bg-[var(--fog)] ${
+                          step.nodeId === whyTarget ? "bg-[var(--fog)]" : ""
+                        }`}
+                        onClick={() => fetchImpact(step.nodeId)}
                       >
                         <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-medium">
-                          {item.node.name}
+                          {step.name}
                         </span>
                         <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[var(--ink-soft)]/70">
-                          d{item.depth} · {item.node.file}
+                          {step.type} · {step.file}
                         </span>
                       </button>
                     </li>
                   ))}
-                </ul>
+                </ol>
               </div>
             )}
           </aside>
         </div>
       )}
     </main>
+  );
+}
+
+function ComplexityPanel({
+  score,
+  factors,
+}: {
+  score: number;
+  factors: ComplexityFactor[];
+}) {
+  return (
+    <div>
+      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
+        Change Complexity
+      </p>
+      <p className="mt-1 font-display text-lg font-semibold">{score}/100</p>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--fog)]">
+        <div className="h-full rounded-full bg-[var(--teal)]" style={{ width: `${score}%` }} />
+      </div>
+      {factors.length > 0 && (
+        <ul className="mt-3 space-y-1.5">
+          {factors.map((factor) => (
+            <li
+              key={factor.label}
+              className="flex items-start justify-between gap-2 font-mono text-[10px] text-[var(--ink-soft)]"
+            >
+              <span className="min-w-0">
+                <span className="text-[var(--ink)]">+{factor.points}</span> {factor.label}
+                <span className="mt-0.5 block text-[9px] opacity-70">{factor.detail}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

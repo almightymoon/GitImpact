@@ -3,18 +3,24 @@ import path from "node:path";
 import {
   Project,
   SyntaxKind,
-  type SourceFile,
+  TypeFormatFlags,
+  type CallExpression,
   type Node,
+  type SourceFile,
+  type TypeChecker,
 } from "ts-morph";
 import {
   CODE_EXTENSIONS,
   IGNORE_PATTERNS,
   SECRET_PATTERNS,
+  type ConfidenceLevel,
   type LanguageStats,
+  type ParsedClass,
   type ParsedFile,
   type ParsedFunction,
-  type ParsedClass,
   type ParsedImport,
+  type ParsedMethod,
+  type ResolvedCall,
 } from "@gitimpact/shared";
 
 export interface LanguageParser {
@@ -44,9 +50,7 @@ function isTestFile(filePath: string): boolean {
   );
 }
 
-function languageFromPath(
-  filePath: string,
-): ParsedFile["language"] {
+function languageFromPath(filePath: string): ParsedFile["language"] {
   if (filePath.endsWith(".tsx")) return "tsx";
   if (filePath.endsWith(".jsx")) return "jsx";
   if (filePath.endsWith(".ts")) return "typescript";
@@ -59,33 +63,6 @@ function getLine(node: Node): number {
 
 function getEndLine(node: Node): number {
   return node.getEndLineNumber();
-}
-
-function extractCalls(bodyText: string): string[] {
-  const calls = new Set<string>();
-  const regex = /\b([A-Za-z_][\w$]*)\s*\(/g;
-  let match: RegExpExecArray | null;
-  const keywords = new Set([
-    "if",
-    "for",
-    "while",
-    "switch",
-    "catch",
-    "function",
-    "return",
-    "typeof",
-    "new",
-    "await",
-    "super",
-    "constructor",
-  ]);
-  while ((match = regex.exec(bodyText)) !== null) {
-    const name = match[1];
-    if (!keywords.has(name)) {
-      calls.add(name);
-    }
-  }
-  return [...calls];
 }
 
 function extractEnvVariables(content: string): string[] {
@@ -103,6 +80,289 @@ function extractEnvVariables(content: string): string[] {
   return [...found];
 }
 
+function toRepoRelative(rootDir: string, filePath: string): string {
+  const normalizedRoot = rootDir.replace(/\\/g, "/").replace(/\/$/, "");
+  const normalized = filePath.replace(/\\/g, "/");
+  if (normalized.startsWith(normalizedRoot + "/")) {
+    return normalized.slice(normalizedRoot.length + 1);
+  }
+  return normalized.replace(/^\.\//, "").replace(/^\/+/, "");
+}
+
+function resolveCallExpression(
+  call: CallExpression,
+  checker: TypeChecker,
+  rootDir: string,
+  knownFiles: Set<string>,
+): ResolvedCall {
+  const expression = call.getExpression();
+  const calleeName = expression.getKind() === SyntaxKind.PropertyAccessExpression
+    ? expression.asKindOrThrow(SyntaxKind.PropertyAccessExpression).getName()
+    : expression.getText().split(".").pop() ?? expression.getText();
+
+  const unresolved: ResolvedCall = {
+    calleeName,
+    resolvedKind: "UNRESOLVED",
+    confidence: "LOW",
+    startLine: getLine(call),
+  };
+
+  try {
+    let symbol = expression.getSymbol() ?? checker.getSymbolAtLocation(expression);
+    if (!symbol) {
+      // For property access like authService.generateToken, resolve the name node
+      if (expression.getKind() === SyntaxKind.PropertyAccessExpression) {
+        const nameNode = expression.asKindOrThrow(SyntaxKind.PropertyAccessExpression).getNameNode();
+        symbol = nameNode.getSymbol() ?? checker.getSymbolAtLocation(nameNode);
+      }
+    }
+    if (!symbol) return unresolved;
+
+    const target = symbol.getAliasedSymbol?.() ?? symbol;
+    const declarations = target.getDeclarations();
+    if (!declarations.length) return unresolved;
+
+    for (const declaration of declarations) {
+      const sourceFile = declaration.getSourceFile();
+      const absolute = sourceFile.getFilePath().replace(/\\/g, "/");
+      // Skip lib / node_modules declarations
+      if (absolute.includes("/node_modules/") || absolute.includes("/typescript/lib/")) {
+        continue;
+      }
+
+      let relative = toRepoRelative(rootDir, absolute);
+      // Match against known repo files
+      if (!knownFiles.has(relative)) {
+        const basename = path.posix.basename(absolute);
+        const match = [...knownFiles].find((f) => f.endsWith("/" + basename) || f === basename);
+        if (match) relative = match;
+        else if (!knownFiles.has(relative)) {
+          // Still record if it looks like our file
+          relative = relative.replace(/^\/+/, "");
+        }
+      }
+
+      const kind = declaration.getKind();
+
+      if (
+        kind === SyntaxKind.MethodDeclaration ||
+        kind === SyntaxKind.Constructor ||
+        kind === SyntaxKind.GetAccessor ||
+        kind === SyntaxKind.SetAccessor
+      ) {
+        const method = declaration.asKindOrThrow(
+          kind === SyntaxKind.MethodDeclaration
+            ? SyntaxKind.MethodDeclaration
+            : kind === SyntaxKind.Constructor
+              ? SyntaxKind.Constructor
+              : kind === SyntaxKind.GetAccessor
+                ? SyntaxKind.GetAccessor
+                : SyntaxKind.SetAccessor,
+        );
+        const parent = method.getParent();
+        const className =
+          parent && "getName" in parent && typeof parent.getName === "function"
+            ? (parent.getName() as string | undefined) ?? "AnonymousClass"
+            : "AnonymousClass";
+        const methodName =
+          kind === SyntaxKind.Constructor
+            ? "constructor"
+            : "getName" in method && typeof method.getName === "function"
+              ? method.getName()
+              : calleeName;
+
+        return {
+          calleeName,
+          resolvedFile: knownFiles.has(relative) ? relative : relative,
+          resolvedSymbol: methodName,
+          resolvedClassName: className,
+          resolvedKind: "METHOD",
+          confidence: knownFiles.has(relative) ? "HIGH" : "MEDIUM",
+          startLine: getLine(call),
+        };
+      }
+
+      if (
+        kind === SyntaxKind.FunctionDeclaration ||
+        kind === SyntaxKind.FunctionExpression ||
+        kind === SyntaxKind.ArrowFunction ||
+        kind === SyntaxKind.VariableDeclaration
+      ) {
+        let name = calleeName;
+        if (kind === SyntaxKind.FunctionDeclaration) {
+          name = declaration.asKindOrThrow(SyntaxKind.FunctionDeclaration).getName() ?? calleeName;
+        } else if (kind === SyntaxKind.VariableDeclaration) {
+          name = declaration.asKindOrThrow(SyntaxKind.VariableDeclaration).getName() ?? calleeName;
+        }
+
+        return {
+          calleeName,
+          resolvedFile: relative,
+          resolvedSymbol: name,
+          resolvedKind: "FUNCTION",
+          confidence: knownFiles.has(relative) ? "HIGH" : "MEDIUM",
+          startLine: getLine(call),
+        };
+      }
+
+      if (kind === SyntaxKind.ClassDeclaration) {
+        const className =
+          declaration.asKindOrThrow(SyntaxKind.ClassDeclaration).getName() ?? calleeName;
+        return {
+          calleeName,
+          resolvedFile: relative,
+          resolvedSymbol: className,
+          resolvedKind: "CLASS",
+          confidence: knownFiles.has(relative) ? "HIGH" : "MEDIUM",
+          startLine: getLine(call),
+        };
+      }
+    }
+  } catch {
+    return unresolved;
+  }
+
+  return unresolved;
+}
+
+function collectCallsInNode(
+  body: Node | undefined,
+  checker: TypeChecker,
+  rootDir: string,
+  knownFiles: Set<string>,
+): ResolvedCall[] {
+  if (!body) return [];
+  const calls: ResolvedCall[] = [];
+  const seen = new Set<string>();
+
+  body.forEachDescendant((node) => {
+    if (node.getKind() !== SyntaxKind.CallExpression) return;
+    // Skip nested call expressions that are the callee of an outer call — still collect all
+    const call = node.asKindOrThrow(SyntaxKind.CallExpression);
+    const resolved = resolveCallExpression(call, checker, rootDir, knownFiles);
+    const key = [
+      resolved.resolvedKind,
+      resolved.resolvedFile ?? "",
+      resolved.resolvedClassName ?? "",
+      resolved.resolvedSymbol ?? resolved.calleeName,
+      resolved.startLine ?? 0,
+    ].join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    calls.push(resolved);
+  });
+
+  return calls;
+}
+
+function parseSourceFileDetailed(
+  sourceFile: SourceFile,
+  content: string,
+  relativePath: string,
+  rootDir: string,
+  knownFiles: Set<string>,
+  checker: TypeChecker,
+): ParsedFile {
+  const imports: ParsedImport[] = sourceFile.getImportDeclarations().map((imp) => {
+    const moduleSpecifier = imp.getModuleSpecifierValue();
+    const resolvedSource = imp.getModuleSpecifierSourceFile();
+    let resolvedPath: string | undefined;
+    if (resolvedSource) {
+      const abs = resolvedSource.getFilePath().replace(/\\/g, "/");
+      if (!abs.includes("/node_modules/")) {
+        const rel = toRepoRelative(rootDir, abs);
+        resolvedPath = knownFiles.has(rel) ? rel : resolveImportPath(relativePath, moduleSpecifier, knownFiles);
+      }
+    } else {
+      resolvedPath = resolveImportPath(relativePath, moduleSpecifier, knownFiles);
+    }
+
+    return {
+      moduleSpecifier,
+      namedImports: imp.getNamedImports().map((named) => named.getName()),
+      defaultImport: imp.getDefaultImport()?.getText(),
+      isTypeOnly: imp.isTypeOnly(),
+      resolvedPath,
+    };
+  });
+
+  const exports: string[] = [];
+  for (const decl of sourceFile.getExportedDeclarations()) {
+    exports.push(decl[0]);
+  }
+
+  const functions: ParsedFunction[] = [];
+  for (const fn of sourceFile.getFunctions()) {
+    const name = fn.getName();
+    if (!name) continue;
+    functions.push({
+      name,
+      startLine: getLine(fn),
+      endLine: getEndLine(fn),
+      exported: fn.isExported(),
+      calls: collectCallsInNode(fn.getBody(), checker, rootDir, knownFiles),
+      parameters: fn.getParameters().map((p) => p.getName()),
+    });
+  }
+
+  for (const statement of sourceFile.getVariableStatements()) {
+    for (const declaration of statement.getDeclarations()) {
+      const initializer = declaration.getInitializer();
+      if (!initializer) continue;
+      if (
+        initializer.getKind() === SyntaxKind.ArrowFunction ||
+        initializer.getKind() === SyntaxKind.FunctionExpression
+      ) {
+        functions.push({
+          name: declaration.getName(),
+          startLine: getLine(declaration),
+          endLine: getEndLine(declaration),
+          exported: statement.isExported(),
+          calls: collectCallsInNode(initializer, checker, rootDir, knownFiles),
+          parameters: [],
+        });
+      }
+    }
+  }
+
+  const classes: ParsedClass[] = sourceFile.getClasses().map((cls) => {
+    const className = cls.getName() ?? "AnonymousClass";
+    const methods: ParsedMethod[] = cls.getMethods().map((method) => ({
+      name: method.getName(),
+      className,
+      startLine: getLine(method),
+      endLine: getEndLine(method),
+      calls: collectCallsInNode(method.getBody(), checker, rootDir, knownFiles),
+      parameters: method.getParameters().map((p) => p.getName()),
+    }));
+
+    return {
+      name: className,
+      startLine: getLine(cls),
+      endLine: getEndLine(cls),
+      exported: cls.isExported(),
+      extends: cls.getExtends()?.getText(),
+      implements: cls.getImplements().map((i) => i.getText()),
+      methods,
+    };
+  });
+
+  return {
+    path: relativePath,
+    language: languageFromPath(relativePath),
+    imports,
+    exports,
+    functions,
+    classes,
+    envVariables: extractEnvVariables(content),
+    isTest: isTestFile(relativePath),
+  };
+}
+
+/**
+ * Legacy single-file parser — kept for simple tooling.
+ * Prefer {@link parseRepository} for accurate cross-file symbol resolution.
+ */
 export class TypeScriptParser implements LanguageParser {
   parseFile(filePath: string, content: string): ParsedFile {
     const project = new Project({
@@ -116,84 +376,16 @@ export class TypeScriptParser implements LanguageParser {
         skipLibCheck: true,
       },
     });
-
     const sourceFile = project.createSourceFile(filePath, content);
-    return this.parseSourceFile(sourceFile, content);
-  }
-
-  private parseSourceFile(sourceFile: SourceFile, content: string): ParsedFile {
-    const filePath = sourceFile.getFilePath();
-
-    const imports: ParsedImport[] = sourceFile.getImportDeclarations().map((imp) => ({
-      moduleSpecifier: imp.getModuleSpecifierValue(),
-      namedImports: imp.getNamedImports().map((named) => named.getName()),
-      defaultImport: imp.getDefaultImport()?.getText(),
-      isTypeOnly: imp.isTypeOnly(),
-    }));
-
-    const exports: string[] = [];
-    for (const decl of sourceFile.getExportedDeclarations()) {
-      exports.push(decl[0]);
-    }
-
-    const functions: ParsedFunction[] = [];
-    for (const fn of sourceFile.getFunctions()) {
-      const name = fn.getName();
-      if (!name) continue;
-      functions.push({
-        name,
-        startLine: getLine(fn),
-        endLine: getEndLine(fn),
-        exported: fn.isExported(),
-        calls: extractCalls(fn.getBodyText() ?? ""),
-        parameters: fn.getParameters().map((p) => p.getName()),
-      });
-    }
-
-    for (const statement of sourceFile.getVariableStatements()) {
-      for (const declaration of statement.getDeclarations()) {
-        const initializer = declaration.getInitializer();
-        if (!initializer) continue;
-        if (
-          initializer.getKind() === SyntaxKind.ArrowFunction ||
-          initializer.getKind() === SyntaxKind.FunctionExpression
-        ) {
-          const name = declaration.getName();
-          functions.push({
-            name,
-            startLine: getLine(declaration),
-            endLine: getEndLine(declaration),
-            exported: statement.isExported(),
-            calls: extractCalls(initializer.getText()),
-            parameters: [],
-          });
-        }
-      }
-    }
-
-    const classes: ParsedClass[] = sourceFile.getClasses().map((cls) => {
-      const name = cls.getName() ?? "AnonymousClass";
-      return {
-        name,
-        startLine: getLine(cls),
-        endLine: getEndLine(cls),
-        exported: cls.isExported(),
-        extends: cls.getExtends()?.getText(),
-        implements: cls.getImplements().map((i) => i.getText()),
-        methods: cls.getMethods().map((m) => m.getName()),
-      };
-    });
-
-    return {
-      path: filePath,
-      language: languageFromPath(filePath),
-      imports,
-      exports,
-      functions,
-      classes,
-      envVariables: extractEnvVariables(content),
-      isTest: isTestFile(filePath),
-    };
+    const known = new Set([filePath]);
+    return parseSourceFileDetailed(
+      sourceFile,
+      content,
+      filePath,
+      "",
+      known,
+      project.getTypeChecker(),
+    );
   }
 }
 
@@ -210,7 +402,6 @@ export async function listCodeFiles(rootDir: string): Promise<string[]> {
         await walk(absolute, rel);
       } else if (entry.isFile() && isCodeFile(rel)) {
         const info = await stat(absolute);
-        // Skip unusually large files
         if (info.size <= 1_500_000) {
           results.push(rel.replace(/\\/g, "/"));
         }
@@ -222,6 +413,10 @@ export async function listCodeFiles(rootDir: string): Promise<string[]> {
   return results.sort();
 }
 
+/**
+ * Repository-level TypeScript project with shared TypeChecker.
+ * Enables deterministic CallExpression → Symbol → Declaration resolution.
+ */
 export async function parseRepository(
   rootDir: string,
   options?: { maxFiles?: number },
@@ -232,22 +427,61 @@ export async function parseRepository(
   contentsByPath: Map<string, string>;
   packageDeps: Record<string, string>;
 }> {
-  const parser = new TypeScriptParser();
   const relativePaths = await listCodeFiles(rootDir);
   const limited = relativePaths.slice(0, options?.maxFiles ?? 2_500);
-  const files: ParsedFile[] = [];
   const contentsByPath = new Map<string, string>();
+  const knownFiles = new Set(limited);
+
+  const project = new Project({
+    useInMemoryFileSystem: true,
+    compilerOptions: {
+      allowJs: true,
+      checkJs: false,
+      jsx: 4,
+      target: 99,
+      module: 99,
+      moduleResolution: 100,
+      esModuleInterop: true,
+      skipLibCheck: true,
+      strict: false,
+      noEmit: true,
+      allowSyntheticDefaultImports: true,
+      resolveJsonModule: true,
+    },
+  });
 
   for (const relativePath of limited) {
     const absolute = path.join(rootDir, relativePath);
     try {
       const content = await readFile(absolute, "utf8");
       contentsByPath.set(relativePath, content);
-      const parsed = parser.parseFile(relativePath, content);
-      parsed.path = relativePath;
-      files.push(parsed);
+      // Use stable posix-like paths so imports resolve across the virtual FS
+      project.createSourceFile(relativePath, content, { overwrite: true });
     } catch {
-      // Skip files that fail to parse — never execute repo code
+      continue;
+    }
+  }
+
+  const checker = project.getTypeChecker();
+  const files: ParsedFile[] = [];
+
+  for (const relativePath of limited) {
+    const content = contentsByPath.get(relativePath);
+    if (!content) continue;
+    const sourceFile = project.getSourceFile(relativePath);
+    if (!sourceFile) continue;
+    try {
+      files.push(
+        parseSourceFileDetailed(
+          sourceFile,
+          content,
+          relativePath,
+          rootDir,
+          knownFiles,
+          checker,
+        ),
+      );
+    } catch {
       continue;
     }
   }
@@ -330,10 +564,7 @@ export function resolveImportPath(
   moduleSpecifier: string,
   knownFiles: Set<string>,
 ): string | undefined {
-  if (
-    !moduleSpecifier.startsWith(".") &&
-    !moduleSpecifier.startsWith("/")
-  ) {
+  if (!moduleSpecifier.startsWith(".") && !moduleSpecifier.startsWith("/")) {
     return undefined;
   }
 
@@ -360,3 +591,5 @@ export function resolveImportPath(
   }
   return undefined;
 }
+
+export type { ConfidenceLevel, TypeFormatFlags };

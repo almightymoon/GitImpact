@@ -1,6 +1,7 @@
 export type NodeType =
   | "FILE"
   | "FUNCTION"
+  | "METHOD"
   | "CLASS"
   | "MODULE"
   | "API_ROUTE"
@@ -36,7 +37,8 @@ export type RelationType =
   | "FETCHES"
   | "CONFIGURES"
   | "DEPLOYS"
-  | "EXPORTS";
+  | "EXPORTS"
+  | "CONTAINS";
 
 export type ChangeCategory =
   | "STRUCTURAL"
@@ -79,12 +81,35 @@ export interface ParsedImport {
   resolvedPath?: string;
 }
 
+export interface ResolvedCall {
+  /** Display / callee name as written in source (e.g. save, generateToken) */
+  calleeName: string;
+  /** Exact repository-relative file of the resolved declaration, if known */
+  resolvedFile?: string;
+  /** Function or method name of the declaration */
+  resolvedSymbol?: string;
+  /** Owning class when the declaration is a method */
+  resolvedClassName?: string;
+  resolvedKind: "FUNCTION" | "METHOD" | "CLASS" | "UNRESOLVED";
+  confidence: ConfidenceLevel;
+  startLine?: number;
+}
+
 export interface ParsedFunction {
   name: string;
   startLine: number;
   endLine: number;
   exported: boolean;
-  calls: string[];
+  calls: ResolvedCall[];
+  parameters: string[];
+}
+
+export interface ParsedMethod {
+  name: string;
+  className: string;
+  startLine: number;
+  endLine: number;
+  calls: ResolvedCall[];
   parameters: string[];
 }
 
@@ -95,7 +120,7 @@ export interface ParsedClass {
   exported: boolean;
   extends?: string;
   implements: string[];
-  methods: string[];
+  methods: ParsedMethod[];
 }
 
 export interface ParsedFile {
@@ -142,6 +167,20 @@ export interface ImpactedNode {
   confidence: ConfidenceLevel;
 }
 
+export interface ImpactPathStep {
+  nodeId: string;
+  name: string;
+  file: string;
+  type: NodeType;
+  edgeType?: RelationType;
+}
+
+export interface ComplexityFactor {
+  label: string;
+  points: number;
+  detail: string;
+}
+
 export interface ImpactReport {
   changedNodes: GraphNode[];
   directImpact: ImpactedNode[];
@@ -152,6 +191,7 @@ export interface ImpactReport {
   missingTests: GraphNode[];
   maxDepth: number;
   complexityScore: number;
+  complexityBreakdown: ComplexityFactor[];
   summary: string;
 }
 

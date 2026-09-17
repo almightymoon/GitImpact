@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAnalysis, getNodeImpact, searchAnalysis } from "@gitimpact/analysis";
+import { getAnalysis, getNodeImpact, searchAnalysis, getImpactPathExplanation } from "@gitimpact/analysis";
 
 export const runtime = "nodejs";
 
@@ -16,6 +16,8 @@ export async function GET(request: Request, { params }: Params) {
   const nodeId = searchParams.get("nodeId");
   const depth = Number(searchParams.get("depth") ?? 3);
   const q = searchParams.get("q");
+  const why = searchParams.get("why");
+  const from = searchParams.get("from") ?? undefined;
 
   const analysis = await getAnalysis(id);
   if (!analysis) {
@@ -29,6 +31,14 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ results: await searchAnalysis(id, q) });
   }
 
+  if (why) {
+    const path = await getImpactPathExplanation(id, why, from);
+    if (!path) {
+      return NextResponse.json({ error: "Impact path not found" }, { status: 404 });
+    }
+    return NextResponse.json({ path });
+  }
+
   if (nodeId) {
     const impact = await getNodeImpact(id, nodeId, depth);
     if (!impact) {
@@ -40,6 +50,9 @@ export async function GET(request: Request, { params }: Params) {
   const fileNodes = analysis.graph.nodes.filter(
     (n) =>
       n.type === "FILE" ||
+      n.type === "FUNCTION" ||
+      n.type === "METHOD" ||
+      n.type === "CLASS" ||
       n.type === "SERVICE" ||
       n.type === "CONTROLLER" ||
       n.type === "COMPONENT" ||
@@ -52,7 +65,11 @@ export async function GET(request: Request, { params }: Params) {
   const fileIds = new Set(fileNodes.map((n) => n.id));
   const graphEdges = analysis.graph.edges.filter(
     (e) =>
-      (e.type === "IMPORTS" || e.type === "CONFIGURES" || e.type === "DEPENDS_ON") &&
+      (e.type === "IMPORTS" ||
+        e.type === "CALLS" ||
+        e.type === "CONFIGURES" ||
+        e.type === "DEPENDS_ON" ||
+        e.type === "CONTAINS") &&
       fileIds.has(e.from) &&
       fileIds.has(e.to),
   );

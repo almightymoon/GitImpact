@@ -79,4 +79,18 @@ cli                           Local CLI
 2. AI explains findings later (not in MVP core path)
 3. Never execute repository code
 4. Confidence levels on relationships
+
+### v0.2 — Symbol resolution
+
+Call graphs resolve through the TypeScript type checker (repository-level `ts-morph` Project), not name heuristics:
+
+```text
+CallExpression → Symbol → Declaration → exact file + function/method
+```
+
+Graph semantics:
+
+- `FILE/CLASS → * : CONTAINS`
+- `FILE → exported symbol : EXPORTS`
+- `FUNCTION/METHOD → FUNCTION/METHOD : CALLS` (resolved)
 # GitImpact

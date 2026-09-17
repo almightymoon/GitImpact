@@ -13,8 +13,9 @@ import {
   buildImpactReport,
   buildPullRequestOverview,
   classifyDiffHunk,
+  explainImpactPath,
   extractChangedSymbols,
-  mapChangedFilesToNodes,
+  mapChangesToSymbolNodes,
 } from "@gitimpact/impact-engine";
 import {
   detectFrameworkNames,
@@ -136,35 +137,19 @@ function buildGraphFromParse(parsed: Awaited<ReturnType<typeof parseRepository>>
 
 function resolveChangedNodes(
   store: GraphStore,
-  prFiles: Array<{ filename: string; patch?: string }>,
+  prFiles: Array<{ filename: string; status?: string; patch?: string }>,
 ): GraphNode[] {
-  const changedFiles = prFiles.map((f) => f.filename);
-  let changedNodes = mapChangedFilesToNodes(store, changedFiles);
-
-  for (const file of prFiles) {
+  const changes: ChangeRecord[] = prFiles.map((file) => {
     const symbols = extractChangedSymbols(file.patch);
-    for (const symbol of symbols) {
-      const fn = store.getNode(`FUNCTION:${file.filename}:${symbol}`);
-      const cls = store.getNode(`CLASS:${file.filename}:${symbol}`);
-      if (fn) changedNodes.push(fn);
-      if (cls) changedNodes.push(cls);
-    }
-  }
-
-  const seen = new Set<string>();
-  changedNodes = changedNodes.filter((node) => {
-    if (seen.has(node.id)) return false;
-    seen.add(node.id);
-    return true;
+    return {
+      filePath: file.filename,
+      changeType: classifyDiffHunk(file.patch, file.status),
+      symbolName: symbols[0],
+      symbols,
+      status: file.status,
+    };
   });
-
-  if (changedNodes.length === 0) {
-    changedNodes = changedFiles
-      .map((file) => store.findFileNode(file))
-      .filter((n): n is GraphNode => Boolean(n));
-  }
-
-  return changedNodes;
+  return mapChangesToSymbolNodes(store, changes);
 }
 
 export async function analyzeRepositoryUrl(
@@ -319,6 +304,35 @@ export async function getNodeImpact(
   return buildImpactReport(store, [node], depth);
 }
 
+export async function getImpactPathExplanation(
+  analysisIdValue: string,
+  targetNodeId: string,
+  changedNodeId?: string,
+): Promise<ReturnType<typeof explainImpactPath> | undefined> {
+  const analysis = await getAnalysis(analysisIdValue);
+  if (!analysis?.impact) return undefined;
+  const store = new GraphStore(analysis.graph);
+
+  const candidate =
+    analysis.impact.directImpact.find((i) => i.node.id === targetNodeId) ??
+    analysis.impact.indirectImpact.find((i) => i.node.id === targetNodeId);
+
+  if (candidate) {
+    return explainImpactPath(store, candidate.relationshipPath);
+  }
+
+  // Recompute from an explicit changed node if provided
+  if (changedNodeId) {
+    const report = await getNodeImpact(analysisIdValue, changedNodeId, analysis.impact.maxDepth);
+    const hit =
+      report?.directImpact.find((i) => i.node.id === targetNodeId) ??
+      report?.indirectImpact.find((i) => i.node.id === targetNodeId);
+    if (hit) return explainImpactPath(store, hit.relationshipPath);
+  }
+
+  return undefined;
+}
+
 export async function searchAnalysis(
   analysisIdValue: string,
   query: string,
@@ -338,6 +352,7 @@ export async function analyzeLocalFixture(
   const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
   const seed =
+    store.getNode("METHOD:src/auth.service.ts:AuthService.authenticate") ??
     store.findFileNode("src/auth.service.ts") ??
     store.getNodes().find((n) => n.type !== "ENV_VARIABLE");
 
@@ -370,18 +385,18 @@ export async function analyzeLocalFixture(
   return persist(stored);
 }
 
-const DEMO_PR_PATCH = `@@ -5,8 +5,8 @@ export function register(email: string) {
-   return createUser(email);
- }
+const DEMO_PR_PATCH = `@@ -10,10 +10,11 @@ export class AuthService {
+   private users = new UserRepository();
  
--export function authenticate(email: string, password: string) {
-+export function authenticate(email: string, password: string, organizationId: string) {
-   if (!email || !password) {
-     throw new Error("missing credentials");
+-  authenticate(email: string, password: string) {
++  authenticate(email: string, password: string, organizationId: string) {
+     if (!email || !password) {
+       throw new Error("missing credentials");
+     }
+     const user = this.users.findByEmail(email);
+-    return { token: "demo", email: user.email };
++    return { token: "demo", email: user.email, organizationId };
    }
--  return { token: "demo", email };
-+  return { token: "demo", email, organizationId };
- }
 `;
 
 export async function analyzeDemoPullRequest(
@@ -455,4 +470,4 @@ export async function analyzeDemoPullRequest(
   return persist(stored);
 }
 
-export { parseGitHubUrl, toGitImpactPath, isDatabaseConfigured };
+export { parseGitHubUrl, toGitImpactPath, isDatabaseConfigured, explainImpactPath };

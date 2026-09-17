@@ -8,10 +8,15 @@ import type {
   NodeType,
   ParsedFile,
   RelationType,
+  ResolvedCall,
 } from "@gitimpact/shared";
 
 function nodeId(type: NodeType, file: string, name?: string): string {
   return name ? `${type}:${file}:${name}` : `${type}:${file}`;
+}
+
+function methodNodeId(file: string, className: string, methodName: string): string {
+  return `METHOD:${file}:${className}.${methodName}`;
 }
 
 function edgeId(from: string, to: string, type: RelationType): string {
@@ -40,12 +45,24 @@ function inferFileType(file: ParsedFile): NodeType {
   return "FILE";
 }
 
+function targetIdFromResolvedCall(call: ResolvedCall): string | undefined {
+  if (call.resolvedKind === "UNRESOLVED" || !call.resolvedFile || !call.resolvedSymbol) {
+    return undefined;
+  }
+  if (call.resolvedKind === "METHOD" && call.resolvedClassName) {
+    return methodNodeId(call.resolvedFile, call.resolvedClassName, call.resolvedSymbol);
+  }
+  if (call.resolvedKind === "CLASS") {
+    return nodeId("CLASS", call.resolvedFile, call.resolvedSymbol);
+  }
+  return nodeId("FUNCTION", call.resolvedFile, call.resolvedSymbol);
+}
+
 export class DependencyGraphBuilder {
   build(files: ParsedFile[], routes: DetectedRoute[] = []): DependencyGraph {
     const nodes = new Map<string, GraphNode>();
     const edges = new Map<string, GraphEdge>();
     const knownFiles = new Set(files.map((f) => f.path));
-    const functionIndex = new Map<string, string[]>();
 
     const addNode = (node: GraphNode) => {
       if (!nodes.has(node.id)) nodes.set(node.id, node);
@@ -64,6 +81,7 @@ export class DependencyGraphBuilder {
       }
     };
 
+    // Pass 1: structural nodes
     for (const file of files) {
       const fileType = inferFileType(file);
       const fileNodeId = nodeId("FILE", file.path);
@@ -90,16 +108,16 @@ export class DependencyGraphBuilder {
           endLine: fn.endLine,
           metadata: { exported: fn.exported, parameters: fn.parameters },
         });
-        addEdge(fileNodeId, id, "EXPORTS", "HIGH");
-        const list = functionIndex.get(fn.name) ?? [];
-        list.push(id);
-        functionIndex.set(fn.name, list);
+        addEdge(fileNodeId, id, "CONTAINS", "HIGH");
+        if (fn.exported) {
+          addEdge(fileNodeId, id, "EXPORTS", "HIGH");
+        }
       }
 
       for (const cls of file.classes) {
-        const id = nodeId("CLASS", file.path, cls.name);
+        const classId = nodeId("CLASS", file.path, cls.name);
         addNode({
-          id,
+          id: classId,
           type: "CLASS",
           name: cls.name,
           file: file.path,
@@ -107,11 +125,33 @@ export class DependencyGraphBuilder {
           endLine: cls.endLine,
           metadata: {
             exported: cls.exported,
-            methods: cls.methods,
             extends: cls.extends,
+            methodCount: cls.methods.length,
           },
         });
-        addEdge(fileNodeId, id, "EXPORTS", "HIGH");
+        addEdge(fileNodeId, classId, "CONTAINS", "HIGH");
+        if (cls.exported) {
+          addEdge(fileNodeId, classId, "EXPORTS", "HIGH");
+        }
+
+        for (const method of cls.methods) {
+          const mid = methodNodeId(file.path, cls.name, method.name);
+          addNode({
+            id: mid,
+            type: "METHOD",
+            name: `${cls.name}.${method.name}`,
+            file: file.path,
+            startLine: method.startLine,
+            endLine: method.endLine,
+            metadata: {
+              className: cls.name,
+              methodName: method.name,
+              parameters: method.parameters,
+            },
+          });
+          addEdge(classId, mid, "CONTAINS", "HIGH");
+          addEdge(fileNodeId, mid, "CONTAINS", "HIGH");
+        }
       }
 
       for (const env of file.envVariables) {
@@ -126,11 +166,14 @@ export class DependencyGraphBuilder {
       }
     }
 
+    // Pass 2: imports, resolved calls, tests
     for (const file of files) {
       const fileNodeId = nodeId("FILE", file.path);
 
       for (const imp of file.imports) {
-        const resolved = resolveImportPath(file.path, imp.moduleSpecifier, knownFiles);
+        const resolved =
+          imp.resolvedPath ??
+          resolveImportPath(file.path, imp.moduleSpecifier, knownFiles);
         if (!resolved) continue;
         const targetFileId = nodeId("FILE", resolved);
         addEdge(fileNodeId, targetFileId, "IMPORTS", "HIGH");
@@ -146,32 +189,31 @@ export class DependencyGraphBuilder {
         }
       }
 
+      const wireCalls = (fromId: string, calls: ResolvedCall[]) => {
+        for (const call of calls) {
+          const target = targetIdFromResolvedCall(call);
+          if (!target) continue;
+          // Only link when target exists in graph — never invent nodes from unresolved names
+          if (!nodes.has(target)) continue;
+          addEdge(fromId, target, "CALLS", call.confidence);
+        }
+      };
+
       for (const fn of file.functions) {
-        const fromId = nodeId("FUNCTION", file.path, fn.name);
-        for (const call of fn.calls) {
-          const candidates = functionIndex.get(call) ?? [];
-          for (const candidate of candidates) {
-            if (candidate === fromId) continue;
-            const candidateFile = nodes.get(candidate)?.file;
-            if (!candidateFile) continue;
-            const imported =
-              candidateFile === file.path ||
-              file.imports.some((imp) => {
-                const resolved = resolveImportPath(
-                  file.path,
-                  imp.moduleSpecifier,
-                  knownFiles,
-                );
-                return resolved === candidateFile;
-              });
-            addEdge(fromId, candidate, "CALLS", imported ? "HIGH" : "MEDIUM");
-          }
+        wireCalls(nodeId("FUNCTION", file.path, fn.name), fn.calls);
+      }
+
+      for (const cls of file.classes) {
+        for (const method of cls.methods) {
+          wireCalls(methodNodeId(file.path, cls.name, method.name), method.calls);
         }
       }
 
       if (file.isTest) {
         for (const imp of file.imports) {
-          const resolved = resolveImportPath(file.path, imp.moduleSpecifier, knownFiles);
+          const resolved =
+            imp.resolvedPath ??
+            resolveImportPath(file.path, imp.moduleSpecifier, knownFiles);
           if (!resolved) continue;
           addEdge(fileNodeId, nodeId("FILE", resolved), "TESTS", "HIGH");
         }
@@ -292,6 +334,54 @@ export class GraphStore {
             n.type === "HOOK"),
       )
     );
+  }
+
+  findSymbolNodes(filePath: string, symbolName: string): GraphNode[] {
+    const results: GraphNode[] = [];
+    const fn = this.nodes.get(`FUNCTION:${filePath}:${symbolName}`);
+    const cls = this.nodes.get(`CLASS:${filePath}:${symbolName}`);
+    if (fn) results.push(fn);
+    if (cls) results.push(cls);
+
+    for (const node of this.getNodes()) {
+      if (node.file !== filePath) continue;
+      if (node.type === "METHOD") {
+        const methodName = String(node.metadata?.methodName ?? "");
+        const className = String(node.metadata?.className ?? "");
+        if (
+          methodName === symbolName ||
+          node.name === symbolName ||
+          node.name.endsWith(`.${symbolName}`) ||
+          `${className}.${methodName}` === symbolName
+        ) {
+          results.push(node);
+        }
+      }
+    }
+    return results;
+  }
+
+  explainPath(pathIds: string[]): Array<{
+    node: GraphNode;
+    edgeType?: RelationType;
+  }> {
+    const steps: Array<{ node: GraphNode; edgeType?: RelationType }> = [];
+    for (let i = 0; i < pathIds.length; i += 1) {
+      const node = this.nodes.get(pathIds[i]);
+      if (!node) continue;
+      let edgeType: RelationType | undefined;
+      if (i > 0) {
+        const prev = pathIds[i - 1];
+        // path is stored changed → ... → dependent (incoming traversal)
+        // edge from current(dependent side) to previous? Actually path is [changed, d1, d2]
+        // edge is from d1 → changed (incoming to changed). So from path[i] to path[i-1]
+        const edge = this.getOutgoing(pathIds[i]).find((e) => e.to === prev)
+          ?? this.getIncoming(prev).find((e) => e.from === pathIds[i]);
+        edgeType = edge?.type;
+      }
+      steps.push({ node, edgeType });
+    }
+    return steps;
   }
 
   search(query: string, limit = 25): GraphNode[] {

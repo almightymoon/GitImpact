@@ -5,3 +5,9 @@ export function createUser(email: string) {
 export function updateProfile(userId: string, name: string) {
   return { userId, name };
 }
+
+export class UserRepository {
+  findByEmail(email: string) {
+    return createUser(email);
+  }
+}
