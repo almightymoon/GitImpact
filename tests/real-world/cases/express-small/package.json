@@ -1,0 +1,6 @@
+{
+  "name": "express-small",
+  "dependencies": {
+    "express": "^4.19.0"
+  }
+}

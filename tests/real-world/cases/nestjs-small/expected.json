@@ -1,0 +1,41 @@
+{
+  "description": "NestJS-style decorators + constructor DI (adversarial for resolver)",
+  "unsupportedPatterns": [
+    "nestjs-decorators",
+    "constructor-di",
+    "module-providers-metadata"
+  ],
+  "mustCall": [
+    {
+      "from": "METHOD:src/users.service.ts:UsersService.findAll",
+      "to": "METHOD:src/users.service.ts:UsersService.findOne"
+    }
+  ],
+  "softMustCall": [
+    {
+      "from": "METHOD:src/users.controller.ts:UsersController.list",
+      "to": "METHOD:src/users.service.ts:UsersService.findAll",
+      "note": "Constructor-injected UsersService may not resolve through DI"
+    },
+    {
+      "from": "METHOD:src/users.controller.ts:UsersController.create",
+      "to": "METHOD:src/users.service.ts:UsersService.findOne",
+      "note": "Constructor-injected UsersService may not resolve through DI"
+    }
+  ],
+  "mustImport": [
+    { "from": "FILE:src/users.controller.ts", "to": "FILE:src/users.service.ts" },
+    { "from": "FILE:src/users.module.ts", "to": "FILE:src/users.controller.ts" },
+    { "from": "FILE:src/users.module.ts", "to": "FILE:src/users.service.ts" }
+  ],
+  "knownUnresolved": [
+    {
+      "pattern": "constructor-di",
+      "note": "this.users.findAll() via injected private field"
+    },
+    {
+      "pattern": "module-providers-metadata",
+      "note": "Module({ providers }) is data, not a call graph edge"
+    }
+  ]
+}

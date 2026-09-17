@@ -1,0 +1,39 @@
+{
+  "description": "Prisma-style generated client + dynamic import (adversarial)",
+  "unsupportedPatterns": [
+    "prisma-delegate-methods",
+    "dynamic-import",
+    "generated-client"
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/app.ts:register",
+      "to": "FUNCTION:src/users.repo.ts:createUser"
+    },
+    {
+      "from": "FUNCTION:src/app.ts:register",
+      "to": "FUNCTION:src/users.repo.ts:listUsers"
+    }
+  ],
+  "mustImport": [
+    { "from": "FILE:src/app.ts", "to": "FILE:src/users.repo.ts" },
+    { "from": "FILE:src/users.repo.ts", "to": "FILE:src/generated-client.ts" }
+  ],
+  "softMustCall": [
+    {
+      "from": "FUNCTION:src/users.repo.ts:listUsers",
+      "to": "METHOD:src/generated-client.ts:PrismaClient.findMany",
+      "note": "prisma.user.findMany is a nested delegate, not a class method node"
+    }
+  ],
+  "knownUnresolved": [
+    {
+      "pattern": "prisma-delegate-methods",
+      "note": "client.model.method() chain"
+    },
+    {
+      "pattern": "dynamic-import",
+      "note": "await import('./generated-client')"
+    }
+  ]
+}

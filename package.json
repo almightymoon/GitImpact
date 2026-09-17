@@ -14,6 +14,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:accuracy": "pnpm --filter @gitimpact/accuracy-tests test",
+    "test:real-world": "pnpm --filter @gitimpact/real-world-tests test",
+    "test:benchmarks": "pnpm test:accuracy && pnpm test:real-world",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

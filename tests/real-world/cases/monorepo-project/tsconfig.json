@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@acme/db": ["packages/db/src/index.ts"],
+      "@acme/ui": ["packages/ui/src/index.ts"]
+    }
+  }
+}

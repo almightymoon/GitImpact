@@ -1,0 +1,45 @@
+{
+  "description": "Workspace package aliases + multi-barrel re-exports + dynamic import",
+  "pathAliases": {
+    "@acme/db": ["packages/db/src/index.ts"],
+    "@acme/ui": ["packages/ui/src/index.ts"]
+  },
+  "unsupportedPatterns": [
+    "workspace-package-alias",
+    "multi-barrel-reexport",
+    "dynamic-import"
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:apps/web/src/page.ts:HomePage",
+      "to": "FUNCTION:packages/db/src/query.ts:queryUsers"
+    },
+    {
+      "from": "FUNCTION:apps/web/src/page.ts:HomePage",
+      "to": "FUNCTION:packages/ui/src/button.ts:Button"
+    }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:apps/web/src/page.ts",
+      "to": "FILE:packages/db/src/index.ts"
+    },
+    {
+      "from": "FILE:apps/web/src/page.ts",
+      "to": "FILE:packages/ui/src/index.ts"
+    }
+  ],
+  "softMustCall": [
+    {
+      "from": "FUNCTION:apps/web/src/page.ts:lazyHome",
+      "to": "FUNCTION:packages/db/src/query.ts:queryUsers",
+      "note": "dynamic import('@acme/db') not resolved"
+    }
+  ],
+  "knownUnresolved": [
+    {
+      "pattern": "dynamic-import",
+      "note": "await import('@acme/db')"
+    }
+  ]
+}

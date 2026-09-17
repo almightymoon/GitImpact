@@ -1,0 +1,167 @@
+{
+  "generatedAt": "2026-09-17T18:24:14.054Z",
+  "fixtures": 5,
+  "assertions": 25,
+  "softMisses": 4,
+  "unsupportedPatternCount": 11,
+  "coverage": {
+    "totalCalls": 18,
+    "resolvedCalls": 15,
+    "unresolvedCalls": 3,
+    "resolutionCoverage": 0.8333333333333334,
+    "resolutionCoveragePct": "83.3%",
+    "unresolvedSamples": [
+      {
+        "file": "monorepo-project:apps/web/src/page.ts",
+        "calleeName": "import",
+        "container": "lazyHome"
+      },
+      {
+        "file": "monorepo-project:apps/web/src/page.ts",
+        "calleeName": "q",
+        "container": "lazyHome"
+      },
+      {
+        "file": "prisma-project:src/users.repo.ts",
+        "calleeName": "import",
+        "container": "loadUsersDynamic"
+      }
+    ]
+  },
+  "metrics": {
+    "callGraph": {
+      "truePositives": 10,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 10,
+      "precision": 1,
+      "recall": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    },
+    "importGraph": {
+      "truePositives": 13,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 13,
+      "precision": 1,
+      "recall": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    },
+    "routeDetection": {
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 2,
+      "precision": 1,
+      "recall": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    }
+  },
+  "summary": {
+    "precision": "100.0%",
+    "recall": "100.0%",
+    "resolutionCoverage": "83.3%",
+    "unsupportedPatternCount": 11
+  },
+  "headline": "Resolved calls: 15 / 18 (83.3%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 11.",
+  "cases": [
+    {
+      "name": "express-small",
+      "totalCalls": 4,
+      "resolvedCalls": 4,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [
+        "middleware-compose-hof",
+        "framework-app-post-binding"
+      ],
+      "knownUnresolved": 1,
+      "softMisses": 2
+    },
+    {
+      "name": "monorepo-project",
+      "totalCalls": 4,
+      "resolvedCalls": 2,
+      "unresolvedCalls": 2,
+      "resolutionCoverage": 0.5,
+      "resolutionCoveragePct": "50.0%",
+      "unresolvedSamples": [
+        {
+          "file": "apps/web/src/page.ts",
+          "calleeName": "import",
+          "container": "lazyHome"
+        },
+        {
+          "file": "apps/web/src/page.ts",
+          "calleeName": "q",
+          "container": "lazyHome"
+        }
+      ],
+      "unsupportedPatterns": [
+        "workspace-package-alias",
+        "multi-barrel-reexport",
+        "dynamic-import"
+      ],
+      "knownUnresolved": 1,
+      "softMisses": 1
+    },
+    {
+      "name": "nestjs-small",
+      "totalCalls": 3,
+      "resolvedCalls": 3,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [
+        "nestjs-decorators",
+        "constructor-di",
+        "module-providers-metadata"
+      ],
+      "knownUnresolved": 2,
+      "softMisses": 0
+    },
+    {
+      "name": "nextjs-small",
+      "totalCalls": 4,
+      "resolvedCalls": 4,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [
+        "server-actions-directive",
+        "dynamic-import"
+      ],
+      "knownUnresolved": 1,
+      "softMisses": 0
+    },
+    {
+      "name": "prisma-project",
+      "totalCalls": 3,
+      "resolvedCalls": 2,
+      "unresolvedCalls": 1,
+      "resolutionCoverage": 0.6666666666666666,
+      "resolutionCoveragePct": "66.7%",
+      "unresolvedSamples": [
+        {
+          "file": "src/users.repo.ts",
+          "calleeName": "import",
+          "container": "loadUsersDynamic"
+        }
+      ],
+      "unsupportedPatterns": [
+        "prisma-delegate-methods",
+        "dynamic-import",
+        "generated-client"
+      ],
+      "knownUnresolved": 2,
+      "softMisses": 1
+    }
+  ]
+}

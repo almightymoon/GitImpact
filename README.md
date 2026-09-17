@@ -89,6 +89,14 @@ pnpm test:accuracy
 
 Cases live under `tests/accuracy/cases/` and assert exact CALLS/IMPORTS edges, changed symbols, blast-radius nodes, and semantic events. `pnpm test:accuracy` regenerates `tests/accuracy/results.json` with measured precision/recall (not hand-written scores).
 
+### Real-world benchmark
+
+Adversarial snapshots under `tests/real-world/cases/` (Next.js, NestJS, Express, Prisma, monorepo). Reports resolution coverage — not only labelled precision:
+
+```bash
+pnpm test:real-world
+```
+
 Call graphs resolve through the TypeScript type checker (repository-level `ts-morph` Project), not name heuristics:
 
 ```text
