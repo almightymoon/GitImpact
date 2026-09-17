@@ -11,5 +11,19 @@
       "method": "POST",
       "path": "/api/login"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/app/api/login/route.ts",
+      "to": "FILE:src/lib/auth.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/lib/auth.ts:authenticate",
+      "mustInclude": [
+        "FUNCTION:src/app/api/login/route.ts:POST"
+      ]
+    }
   ]
 }

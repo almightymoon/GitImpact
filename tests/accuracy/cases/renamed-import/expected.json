@@ -5,5 +5,19 @@
       "from": "FUNCTION:src/caller.ts:caller",
       "to": "FUNCTION:src/foo.ts:foo"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/foo.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/foo.ts:foo",
+      "mustInclude": [
+        "FUNCTION:src/caller.ts:caller"
+      ]
+    }
   ]
 }

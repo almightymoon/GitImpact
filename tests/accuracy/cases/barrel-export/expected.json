@@ -5,5 +5,19 @@
       "from": "FUNCTION:src/caller.ts:caller",
       "to": "FUNCTION:src/auth.ts:login"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/index.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/auth.ts:login",
+      "mustInclude": [
+        "FUNCTION:src/caller.ts:caller"
+      ]
+    }
   ]
 }

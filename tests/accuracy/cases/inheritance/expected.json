@@ -9,5 +9,19 @@
       "from": "METHOD:src/auth.ts:AuthService.login",
       "to": "METHOD:src/auth.ts:BaseAuth.createSession"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/auth.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "METHOD:src/auth.ts:AuthService.login",
+      "mustInclude": [
+        "FUNCTION:src/caller.ts:caller"
+      ]
+    }
   ]
 }

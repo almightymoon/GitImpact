@@ -12,5 +12,19 @@
       "to": "METHOD:src/tokens.ts:JwtIssuer.issue",
       "note": "May be UNRESOLVED/MEDIUM when only the interface signature is visible"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/tokens.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/tokens.ts:issueWith",
+      "mustInclude": [
+        "FUNCTION:src/caller.ts:caller"
+      ]
+    }
   ]
 }

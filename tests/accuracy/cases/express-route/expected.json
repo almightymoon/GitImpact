@@ -11,5 +11,19 @@
       "method": "POST",
       "path": "/login"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/routes/auth.ts",
+      "to": "FILE:src/lib/auth.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/lib/auth.ts:authenticate",
+      "mustInclude": [
+        "FUNCTION:src/routes/auth.ts:loginHandler"
+      ]
+    }
   ]
 }

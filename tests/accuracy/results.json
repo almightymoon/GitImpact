@@ -1,0 +1,243 @@
+{
+  "generatedAt": "2026-09-17T18:18:57.152Z",
+  "fixtures": 22,
+  "assertions": 98,
+  "softMisses": 2,
+  "metrics": {
+    "symbolResolution": {
+      "truePositives": 7,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 7,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    },
+    "callGraph": {
+      "truePositives": 27,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 27,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    },
+    "importGraph": {
+      "truePositives": 18,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 18,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    },
+    "impact": {
+      "truePositives": 26,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 26,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    },
+    "diffToAst": {
+      "truePositives": 4,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 4,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    },
+    "semanticDiff": {
+      "truePositives": 16,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "assertions": 16,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "precisionPct": "100.0%",
+      "recallPct": "100.0%"
+    }
+  },
+  "summary": {
+    "symbolMappingPrecision": "100.0%",
+    "symbolMappingRecall": "100.0%",
+    "callGraphPrecision": "100.0%",
+    "callGraphRecall": "100.0%",
+    "importGraphPrecision": "100.0%",
+    "importGraphRecall": "100.0%",
+    "impactPrecision": "100.0%",
+    "impactRecall": "100.0%",
+    "diffToAstMapping": "100.0%",
+    "semanticDiffAccuracy": "100.0%"
+  },
+  "headline": "GitImpact resolves 100.0% of benchmark call relationships correctly across the TypeScript accuracy suite.",
+  "fixturesDetail": [
+    {
+      "name": "anonymous-default-class",
+      "assertions": 5,
+      "truePositives": 5,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "arrow-function",
+      "assertions": 7,
+      "truePositives": 7,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "barrel-export",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "body-only-change",
+      "assertions": 5,
+      "truePositives": 5,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "class-method",
+      "assertions": 5,
+      "truePositives": 5,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "default-export",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "deletion-only-change",
+      "assertions": 9,
+      "truePositives": 9,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "duplicate-method-names",
+      "assertions": 8,
+      "truePositives": 8,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "express-route",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "function-import",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "inheritance",
+      "assertions": 4,
+      "truePositives": 4,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "interface-implementation",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "monorepo-alias",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "nested-callbacks",
+      "assertions": 2,
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "nested-calls",
+      "assertions": 5,
+      "truePositives": 5,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "nextjs-route",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "path-alias",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "re-export",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "renamed-file",
+      "assertions": 6,
+      "truePositives": 6,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "renamed-import",
+      "assertions": 3,
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "semantic-events",
+      "assertions": 10,
+      "truePositives": 10,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "test-mapping",
+      "assertions": 2,
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    }
+  ]
+}

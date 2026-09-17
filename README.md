@@ -87,7 +87,7 @@ pnpm build:packages
 pnpm test:accuracy
 ```
 
-Cases live under `tests/accuracy/cases/` and assert exact CALLS edges, changed symbols, and semantic events (e.g. `UserService.save` ≠ `OrderService.save`, `METHOD_REMOVED`, `BODY_CHANGED`).
+Cases live under `tests/accuracy/cases/` and assert exact CALLS/IMPORTS edges, changed symbols, blast-radius nodes, and semantic events. `pnpm test:accuracy` regenerates `tests/accuracy/results.json` with measured precision/recall (not hand-written scores).
 
 Call graphs resolve through the TypeScript type checker (repository-level `ts-morph` Project), not name heuristics:
 

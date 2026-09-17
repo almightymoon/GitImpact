@@ -13,5 +13,11 @@
       "to": "FUNCTION:src/math.ts:add",
       "note": "Calls inside it()/test() callbacks are not yet extracted as first-class function nodes"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/math.test.ts",
+      "to": "FILE:src/math.ts"
+    }
   ]
 }

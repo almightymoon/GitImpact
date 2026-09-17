@@ -9,5 +9,20 @@
       "from": "FUNCTION:src/caller.ts:handleLogin",
       "to": "METHOD:src/auth.ts:AnonymousClass.login"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/auth.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "METHOD:src/auth.ts:AnonymousClass.hash",
+      "mustInclude": [
+        "METHOD:src/auth.ts:AnonymousClass.login",
+        "FUNCTION:src/caller.ts:handleLogin"
+      ]
+    }
   ]
 }

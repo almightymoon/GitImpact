@@ -1,12 +1,28 @@
 {
   "description": "Path alias @/ imports resolve to the aliased source file",
   "pathAliases": {
-    "@/*": ["src/*"]
+    "@/*": [
+      "src/*"
+    ]
   },
   "mustCall": [
     {
       "from": "FUNCTION:src/caller.ts:caller",
       "to": "METHOD:src/services/auth.ts:AuthService.login"
+    }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/services/auth.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "METHOD:src/services/auth.ts:AuthService.login",
+      "mustInclude": [
+        "FUNCTION:src/caller.ts:caller"
+      ]
     }
   ]
 }

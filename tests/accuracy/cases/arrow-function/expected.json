@@ -13,5 +13,21 @@
       "from": "FUNCTION:src/caller.ts:handleLogin",
       "to": "FUNCTION:src/auth.ts:login"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/auth.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/auth.ts:sign",
+      "mustInclude": [
+        "FUNCTION:src/auth.ts:authenticate",
+        "FUNCTION:src/auth.ts:login",
+        "FUNCTION:src/caller.ts:handleLogin"
+      ]
+    }
   ]
 }

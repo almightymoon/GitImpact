@@ -9,5 +9,20 @@
       "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
       "to": "METHOD:src/auth.service.ts:AuthService.issueToken"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/auth.service.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "METHOD:src/auth.service.ts:AuthService.issueToken",
+      "mustInclude": [
+        "METHOD:src/auth.service.ts:AuthService.authenticate",
+        "FUNCTION:src/caller.ts:login"
+      ]
+    }
   ]
 }

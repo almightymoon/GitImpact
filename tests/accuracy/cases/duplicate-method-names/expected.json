@@ -15,5 +15,26 @@
       "from": "FUNCTION:src/caller.ts:run",
       "to": "METHOD:src/order-service.ts:OrderService.save"
     }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/user-service.ts"
+    },
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/order-service.ts"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "METHOD:src/user-service.ts:UserService.save",
+      "mustInclude": [
+        "FUNCTION:src/caller.ts:run"
+      ],
+      "mustNotInclude": [
+        "METHOD:src/order-service.ts:OrderService.save"
+      ]
+    }
   ]
 }

@@ -12,5 +12,13 @@
       "to": "FUNCTION:src/pipeline.ts:processItems",
       "note": "filter callback body may obscure direct CALLS depending on checker depth"
     }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/pipeline.ts:transform",
+      "mustInclude": [
+        "FUNCTION:src/pipeline.ts:processItems"
+      ]
+    }
   ]
 }

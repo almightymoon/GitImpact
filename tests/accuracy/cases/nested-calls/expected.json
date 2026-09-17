@@ -15,5 +15,14 @@
       "from": "FUNCTION:src/chain.ts:top",
       "to": "FUNCTION:src/chain.ts:leaf"
     }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/chain.ts:leaf",
+      "mustInclude": [
+        "FUNCTION:src/chain.ts:middle",
+        "FUNCTION:src/chain.ts:top"
+      ]
+    }
   ]
 }
