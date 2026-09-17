@@ -22,7 +22,7 @@ type FixtureExpected = {
   mustCall?: EdgeExpectation[];
   mustNotCall?: EdgeExpectation[];
   mustEdge?: EdgeExpectation[];
-  softMustCall?: EdgeExpectation[];
+  softMustCall?: Array<EdgeExpectation & { note?: string }>;
   mustDetectRoutes?: Array<{ method: string; path: string }>;
   diffCases?: Array<{
     file: string;
@@ -81,8 +81,16 @@ describe("GitImpact accuracy fixtures", async () => {
             ).toBe(true);
           }
         }
-        return;
       }
+
+      const hasGraphAssertions =
+        (expected.mustCall?.length ?? 0) > 0 ||
+        (expected.mustNotCall?.length ?? 0) > 0 ||
+        (expected.mustEdge?.length ?? 0) > 0 ||
+        (expected.mustDetectRoutes?.length ?? 0) > 0 ||
+        (expected.softMustCall?.length ?? 0) > 0;
+
+      if (!hasGraphAssertions) return;
 
       const parsed = await parseRepository(fixtureDir, {
         pathAliases: expected.pathAliases,

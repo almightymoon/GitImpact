@@ -1,0 +1,17 @@
+{
+  "description": "Const arrow functions become FUNCTION nodes and resolve CALLS edges",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/auth.ts:authenticate",
+      "to": "FUNCTION:src/auth.ts:sign"
+    },
+    {
+      "from": "FUNCTION:src/auth.ts:login",
+      "to": "FUNCTION:src/auth.ts:authenticate"
+    },
+    {
+      "from": "FUNCTION:src/caller.ts:handleLogin",
+      "to": "FUNCTION:src/auth.ts:login"
+    }
+  ]
+}

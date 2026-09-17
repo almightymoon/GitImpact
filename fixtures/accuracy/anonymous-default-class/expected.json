@@ -1,0 +1,13 @@
+{
+  "description": "Anonymous default-export classes use AnonymousClass and resolve method CALLS",
+  "mustCall": [
+    {
+      "from": "METHOD:src/auth.ts:AnonymousClass.login",
+      "to": "METHOD:src/auth.ts:AnonymousClass.hash"
+    },
+    {
+      "from": "FUNCTION:src/caller.ts:handleLogin",
+      "to": "METHOD:src/auth.ts:AnonymousClass.login"
+    }
+  ]
+}

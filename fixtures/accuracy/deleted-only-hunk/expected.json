@@ -1,0 +1,27 @@
+{
+  "description": "Deleted-only hunks still map to the enclosing method via deletion anchors + old AST",
+  "diffCases": [
+    {
+      "file": "src/auth.service.ts",
+      "patch": "@@ -2,4 +2,3 @@\n   generateToken(payload: string) {\n-    const unused = computeUnused();\n     return sign(payload, \"secret\");\n   }\n",
+      "mustEnclose": [
+        {
+          "kind": "METHOD",
+          "name": "generateToken",
+          "className": "AuthService"
+        }
+      ]
+    },
+    {
+      "file": "src/auth-removed-method.ts",
+      "patch": "@@ -1,8 +1,4 @@\n export class AuthService {\n-  generateToken(payload: string) {\n-    return sign(payload, \"secret\");\n-  }\n-\n   refresh(payload: string) {\n     return sign(payload, \"refresh\");\n   }\n",
+      "mustEnclose": [
+        {
+          "kind": "METHOD",
+          "name": "generateToken",
+          "className": "AuthService"
+        }
+      ]
+    }
+  ]
+}

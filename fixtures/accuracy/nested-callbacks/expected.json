@@ -1,0 +1,16 @@
+{
+  "description": "Calls inside nested callbacks still resolve to the enclosing named function",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/pipeline.ts:processItems",
+      "to": "FUNCTION:src/pipeline.ts:transform"
+    }
+  ],
+  "softMustCall": [
+    {
+      "from": "FUNCTION:src/pipeline.ts:runPipeline",
+      "to": "FUNCTION:src/pipeline.ts:processItems",
+      "note": "filter callback body may obscure direct CALLS depending on checker depth"
+    }
+  ]
+}

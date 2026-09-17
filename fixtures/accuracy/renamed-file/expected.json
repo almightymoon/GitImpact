@@ -1,0 +1,26 @@
+{
+  "description": "Renamed files still resolve CALLS at the new path; rename patches map enclosing symbols",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:login",
+      "to": "METHOD:src/auth.service.ts:AuthService.authenticate"
+    },
+    {
+      "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "to": "METHOD:src/auth.service.ts:AuthService.issueToken"
+    }
+  ],
+  "diffCases": [
+    {
+      "file": "src/auth.service.ts",
+      "patch": "diff --git a/src/old-auth.ts b/src/auth.service.ts\nsimilarity index 92%\nrename from src/old-auth.ts\nrename to src/auth.service.ts\n@@ -1,8 +1,8 @@\n export class AuthService {\n   authenticate(user: string) {\n-    return this.issueToken(user);\n+    return this.issueToken(user.trim());\n   }\n \n   issueToken(user: string) {\n",
+      "mustEnclose": [
+        {
+          "kind": "METHOD",
+          "name": "authenticate",
+          "className": "AuthService"
+        }
+      ]
+    }
+  ]
+}

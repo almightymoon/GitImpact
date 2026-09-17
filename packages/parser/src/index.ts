@@ -665,8 +665,11 @@ export function resolveImportPath(
 export type { ConfidenceLevel, TypeFormatFlags };
 export {
   parseChangedLinesFromPatch,
+  parseChangedLineRangesFromPatch,
+  reconstructOldContent,
   findEnclosingSymbols,
   mapPatchToEnclosingSymbols,
   enclosingSymbolToNodeId,
   type EnclosingSymbol,
+  type ChangedLineRanges,
 } from "./diff-to-ast.js";
