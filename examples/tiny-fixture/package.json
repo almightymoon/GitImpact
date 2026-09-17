@@ -1,5 +1,10 @@
 {
   "name": "tiny-fixture",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "express": "^4.21.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0"
+  }
 }

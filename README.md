@@ -30,13 +30,26 @@ Open [http://localhost:3000](http://localhost:3000).
 - Repo demo: [/demo/tiny-fixture](http://localhost:3000/demo/tiny-fixture)
 - PR demo: [/demo/tiny-fixture/pull/1](http://localhost:3000/demo/tiny-fixture/pull/1) (Overview · Graph · Changes · Tests · APIs)
 
-Optional env:
+## Persistence
+
+Analyses are cached in memory and, when configured, written to Postgres.
 
 ```bash
-export GITHUB_TOKEN=...          # higher PR API rate limits
-export GITIMPACT_MAX_FILES=800   # parse cap (default 800)
-export GITIMPACT_CACHE_DIR=./.repos
+cp .env.example apps/web/.env.local
+pnpm db:up          # starts Postgres via Docker
+# schema auto-applies from packages/db/drizzle/0000_init.sql on first boot
+pnpm build:packages
+pnpm --filter @gitimpact/web dev
 ```
+
+Without `DATABASE_URL`, GitImpact still works with in-memory storage (lost on restart).
+
+## Framework route detection
+
+MVP detectors:
+
+- **Next.js** — `app/api/**/route.ts` and `pages/api/**`
+- **Express** — `app.get/post/...`, `router.get/...`, `.route().get(...)`
 
 ### CLI
 
@@ -48,14 +61,16 @@ node cli/dist/index.js analyze github.com/owner/repo
 ## Monorepo
 
 ```text
-apps/web                 Next.js UI + API
-packages/shared          Shared types
-packages/git             GitHub URL + clone helpers
-packages/parser          TS/JS AST extraction
-packages/graph           Dependency graph builder
-packages/impact-engine   Blast-radius traversal
-packages/analysis        Orchestration + in-memory store
-cli                      Local CLI
+apps/web                      Next.js UI + API
+packages/shared               Shared types
+packages/git                  GitHub URL + clone helpers
+packages/parser               TS/JS AST extraction
+packages/framework-detector   Next.js + Express route detection
+packages/graph                Dependency graph builder
+packages/impact-engine        Blast-radius traversal
+packages/db                   Postgres + Drizzle persistence
+packages/analysis             Orchestration + cache
+cli                           Local CLI
 ```
 
 ## Principles

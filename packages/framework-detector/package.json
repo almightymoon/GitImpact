@@ -1,5 +1,5 @@
 {
-  "name": "@gitimpact/analysis",
+  "name": "@gitimpact/framework-detector",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,13 +18,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@gitimpact/shared": "workspace:*",
-    "@gitimpact/git": "workspace:*",
-    "@gitimpact/parser": "workspace:*",
-    "@gitimpact/graph": "workspace:*",
-    "@gitimpact/impact-engine": "workspace:*",
-    "@gitimpact/framework-detector": "workspace:*",
-    "@gitimpact/db": "workspace:*"
+    "@gitimpact/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

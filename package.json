@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
-    "build:packages": "pnpm --filter @gitimpact/shared build && pnpm --filter @gitimpact/git build && pnpm --filter @gitimpact/parser build && pnpm --filter @gitimpact/graph build && pnpm --filter @gitimpact/impact-engine build && pnpm --filter @gitimpact/analysis build && pnpm --filter @gitimpact/cli build",
+    "build:packages": "pnpm --filter @gitimpact/shared build && pnpm --filter @gitimpact/git build && pnpm --filter @gitimpact/parser build && pnpm --filter @gitimpact/framework-detector build && pnpm --filter @gitimpact/graph build && pnpm --filter @gitimpact/impact-engine build && pnpm --filter @gitimpact/db build && pnpm --filter @gitimpact/analysis build && pnpm --filter @gitimpact/cli build",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:push": "pnpm --filter @gitimpact/db db:push",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",

@@ -121,3 +121,9 @@ a {
   stroke-dasharray: 6 6;
   animation: dash-flow 1s linear infinite;
 }
+
+/* Keep React Flow labels from blowing out layout */
+.react-flow__node {
+  max-width: 180px;
+  overflow: hidden;
+}

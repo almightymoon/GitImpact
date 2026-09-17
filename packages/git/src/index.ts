@@ -98,34 +98,38 @@ export async function cloneOrUpdateRepository(options: {
 
   await ensureDir(path.dirname(clonePath));
 
-  if (await exists(path.join(clonePath, ".git"))) {
-    await execFileAsync("git", ["fetch", "--depth", "1", "origin"], {
-      cwd: clonePath,
-      timeout: 120_000,
-    });
-    if (branch) {
-      await execFileAsync("git", ["checkout", branch], {
-        cwd: clonePath,
-        timeout: 60_000,
-      }).catch(async () => {
-        await execFileAsync("git", ["checkout", "-B", branch, `origin/${branch}`], {
-          cwd: clonePath,
-          timeout: 60_000,
-        });
-      });
-    } else {
-      await execFileAsync("git", ["pull", "--ff-only"], {
+  try {
+    if (await exists(path.join(clonePath, ".git"))) {
+      await execFileAsync("git", ["fetch", "--depth", "1", "origin"], {
         cwd: clonePath,
         timeout: 120_000,
-      }).catch(() => undefined);
+      });
+      if (branch) {
+        await execFileAsync("git", ["checkout", branch], {
+          cwd: clonePath,
+          timeout: 60_000,
+        }).catch(async () => {
+          await execFileAsync("git", ["checkout", "-B", branch, `origin/${branch}`], {
+            cwd: clonePath,
+            timeout: 60_000,
+          });
+        });
+      } else {
+        await execFileAsync("git", ["pull", "--ff-only"], {
+          cwd: clonePath,
+          timeout: 120_000,
+        }).catch(() => undefined);
+      }
+    } else {
+      const args = ["clone", "--depth", "1"];
+      if (branch) {
+        args.push("--branch", branch);
+      }
+      args.push(url, clonePath);
+      await execFileAsync("git", args, { timeout: 180_000 });
     }
-  } else {
-    const args = ["clone", "--depth", "1"];
-    if (branch) {
-      args.push("--branch", branch);
-    }
-    args.push(url, clonePath);
-    await execFileAsync("git", args, { timeout: 180_000 });
+  } catch (error) {
+    throw new Error(friendlyGitError(error, url));
   }
 
   const { stdout } = await execFileAsync(
@@ -143,6 +147,31 @@ export async function cloneOrUpdateRepository(options: {
   };
 }
 
+function friendlyGitError(error: unknown, url: string): string {
+  const raw =
+    error instanceof Error
+      ? `${error.message}${"stderr" in error && typeof (error as { stderr?: unknown }).stderr === "string" ? `\n${(error as { stderr: string }).stderr}` : ""}`
+      : String(error);
+
+  if (/Could not resolve host|nodename nor servname|getaddrinfo/i.test(raw)) {
+    return `Could not reach GitHub (DNS/network). Check your internet connection, then retry. Tried: ${url}`;
+  }
+  if (/Repository not found|Authentication failed|could not read Username/i.test(raw)) {
+    return `GitHub repository not found or private. For private repos, set GITHUB_TOKEN. Tried: ${url}`;
+  }
+  if (/timed out|ETIMEDOUT|timeout/i.test(raw)) {
+    return `Git clone timed out while fetching ${url}. Retry in a moment.`;
+  }
+
+  const compact = raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 4)
+    .join(" ");
+  return `Failed to clone repository: ${compact}`;
+}
+
 export async function fetchPullRequestHead(options: {
   owner: string;
   repo: string;
@@ -156,23 +185,27 @@ export async function fetchPullRequestHead(options: {
 
   await ensureDir(path.dirname(clonePath));
 
-  if (!(await exists(path.join(clonePath, ".git")))) {
-    await execFileAsync("git", ["clone", "--depth", "1", url, clonePath], {
-      timeout: 180_000,
+  try {
+    if (!(await exists(path.join(clonePath, ".git")))) {
+      await execFileAsync("git", ["clone", "--depth", "1", url, clonePath], {
+        timeout: 180_000,
+      });
+    }
+
+    // GitHub exposes PR heads as pull/<n>/head
+    await execFileAsync(
+      "git",
+      ["fetch", "--depth", "1", "origin", `pull/${number}/head:pr-${number}`],
+      { cwd: clonePath, timeout: 120_000 },
+    );
+
+    await execFileAsync("git", ["checkout", `pr-${number}`], {
+      cwd: clonePath,
+      timeout: 60_000,
     });
+  } catch (error) {
+    throw new Error(friendlyGitError(error, url));
   }
-
-  // GitHub exposes PR heads as pull/<n>/head
-  await execFileAsync(
-    "git",
-    ["fetch", "--depth", "1", "origin", `pull/${number}/head:pr-${number}`],
-    { cwd: clonePath, timeout: 120_000 },
-  );
-
-  await execFileAsync("git", ["checkout", `pr-${number}`], {
-    cwd: clonePath,
-    timeout: 60_000,
-  });
 
   return {
     owner,

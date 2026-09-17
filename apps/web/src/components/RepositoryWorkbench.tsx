@@ -136,6 +136,11 @@ export function RepositoryWorkbench({
     [fetchImpact],
   );
 
+  const clearSelection = useCallback(() => {
+    setSelectedNodeId(null);
+    setImpact(null);
+  }, []);
+
   const impactedIds = useMemo(() => {
     if (!impact) return new Map<string, string>();
     const map = new Map<string, string>();
@@ -194,12 +199,14 @@ export function RepositoryWorkbench({
     <main className="min-h-screen">
       <header className="border-b border-[var(--line)]/80 bg-white/70 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-4 px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="font-display text-lg font-bold">
+          <div className="flex min-w-0 items-center gap-4">
+            <Link href="/" className="shrink-0 font-display text-lg font-bold">
               GitImpact
             </Link>
-            <div>
-              <p className="font-mono text-sm text-[var(--ink)]">{title}</p>
+            <div className="min-w-0 overflow-hidden">
+              <p className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm text-[var(--ink)]" title={title}>
+                {title}
+              </p>
               {data.pullRequest ? (
                 <p className="text-xs text-[var(--ink-soft)]/80">
                   {data.pullRequest.title}
@@ -295,31 +302,45 @@ export function RepositoryWorkbench({
       ) : null}
 
       {(!showPrChrome || tab === "graph") && (
-        <div className="mx-auto grid max-w-[1400px] gap-6 px-6 py-6 lg:grid-cols-[280px_minmax(0,1fr)_300px]">
-          <aside className="space-y-4">
+        <div className="mx-auto grid max-w-[1400px] gap-6 px-6 py-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)_minmax(0,300px)]">
+          <aside className="min-w-0 space-y-4 overflow-hidden">
             <Stats summary={data.summary} />
-            <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-4">
-              <label className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
-                Search files
-              </label>
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/70 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <label className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
+                  Search files
+                </label>
+                {selectedNodeId ? (
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    className="shrink-0 text-[11px] text-[var(--teal)] hover:underline"
+                  >
+                    Show all
+                  </button>
+                ) : null}
+              </div>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="authenticate"
-                className="mt-2 w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-mono text-sm outline-none focus:border-[var(--teal)]"
+                className="mt-2 w-full min-w-0 rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-mono text-sm outline-none focus:border-[var(--teal)]"
               />
-              <ul className="mt-3 max-h-[420px] space-y-1 overflow-auto">
+              <ul className="mt-3 max-h-[420px] space-y-1 overflow-x-hidden overflow-y-auto">
                 {filteredNodes.slice(0, 80).map((node) => (
-                  <li key={node.id}>
+                  <li key={node.id} className="min-w-0 max-w-full">
                     <button
                       type="button"
                       onClick={() => fetchImpact(node.id)}
-                      className={`w-full rounded-lg px-2 py-2 text-left text-xs transition hover:bg-[var(--fog)] ${
+                      title={`${node.name}\n${node.file}`}
+                      className={`block w-full max-w-full overflow-hidden rounded-lg px-2 py-2 text-left text-xs transition hover:bg-[var(--fog)] ${
                         selectedNodeId === node.id ? "bg-[var(--fog)]" : ""
                       }`}
                     >
-                      <span className="block truncate font-medium">{node.name}</span>
-                      <span className="block truncate font-mono text-[10px] text-[var(--ink-soft)]/70">
+                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-medium">
+                        {node.name}
+                      </span>
+                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[var(--ink-soft)]/70">
                         {node.file}
                       </span>
                     </button>
@@ -329,17 +350,32 @@ export function RepositoryWorkbench({
             </div>
           </aside>
 
-          <section className="min-h-[640px] overflow-hidden rounded-2xl border border-[var(--line)] bg-white/80">
-            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-              <div>
+          <section className="min-h-[640px] min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/80">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
+              <div className="min-w-0 flex-1">
                 <h2 className="font-display text-lg font-semibold">
-                  {showPrChrome ? "Pull Request Impact Graph" : "Dependency Graph"}
+                  {selectedNodeId
+                    ? "Blast radius"
+                    : showPrChrome
+                      ? "Pull Request Impact Graph"
+                      : "Dependency Graph"}
                 </h2>
-                <p className="text-xs text-[var(--ink-soft)]/70">
-                  Click a node to compute blast radius · depth {depth}
+                <p className="truncate text-xs text-[var(--ink-soft)]/70">
+                  {selectedNodeId
+                    ? "Focused on selected file · return to full repository graph anytime"
+                    : `Click a node to compute blast radius · depth ${depth}`}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-3">
+                {selectedNodeId ? (
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    className="rounded-full bg-[var(--ink)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--ink-soft)]"
+                  >
+                    ← Back to overview
+                  </button>
+                ) : null}
                 <label className="font-mono text-[11px] text-[var(--ink-soft)]">Depth</label>
                 <input
                   type="range"
@@ -354,25 +390,39 @@ export function RepositoryWorkbench({
                 />
               </div>
             </div>
-            <div className="h-[600px]">
+            <div className="h-[600px] overflow-hidden">
               <ImpactGraph
                 nodes={data.graph.nodes}
                 edges={data.graph.edges}
                 impacted={impactedIds}
                 selectedId={selectedNodeId}
                 onSelect={(id) => fetchImpact(id)}
+                onClear={clearSelection}
               />
             </div>
           </section>
 
-          <aside className="space-y-4">
-            <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-4">
-              <h3 className="font-display text-base font-semibold">Change Impact</h3>
+          <aside className="min-w-0 space-y-4 overflow-hidden">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/70 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-display text-base font-semibold">Change Impact</h3>
+                {selectedNodeId ? (
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    className="shrink-0 rounded-full border border-[var(--line)] px-2.5 py-1 text-[11px] text-[var(--ink-soft)] hover:border-[var(--teal)] hover:text-[var(--ink)]"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
               {pending ? (
                 <p className="mt-3 font-mono text-xs text-[var(--ink-soft)]">Computing…</p>
               ) : impact ? (
-                <div className="mt-3 space-y-3">
-                  <p className="text-sm leading-relaxed text-[var(--ink-soft)]">{impact.summary}</p>
+                <div className="mt-3 min-w-0 space-y-3 overflow-hidden">
+                  <p className="break-words text-sm leading-relaxed text-[var(--ink-soft)]">
+                    {impact.summary}
+                  </p>
                   <dl className="grid grid-cols-2 gap-2 text-sm">
                     <Metric label="Affected files" value={impact.affectedFiles.length} />
                     <Metric label="Direct" value={impact.directImpact.length} />
@@ -390,22 +440,25 @@ export function RepositoryWorkbench({
             </div>
 
             {impact && (
-              <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-4">
+              <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--line)] bg-white/70 p-4">
                 <h3 className="font-display text-base font-semibold">Dependents</h3>
-                <ul className="mt-3 max-h-[360px] space-y-2 overflow-auto">
+                <ul className="mt-3 max-h-[360px] space-y-2 overflow-x-hidden overflow-y-auto">
                   {[...impact.directImpact, ...impact.indirectImpact].slice(0, 40).map((item) => (
-                    <li key={item.node.id} className="flex items-start gap-2 text-xs">
+                    <li key={item.node.id} className="flex min-w-0 items-start gap-2 text-xs">
                       <span
                         className="mt-1 h-2 w-2 shrink-0 rounded-full"
                         style={{ background: severityColor[item.severity] }}
                       />
                       <button
                         type="button"
-                        className="text-left hover:text-[var(--teal)]"
+                        title={item.node.file}
+                        className="min-w-0 flex-1 overflow-hidden text-left hover:text-[var(--teal)]"
                         onClick={() => fetchImpact(item.node.id)}
                       >
-                        <span className="block font-medium">{item.node.name}</span>
-                        <span className="font-mono text-[10px] text-[var(--ink-soft)]/70">
+                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-medium">
+                          {item.node.name}
+                        </span>
+                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[var(--ink-soft)]/70">
                           d{item.depth} · {item.node.file}
                         </span>
                       </button>

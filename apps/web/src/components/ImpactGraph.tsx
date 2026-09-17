@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, memo } from "react";
 import {
   Background,
   Controls,
@@ -9,8 +9,11 @@ import {
   useEdgesState,
   useNodesState,
   MarkerType,
+  Handle,
+  Position,
   type Edge,
   type Node,
+  type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { GraphEdge, GraphNode } from "@gitimpact/shared";
@@ -22,19 +25,82 @@ const severityFill: Record<string, string> = {
   NEUTRAL: "#64748b",
 };
 
+type ImpactNodeData = {
+  title: string;
+  subtitle: string;
+  severity: string;
+  selected: boolean;
+};
+
+function ImpactNode({ data }: NodeProps) {
+  const nodeData = data as ImpactNodeData;
+  const border = nodeData.selected
+    ? "#0f7a6c"
+    : severityFill[nodeData.severity] ?? severityFill.NEUTRAL;
+
+  return (
+    <div
+      title={`${nodeData.title}\n${nodeData.subtitle}`}
+      style={{
+        width: 168,
+        maxWidth: 168,
+        overflow: "hidden",
+        borderRadius: 12,
+        border: `1.5px solid ${border}`,
+        background: nodeData.selected ? "#0b1220" : "#ffffff",
+        color: nodeData.selected ? "#f7fafc" : "#0b1220",
+        boxShadow:
+          nodeData.severity !== "NEUTRAL"
+            ? `0 0 0 3px ${(severityFill[nodeData.severity] ?? "#64748b")}22`
+            : undefined,
+        padding: "8px 10px",
+      }}
+    >
+      <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          lineHeight: 1.25,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {nodeData.title}
+      </div>
+      <div
+        style={{
+          marginTop: 2,
+          fontSize: 9,
+          fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+          opacity: 0.7,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {nodeData.subtitle}
+      </div>
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
+    </div>
+  );
+}
+
+const nodeTypes = { impact: memo(ImpactNode) };
+
 function layoutNodes(
   nodes: GraphNode[],
   impacted: Map<string, string>,
   selectedId: string | null,
 ): Node[] {
-  // Prefer impacted subgraph when available for readability
   const focus = impacted.size
     ? nodes.filter((n) => impacted.has(n.id) || impacted.has(`FILE:${n.file}`))
     : nodes;
 
   const pool = (focus.length > 0 ? focus : nodes).slice(0, 120);
-
   const columns = Math.max(3, Math.ceil(Math.sqrt(pool.length)));
+
   return pool.map((node, index) => {
     const col = index % columns;
     const row = Math.floor(index / columns);
@@ -42,28 +108,18 @@ function layoutNodes(
       impacted.get(node.id) ??
       impacted.get(`FILE:${node.file}`) ??
       "NEUTRAL";
-    const isSelected = node.id === selectedId;
+
     return {
       id: node.id,
-      position: { x: col * 220, y: row * 110 },
+      type: "impact",
+      position: { x: col * 200, y: row * 100 },
       data: {
-        label: (
-          <div className="px-1 py-0.5">
-            <div className="text-[11px] font-semibold leading-tight">{node.name}</div>
-            <div className="font-mono text-[9px] opacity-70">{node.type}</div>
-          </div>
-        ),
-      },
-      style: {
-        border: `1.5px solid ${isSelected ? "#0f7a6c" : severityFill[severity]}`,
-        background: isSelected ? "#0b1220" : "#ffffff",
-        color: isSelected ? "#f7fafc" : "#0b1220",
-        borderRadius: 12,
-        fontSize: 12,
-        width: 170,
-        boxShadow: severity !== "NEUTRAL" ? `0 0 0 3px ${severityFill[severity]}22` : undefined,
-      },
-    } satisfies Node;
+        title: node.name,
+        subtitle: node.type,
+        severity,
+        selected: node.id === selectedId,
+      } satisfies ImpactNodeData,
+    };
   });
 }
 
@@ -77,7 +133,12 @@ function layoutEdges(edges: GraphEdge[], visibleIds: Set<string>): Edge[] {
       target: edge.to,
       animated: edge.type === "IMPORTS",
       style: { stroke: "#94a3b8", strokeWidth: 1.2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8", width: 16, height: 16 },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: "#94a3b8",
+        width: 16,
+        height: 16,
+      },
     }));
 }
 
@@ -87,12 +148,14 @@ export function ImpactGraph({
   impacted,
   selectedId,
   onSelect,
+  onClear,
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
   impacted: Map<string, string>;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onClear?: () => void;
 }) {
   const initialNodes = useMemo(
     () => layoutNodes(nodes, impacted, selectedId),
@@ -119,9 +182,11 @@ export function ImpactGraph({
     <ReactFlow
       nodes={rfNodes}
       edges={rfEdges}
+      nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onNodeClick={(_, node) => onSelect(node.id)}
+      onPaneClick={() => onClear?.()}
       fitView
       minZoom={0.2}
       maxZoom={1.6}

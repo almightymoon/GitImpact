@@ -1,5 +1,5 @@
 {
-  "name": "@gitimpact/analysis",
+  "name": "@gitimpact/db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,19 +15,19 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@gitimpact/shared": "workspace:*",
-    "@gitimpact/git": "workspace:*",
-    "@gitimpact/parser": "workspace:*",
-    "@gitimpact/graph": "workspace:*",
-    "@gitimpact/impact-engine": "workspace:*",
-    "@gitimpact/framework-detector": "workspace:*",
-    "@gitimpact/db": "workspace:*"
+    "drizzle-orm": "^0.44.2",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
+    "drizzle-kit": "^0.31.1",
     "typescript": "^5.8.3"
   }
 }

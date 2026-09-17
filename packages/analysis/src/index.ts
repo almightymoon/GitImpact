@@ -16,12 +16,23 @@ import {
   extractChangedSymbols,
   mapChangedFilesToNodes,
 } from "@gitimpact/impact-engine";
+import {
+  detectFrameworkNames,
+  extractAllRoutes,
+} from "@gitimpact/framework-detector";
+import {
+  isDatabaseConfigured,
+  loadAnalysis as loadAnalysisFromDb,
+  saveAnalysis as saveAnalysisToDb,
+} from "@gitimpact/db";
 import type {
   AnalysisSummary,
   ChangeRecord,
   DependencyGraph,
+  DetectedRoute,
   GraphNode,
   ImpactReport,
+  ParsedFile,
   PullRequestImpactOverview,
   PullRequestMeta,
   RepositoryMeta,
@@ -38,13 +49,15 @@ export interface StoredAnalysis {
   changes?: ChangeRecord[];
   impact?: ImpactReport;
   prOverview?: PullRequestImpactOverview;
+  routes?: DetectedRoute[];
+  persisted?: boolean;
 }
 
 const globalStore = globalThis as typeof globalThis & {
   __gitimpactAnalyses?: Map<string, StoredAnalysis>;
 };
 
-function getStore(): Map<string, StoredAnalysis> {
+function getMemoryStore(): Map<string, StoredAnalysis> {
   if (!globalStore.__gitimpactAnalyses) {
     globalStore.__gitimpactAnalyses = new Map();
   }
@@ -56,15 +69,37 @@ function analysisId(owner: string, repo: string, pr?: number): string {
 }
 
 function defaultCacheDir(): string {
-  return process.env.GITIMPACT_CACHE_DIR ?? path.join(process.cwd(), ".repos");
+  // Prefer monorepo root .repos over apps/web/.repos when running Next.js
+  const fromEnv = process.env.GITIMPACT_CACHE_DIR;
+  if (fromEnv) return fromEnv;
+  const cwd = process.cwd();
+  if (cwd.endsWith(`${path.sep}apps${path.sep}web`)) {
+    return path.resolve(cwd, "../../.repos");
+  }
+  return path.join(cwd, ".repos");
+}
+
+async function persist(analysis: StoredAnalysis): Promise<StoredAnalysis> {
+  getMemoryStore().set(analysis.id, analysis);
+  if (!isDatabaseConfigured()) {
+    return { ...analysis, persisted: false };
+  }
+  try {
+    await saveAnalysisToDb(analysis);
+    return { ...analysis, persisted: true };
+  } catch (error) {
+    console.error("[gitimpact] failed to persist analysis", error);
+    return { ...analysis, persisted: false };
+  }
 }
 
 function buildSummary(
-  files: Awaited<ReturnType<typeof parseRepository>>["files"],
+  files: ParsedFile[],
   graph: DependencyGraph,
   store: GraphStore,
   languages: AnalysisSummary["languages"],
   frameworks: string[],
+  routeCount: number,
 ): AnalysisSummary {
   return {
     files: files.length,
@@ -72,10 +107,31 @@ function buildSummary(
     classes: files.reduce((sum, f) => sum + f.classes.length, 0),
     dependencies: graph.edges.filter((e) => e.type === "IMPORTS").length,
     tests: files.filter((f) => f.isTest).length,
-    apiRoutes: store.getNodes().filter((n) => n.type === "API_ROUTE").length,
+    apiRoutes: Math.max(
+      routeCount,
+      store.getNodes().filter((n) => n.type === "API_ROUTE").length,
+    ),
     languages,
     frameworks,
   };
+}
+
+function buildGraphFromParse(parsed: Awaited<ReturnType<typeof parseRepository>>): {
+  graph: DependencyGraph;
+  store: GraphStore;
+  routes: DetectedRoute[];
+  frameworks: string[];
+} {
+  const detectedFrameworks = detectFrameworkNames(parsed.files, parsed.packageDeps);
+  const frameworks = [...new Set([...parsed.frameworks, ...detectedFrameworks])];
+  const routes = extractAllRoutes(
+    parsed.files,
+    parsed.contentsByPath,
+    parsed.packageDeps,
+  );
+  const graph = buildGraph(parsed.files, routes);
+  const store = new GraphStore(graph);
+  return { graph, store, routes, frameworks };
 }
 
 function resolveChangedNodes(
@@ -115,12 +171,12 @@ export async function analyzeRepositoryUrl(
   inputUrl: string,
   options?: { depth?: number; cacheDir?: string; maxFiles?: number },
 ): Promise<StoredAnalysis> {
-  const parsed = parseGitHubUrl(inputUrl);
+  const parsedUrl = parseGitHubUrl(inputUrl);
   const cacheDir = options?.cacheDir ?? defaultCacheDir();
   const depth = options?.depth ?? 3;
 
-  if (parsed.kind === "pull_request" && parsed.prNumber) {
-    return analyzePullRequest(parsed.owner, parsed.repo, parsed.prNumber, {
+  if (parsedUrl.kind === "pull_request" && parsedUrl.prNumber) {
+    return analyzePullRequest(parsedUrl.owner, parsedUrl.repo, parsedUrl.prNumber, {
       depth,
       cacheDir,
       maxFiles: options?.maxFiles,
@@ -128,34 +184,39 @@ export async function analyzeRepositoryUrl(
   }
 
   const repository = await cloneOrUpdateRepository({
-    owner: parsed.owner,
-    repo: parsed.repo,
+    owner: parsedUrl.owner,
+    repo: parsedUrl.repo,
     cacheDir,
-    branch: parsed.branch,
+    branch: parsedUrl.branch,
   });
 
   if (!repository.clonePath) {
     throw new Error("Repository clone path missing");
   }
 
-  const { files, languages, frameworks } = await parseRepository(
-    repository.clonePath,
-    { maxFiles: options?.maxFiles ?? 1500 },
-  );
-  const graph = buildGraph(files);
-  const store = new GraphStore(graph);
+  const parsed = await parseRepository(repository.clonePath, {
+    maxFiles: options?.maxFiles ?? 1500,
+  });
+  const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
   const stored: StoredAnalysis = {
-    id: analysisId(parsed.owner, parsed.repo),
+    id: analysisId(parsedUrl.owner, parsedUrl.repo),
     createdAt: new Date().toISOString(),
     repository,
-    summary: buildSummary(files, graph, store, languages, frameworks),
+    summary: buildSummary(
+      parsed.files,
+      graph,
+      store,
+      parsed.languages,
+      frameworks,
+      routes.length,
+    ),
     graph,
-    routePath: toGitImpactPath(parsed),
+    routePath: toGitImpactPath(parsedUrl),
+    routes,
   };
 
-  getStore().set(stored.id, stored);
-  return stored;
+  return persist(stored);
 }
 
 export async function analyzePullRequest(
@@ -184,12 +245,10 @@ export async function analyzePullRequest(
     throw new Error("Repository clone path missing");
   }
 
-  const { files, languages, frameworks } = await parseRepository(
-    repository.clonePath,
-    { maxFiles: options?.maxFiles ?? 1500 },
-  );
-  const graph = buildGraph(files);
-  const store = new GraphStore(graph);
+  const parsed = await parseRepository(repository.clonePath, {
+    maxFiles: options?.maxFiles ?? 1500,
+  });
+  const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
   const changes: ChangeRecord[] = prFiles.map((file) => {
     const symbols = extractChangedSymbols(file.patch);
@@ -210,29 +269,49 @@ export async function analyzePullRequest(
     id: analysisId(owner, repo, number),
     createdAt: new Date().toISOString(),
     repository,
-    summary: buildSummary(files, graph, store, languages, frameworks),
+    summary: buildSummary(
+      parsed.files,
+      graph,
+      store,
+      parsed.languages,
+      frameworks,
+      routes.length,
+    ),
     graph,
     routePath: `/${owner}/${repo}/pull/${number}`,
     pullRequest,
     changes,
     impact,
     prOverview,
+    routes,
   };
 
-  getStore().set(stored.id, stored);
-  return stored;
+  return persist(stored);
 }
 
-export function getAnalysis(id: string): StoredAnalysis | undefined {
-  return getStore().get(id);
+export async function getAnalysis(id: string): Promise<StoredAnalysis | undefined> {
+  const memory = getMemoryStore().get(id);
+  if (memory) return memory;
+
+  if (!isDatabaseConfigured()) return undefined;
+  try {
+    const fromDb = await loadAnalysisFromDb(id);
+    if (!fromDb) return undefined;
+    const hydrated: StoredAnalysis = { ...fromDb, persisted: true };
+    getMemoryStore().set(id, hydrated);
+    return hydrated;
+  } catch (error) {
+    console.error("[gitimpact] failed to load analysis", error);
+    return undefined;
+  }
 }
 
-export function getNodeImpact(
+export async function getNodeImpact(
   analysisIdValue: string,
   nodeId: string,
   depth = 3,
-): ImpactReport | undefined {
-  const analysis = getStore().get(analysisIdValue);
+): Promise<ImpactReport | undefined> {
+  const analysis = await getAnalysis(analysisIdValue);
   if (!analysis) return undefined;
   const store = new GraphStore(analysis.graph);
   const node = store.getNode(nodeId) ?? store.findFileNode(nodeId);
@@ -240,11 +319,11 @@ export function getNodeImpact(
   return buildImpactReport(store, [node], depth);
 }
 
-export function searchAnalysis(
+export async function searchAnalysis(
   analysisIdValue: string,
   query: string,
-): GraphNode[] {
-  const analysis = getStore().get(analysisIdValue);
+): Promise<GraphNode[]> {
+  const analysis = await getAnalysis(analysisIdValue);
   if (!analysis) return [];
   return new GraphStore(analysis.graph).search(query);
 }
@@ -255,9 +334,8 @@ export async function analyzeLocalFixture(
 ): Promise<StoredAnalysis> {
   const depth = options?.depth ?? 3;
   const id = options?.id ?? "demo/tiny-fixture";
-  const { files, languages, frameworks } = await parseRepository(fixtureDir);
-  const graph = buildGraph(files);
-  const store = new GraphStore(graph);
+  const parsed = await parseRepository(fixtureDir);
+  const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
   const seed =
     store.findFileNode("src/auth.service.ts") ??
@@ -275,14 +353,21 @@ export async function analyzeLocalFixture(
       defaultBranch: "main",
       clonePath: fixtureDir,
     },
-    summary: buildSummary(files, graph, store, languages, frameworks),
+    summary: buildSummary(
+      parsed.files,
+      graph,
+      store,
+      parsed.languages,
+      frameworks,
+      routes.length,
+    ),
     graph,
     routePath: "/demo/tiny-fixture",
     impact,
+    routes,
   };
 
-  getStore().set(stored.id, stored);
-  return stored;
+  return persist(stored);
 }
 
 const DEMO_PR_PATCH = `@@ -5,8 +5,8 @@ export function register(email: string) {
@@ -304,9 +389,8 @@ export async function analyzeDemoPullRequest(
   options?: { depth?: number },
 ): Promise<StoredAnalysis> {
   const depth = options?.depth ?? 3;
-  const { files, languages, frameworks } = await parseRepository(fixtureDir);
-  const graph = buildGraph(files);
-  const store = new GraphStore(graph);
+  const parsed = await parseRepository(fixtureDir);
+  const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
   const pullRequest: PullRequestMeta = {
     owner: "demo",
@@ -351,17 +435,24 @@ export async function analyzeDemoPullRequest(
       defaultBranch: "main",
       clonePath: fixtureDir,
     },
-    summary: buildSummary(files, graph, store, languages, frameworks),
+    summary: buildSummary(
+      parsed.files,
+      graph,
+      store,
+      parsed.languages,
+      frameworks,
+      routes.length,
+    ),
     graph,
     routePath: "/demo/tiny-fixture/pull/1",
     pullRequest,
     changes,
     impact,
     prOverview,
+    routes,
   };
 
-  getStore().set(stored.id, stored);
-  return stored;
+  return persist(stored);
 }
 
-export { parseGitHubUrl, toGitImpactPath };
+export { parseGitHubUrl, toGitImpactPath, isDatabaseConfigured };

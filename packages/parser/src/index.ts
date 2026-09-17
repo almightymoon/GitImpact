@@ -225,16 +225,24 @@ export async function listCodeFiles(rootDir: string): Promise<string[]> {
 export async function parseRepository(
   rootDir: string,
   options?: { maxFiles?: number },
-): Promise<{ files: ParsedFile[]; languages: LanguageStats[]; frameworks: string[] }> {
+): Promise<{
+  files: ParsedFile[];
+  languages: LanguageStats[];
+  frameworks: string[];
+  contentsByPath: Map<string, string>;
+  packageDeps: Record<string, string>;
+}> {
   const parser = new TypeScriptParser();
   const relativePaths = await listCodeFiles(rootDir);
   const limited = relativePaths.slice(0, options?.maxFiles ?? 2_500);
   const files: ParsedFile[] = [];
+  const contentsByPath = new Map<string, string>();
 
   for (const relativePath of limited) {
     const absolute = path.join(rootDir, relativePath);
     try {
       const content = await readFile(absolute, "utf8");
+      contentsByPath.set(relativePath, content);
       const parsed = parser.parseFile(relativePath, content);
       parsed.path = relativePath;
       files.push(parsed);
@@ -244,11 +252,32 @@ export async function parseRepository(
     }
   }
 
+  const packageDeps = await readPackageDeps(rootDir);
+  const frameworks = await detectFrameworks(rootDir, files, packageDeps);
+
   return {
     files,
     languages: detectLanguages(files),
-    frameworks: await detectFrameworks(rootDir, files),
+    frameworks,
+    contentsByPath,
+    packageDeps,
   };
+}
+
+async function readPackageDeps(rootDir: string): Promise<Record<string, string>> {
+  try {
+    const pkgRaw = await readFile(path.join(rootDir, "package.json"), "utf8");
+    const pkg = JSON.parse(pkgRaw) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    return {
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+    };
+  } catch {
+    return {};
+  }
 }
 
 export function detectLanguages(files: ParsedFile[]): LanguageStats[] {
@@ -273,30 +302,20 @@ export function detectLanguages(files: ParsedFile[]): LanguageStats[] {
 export async function detectFrameworks(
   rootDir: string,
   files: ParsedFile[],
+  packageDeps?: Record<string, string>,
 ): Promise<string[]> {
+  const deps = packageDeps ?? (await readPackageDeps(rootDir));
   const frameworks = new Set<string>();
-  try {
-    const pkgRaw = await readFile(path.join(rootDir, "package.json"), "utf8");
-    const pkg = JSON.parse(pkgRaw) as {
-      dependencies?: Record<string, string>;
-      devDependencies?: Record<string, string>;
-    };
-    const deps = {
-      ...pkg.dependencies,
-      ...pkg.devDependencies,
-    };
-    if (deps.next) frameworks.add("Next.js");
-    if (deps.react) frameworks.add("React");
-    if (deps["@nestjs/core"]) frameworks.add("NestJS");
-    if (deps.express) frameworks.add("Express");
-    if (deps.fastify) frameworks.add("Fastify");
-    if (deps.vue) frameworks.add("Vue");
-    if (deps["@angular/core"]) frameworks.add("Angular");
-    if (deps.prisma || deps["@prisma/client"]) frameworks.add("Prisma");
-    if (deps["drizzle-orm"]) frameworks.add("Drizzle");
-  } catch {
-    // no package.json
-  }
+
+  if (deps.next) frameworks.add("Next.js");
+  if (deps.react) frameworks.add("React");
+  if (deps["@nestjs/core"]) frameworks.add("NestJS");
+  if (deps.express) frameworks.add("Express");
+  if (deps.fastify) frameworks.add("Fastify");
+  if (deps.vue) frameworks.add("Vue");
+  if (deps["@angular/core"]) frameworks.add("Angular");
+  if (deps.prisma || deps["@prisma/client"]) frameworks.add("Prisma");
+  if (deps["drizzle-orm"]) frameworks.add("Drizzle");
 
   const joined = files.map((f) => f.path).join("\n");
   if (joined.includes("app/api/") || joined.includes("pages/api/")) {

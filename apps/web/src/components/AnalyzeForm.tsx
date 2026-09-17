@@ -12,7 +12,10 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
-    const value = url.trim();
+    const value = url
+      .trim()
+      .replace(/\.git$/i, "")
+      .replace(/\/$/, "");
     if (!value) {
       setError("Paste a GitHub repository or pull request URL.");
       return;
@@ -64,7 +67,7 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
         </button>
       </div>
       {error ? (
-        <p className="mt-3 text-sm text-[var(--critical)]">{error}</p>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--critical)]">{error}</p>
       ) : (
         <p className="mt-3 font-mono text-xs text-[var(--ink-soft)]/60">
           MVP: public repos · TypeScript / JavaScript

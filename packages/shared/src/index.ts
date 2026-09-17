@@ -205,6 +205,28 @@ export interface AnalyzeImpactRequest {
   depth?: number;
 }
 
+export type HttpMethod =
+  | "GET"
+  | "POST"
+  | "PUT"
+  | "PATCH"
+  | "DELETE"
+  | "OPTIONS"
+  | "HEAD"
+  | "ALL"
+  | "USE";
+
+export interface DetectedRoute {
+  id: string;
+  framework: "nextjs" | "express" | "nestjs" | "unknown";
+  method: HttpMethod;
+  path: string;
+  file: string;
+  handlerName?: string;
+  confidence: ConfidenceLevel;
+  startLine?: number;
+}
+
 export const IGNORE_PATTERNS = [
   "node_modules",
   "vendor",

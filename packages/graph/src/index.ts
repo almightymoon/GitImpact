@@ -2,6 +2,7 @@ import { resolveImportPath } from "@gitimpact/parser";
 import type {
   ConfidenceLevel,
   DependencyGraph,
+  DetectedRoute,
   GraphEdge,
   GraphNode,
   NodeType,
@@ -24,6 +25,13 @@ function inferFileType(file: ParsedFile): NodeType {
   if (p.includes("service")) return "SERVICE";
   if (/\.(tsx|jsx)$/.test(p) || p.includes("/components/")) return "COMPONENT";
   if (p.includes("/hooks/") || /(^|\/)use[A-Z]/.test(p)) return "HOOK";
+  if (
+    p.includes("/app/api/") ||
+    p.includes("/pages/api/") ||
+    /(^|\/)route\.(ts|tsx|js|jsx)$/.test(p)
+  ) {
+    return "API_ROUTE";
+  }
   if (p.includes("route") || p.includes("/api/")) return "API_ROUTE";
   if (p.includes("model") || p.includes("schema") || p.includes("entity")) {
     return "DATABASE_MODEL";
@@ -33,7 +41,7 @@ function inferFileType(file: ParsedFile): NodeType {
 }
 
 export class DependencyGraphBuilder {
-  build(files: ParsedFile[]): DependencyGraph {
+  build(files: ParsedFile[], routes: DetectedRoute[] = []): DependencyGraph {
     const nodes = new Map<string, GraphNode>();
     const edges = new Map<string, GraphEdge>();
     const knownFiles = new Set(files.map((f) => f.path));
@@ -83,10 +91,9 @@ export class DependencyGraphBuilder {
           metadata: { exported: fn.exported, parameters: fn.parameters },
         });
         addEdge(fileNodeId, id, "EXPORTS", "HIGH");
-        const key = fn.name;
-        const list = functionIndex.get(key) ?? [];
+        const list = functionIndex.get(fn.name) ?? [];
         list.push(id);
-        functionIndex.set(key, list);
+        functionIndex.set(fn.name, list);
       }
 
       for (const cls of file.classes) {
@@ -145,7 +152,6 @@ export class DependencyGraphBuilder {
           const candidates = functionIndex.get(call) ?? [];
           for (const candidate of candidates) {
             if (candidate === fromId) continue;
-            // Prefer same-file or imported files
             const candidateFile = nodes.get(candidate)?.file;
             if (!candidateFile) continue;
             const imported =
@@ -168,6 +174,34 @@ export class DependencyGraphBuilder {
           const resolved = resolveImportPath(file.path, imp.moduleSpecifier, knownFiles);
           if (!resolved) continue;
           addEdge(fileNodeId, nodeId("FILE", resolved), "TESTS", "HIGH");
+        }
+      }
+    }
+
+    for (const route of routes) {
+      addNode({
+        id: route.id,
+        type: "API_ROUTE",
+        name: `${route.method} ${route.path}`,
+        file: route.file,
+        startLine: route.startLine,
+        metadata: {
+          framework: route.framework,
+          method: route.method,
+          path: route.path,
+          handlerName: route.handlerName,
+          confidence: route.confidence,
+        },
+      });
+
+      const fileNodeId = nodeId("FILE", route.file);
+      addEdge(route.id, fileNodeId, "DEPENDS_ON", route.confidence);
+      addEdge(fileNodeId, route.id, "CONFIGURES", route.confidence);
+
+      if (route.handlerName && route.handlerName !== "default" && route.handlerName !== "ALL") {
+        const handlerFn = nodeId("FUNCTION", route.file, route.handlerName);
+        if (nodes.has(handlerFn)) {
+          addEdge(route.id, handlerFn, "USES", route.confidence);
         }
       }
     }
@@ -242,8 +276,22 @@ export class GraphStore {
   }
 
   findFileNode(filePath: string): GraphNode | undefined {
-    return this.nodes.get(`FILE:${filePath}`) ??
-      this.getNodes().find((n) => n.file === filePath && (n.type === "FILE" || n.type === "SERVICE" || n.type === "CONTROLLER" || n.type === "COMPONENT" || n.type === "TEST" || n.type === "API_ROUTE" || n.type === "CONFIG" || n.type === "DATABASE_MODEL" || n.type === "HOOK"));
+    return (
+      this.nodes.get(`FILE:${filePath}`) ??
+      this.getNodes().find(
+        (n) =>
+          n.file === filePath &&
+          (n.type === "FILE" ||
+            n.type === "SERVICE" ||
+            n.type === "CONTROLLER" ||
+            n.type === "COMPONENT" ||
+            n.type === "TEST" ||
+            n.type === "API_ROUTE" ||
+            n.type === "CONFIG" ||
+            n.type === "DATABASE_MODEL" ||
+            n.type === "HOOK"),
+      )
+    );
   }
 
   search(query: string, limit = 25): GraphNode[] {
@@ -266,6 +314,9 @@ export class GraphStore {
   }
 }
 
-export function buildGraph(files: ParsedFile[]): DependencyGraph {
-  return new DependencyGraphBuilder().build(files);
+export function buildGraph(
+  files: ParsedFile[],
+  routes: DetectedRoute[] = [],
+): DependencyGraph {
+  return new DependencyGraphBuilder().build(files, routes);
 }

@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: Params) {
   const depth = Number(searchParams.get("depth") ?? 3);
   const q = searchParams.get("q");
 
-  const analysis = getAnalysis(id);
+  const analysis = await getAnalysis(id);
   if (!analysis) {
     return NextResponse.json(
       { error: "Analysis not found. Re-run analyze from the home page." },
@@ -26,18 +26,17 @@ export async function GET(request: Request, { params }: Params) {
   }
 
   if (q) {
-    return NextResponse.json({ results: searchAnalysis(id, q) });
+    return NextResponse.json({ results: await searchAnalysis(id, q) });
   }
 
   if (nodeId) {
-    const impact = getNodeImpact(id, nodeId, depth);
+    const impact = await getNodeImpact(id, nodeId, depth);
     if (!impact) {
       return NextResponse.json({ error: "Node not found" }, { status: 404 });
     }
     return NextResponse.json({ impact });
   }
 
-  // Return a trimmed graph for the UI (file-level nodes + import edges)
   const fileNodes = analysis.graph.nodes.filter(
     (n) =>
       n.type === "FILE" ||
@@ -51,20 +50,23 @@ export async function GET(request: Request, { params }: Params) {
       n.type === "HOOK",
   );
   const fileIds = new Set(fileNodes.map((n) => n.id));
-  const importEdges = analysis.graph.edges.filter(
-    (e) => e.type === "IMPORTS" && fileIds.has(e.from) && fileIds.has(e.to),
+  const graphEdges = analysis.graph.edges.filter(
+    (e) =>
+      (e.type === "IMPORTS" || e.type === "CONFIGURES" || e.type === "DEPENDS_ON") &&
+      fileIds.has(e.from) &&
+      fileIds.has(e.to),
   );
 
-  // Cap for browser performance
   const cappedNodes = fileNodes.slice(0, 400);
   const cappedIds = new Set(cappedNodes.map((n) => n.id));
-  const cappedEdges = importEdges
+  const cappedEdges = graphEdges
     .filter((e) => cappedIds.has(e.from) && cappedIds.has(e.to))
     .slice(0, 800);
 
   return NextResponse.json({
     id: analysis.id,
     createdAt: analysis.createdAt,
+    persisted: analysis.persisted ?? false,
     repository: {
       owner: analysis.repository.owner,
       name: analysis.repository.name,
@@ -76,6 +78,7 @@ export async function GET(request: Request, { params }: Params) {
     changes: analysis.changes,
     impact: analysis.impact,
     prOverview: analysis.prOverview,
+    routes: analysis.routes?.slice(0, 200) ?? [],
     graph: {
       nodes: cappedNodes,
       edges: cappedEdges,

@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gitimpact-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: gitimpact
+      POSTGRES_PASSWORD: gitimpact
+      POSTGRES_DB: gitimpact
+    volumes:
+      - gitimpact_pg:/var/lib/postgresql/data
+      - ./packages/db/drizzle/0000_init.sql:/docker-entrypoint-initdb.d/0000_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitimpact -d gitimpact"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gitimpact_pg:
