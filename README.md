@@ -116,3 +116,7 @@ Changed line ranges from Git patches map to the smallest enclosing FUNCTION/METH
 ### v0.4 — Semantic Diff Engine
 
 Unified diffs are compared as old-file AST vs new-file AST, emitting events such as `METHOD_REMOVED`, `PARAMETER_ADDED`, `CALL_ADDED`, and `BODY_CHANGED` — finer than broad STRUCTURAL / INTERFACE / BEHAVIORAL buckets.
+
+### v0.5 — Framework & Resolution Coverage
+
+Dynamic `import()`, NestJS DI (`DEPENDS_ON`) + decorator routes (`HANDLED_BY`), and Prisma delegate `QUERIES` → `DATABASE_MODEL` edges. Goal on the real-world suite: resolution coverage ≥ 90% with precision ≥ 98%.

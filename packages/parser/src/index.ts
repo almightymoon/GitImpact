@@ -22,6 +22,14 @@ import {
   type ParsedMethod,
   type ResolvedCall,
 } from "@gitimpact/shared";
+import {
+  collectDynamicImports,
+  extractConstructorDependencies,
+  extractDecoratorMeta,
+  tryResolveDynamicBindingCall,
+  tryResolveDynamicImportCall,
+  tryResolvePrismaCall,
+} from "./framework-intel.js";
 
 export interface LanguageParser {
   parseFile(filePath: string, content: string): ParsedFile;
@@ -230,16 +238,45 @@ function collectCallsInNode(
   checker: TypeChecker,
   rootDir: string,
   knownFiles: Set<string>,
-): ResolvedCall[] {
-  if (!body) return [];
+  bindingMap: Map<string, { modulePath: string; exportName: string }> = new Map(),
+  resolveSpecifier: (specifier: string) => string | undefined = () => undefined,
+): { calls: ResolvedCall[]; queries: Array<{ model: string; method: string }> } {
+  if (!body) return { calls: [], queries: [] };
   const calls: ResolvedCall[] = [];
+  const queries: Array<{ model: string; method: string }> = [];
   const seen = new Set<string>();
 
   body.forEachDescendant((node) => {
     if (node.getKind() !== SyntaxKind.CallExpression) return;
-    // Skip nested call expressions that are the callee of an outer call — still collect all
     const call = node.asKindOrThrow(SyntaxKind.CallExpression);
-    const resolved = resolveCallExpression(call, checker, rootDir, knownFiles);
+
+    const dynamicImport = tryResolveDynamicImportCall(call, resolveSpecifier);
+    if (dynamicImport) {
+      const key = `MODULE|${dynamicImport.resolvedFile ?? ""}|import|${dynamicImport.startLine ?? 0}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        calls.push(dynamicImport);
+      }
+      return;
+    }
+
+    const prisma = tryResolvePrismaCall(call);
+    if (prisma) {
+      const key = `QUERY|${prisma.query.model}|${prisma.query.method}|${prisma.call.startLine ?? 0}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        calls.push(prisma.call);
+        queries.push(prisma.query);
+      }
+      return;
+    }
+
+    let resolved = resolveCallExpression(call, checker, rootDir, knownFiles);
+    if (resolved.resolvedKind === "UNRESOLVED") {
+      const fromBinding = tryResolveDynamicBindingCall(call, bindingMap);
+      if (fromBinding) resolved = fromBinding;
+    }
+
     const key = [
       resolved.resolvedKind,
       resolved.resolvedFile ?? "",
@@ -252,7 +289,7 @@ function collectCallsInNode(
     calls.push(resolved);
   });
 
-  return calls;
+  return { calls, queries };
 }
 
 function parseSourceFileDetailed(
@@ -262,6 +299,7 @@ function parseSourceFileDetailed(
   rootDir: string,
   knownFiles: Set<string>,
   checker: TypeChecker,
+  resolveSpecifier: (specifier: string) => string | undefined,
 ): ParsedFile {
   const imports: ParsedImport[] = sourceFile.getImportDeclarations().map((imp) => {
     const moduleSpecifier = imp.getModuleSpecifierValue();
@@ -286,6 +324,9 @@ function parseSourceFileDetailed(
     };
   });
 
+  const dynamic = collectDynamicImports(sourceFile, resolveSpecifier);
+  imports.push(...dynamic.imports);
+
   const exports: string[] = [];
   for (const decl of sourceFile.getExportedDeclarations()) {
     exports.push(decl[0]);
@@ -295,13 +336,22 @@ function parseSourceFileDetailed(
   for (const fn of sourceFile.getFunctions()) {
     const name = fn.getName();
     if (!name) continue;
+    const collected = collectCallsInNode(
+      fn.getBody(),
+      checker,
+      rootDir,
+      knownFiles,
+      dynamic.bindingMap,
+      resolveSpecifier,
+    );
     functions.push({
       name,
       startLine: getLine(fn),
       endLine: getEndLine(fn),
       exported: fn.isExported(),
-      calls: collectCallsInNode(fn.getBody(), checker, rootDir, knownFiles),
+      calls: collected.calls,
       parameters: fn.getParameters().map((p) => p.getName()),
+      queries: collected.queries.length ? collected.queries : undefined,
     });
   }
 
@@ -313,13 +363,22 @@ function parseSourceFileDetailed(
         initializer.getKind() === SyntaxKind.ArrowFunction ||
         initializer.getKind() === SyntaxKind.FunctionExpression
       ) {
+        const collected = collectCallsInNode(
+          initializer,
+          checker,
+          rootDir,
+          knownFiles,
+          dynamic.bindingMap,
+          resolveSpecifier,
+        );
         functions.push({
           name: declaration.getName(),
           startLine: getLine(declaration),
           endLine: getEndLine(declaration),
           exported: statement.isExported(),
-          calls: collectCallsInNode(initializer, checker, rootDir, knownFiles),
+          calls: collected.calls,
           parameters: [],
+          queries: collected.queries.length ? collected.queries : undefined,
         });
       }
     }
@@ -327,14 +386,26 @@ function parseSourceFileDetailed(
 
   const classes: ParsedClass[] = sourceFile.getClasses().map((cls) => {
     const className = cls.getName() ?? "AnonymousClass";
-    const methods: ParsedMethod[] = cls.getMethods().map((method) => ({
-      name: method.getName(),
-      className,
-      startLine: getLine(method),
-      endLine: getEndLine(method),
-      calls: collectCallsInNode(method.getBody(), checker, rootDir, knownFiles),
-      parameters: method.getParameters().map((p) => p.getName()),
-    }));
+    const methods: ParsedMethod[] = cls.getMethods().map((method) => {
+      const collected = collectCallsInNode(
+        method.getBody(),
+        checker,
+        rootDir,
+        knownFiles,
+        dynamic.bindingMap,
+        resolveSpecifier,
+      );
+      return {
+        name: method.getName(),
+        className,
+        startLine: getLine(method),
+        endLine: getEndLine(method),
+        calls: collected.calls,
+        parameters: method.getParameters().map((p) => p.getName()),
+        decorators: extractDecoratorMeta(method),
+        queries: collected.queries.length ? collected.queries : undefined,
+      };
+    });
 
     return {
       name: className,
@@ -344,6 +415,8 @@ function parseSourceFileDetailed(
       extends: cls.getExtends()?.getText(),
       implements: cls.getImplements().map((i) => i.getText()),
       methods,
+      dependencies: extractConstructorDependencies(cls),
+      decorators: extractDecoratorMeta(cls),
     };
   });
 
@@ -378,6 +451,8 @@ export class TypeScriptParser implements LanguageParser {
     });
     const sourceFile = project.createSourceFile(filePath, content);
     const known = new Set([filePath]);
+    const resolveSpecifier = (specifier: string) =>
+      resolveImportPath(filePath, specifier, known);
     return parseSourceFileDetailed(
       sourceFile,
       content,
@@ -385,6 +460,7 @@ export class TypeScriptParser implements LanguageParser {
       "",
       known,
       project.getTypeChecker(),
+      resolveSpecifier,
     );
   }
 }
@@ -477,6 +553,9 @@ export async function parseRepository(
     const sourceFile = project.getSourceFile(relativePath);
     if (!sourceFile) continue;
     try {
+      const resolveSpecifier = (specifier: string) =>
+        resolveImportPath(relativePath, specifier, knownFiles) ??
+        resolveAliasImport(specifier, pathAliases, knownFiles);
       const parsed = parseSourceFileDetailed(
         sourceFile,
         content,
@@ -484,6 +563,7 @@ export async function parseRepository(
         rootDir,
         knownFiles,
         checker,
+        resolveSpecifier,
       );
       // Fill unresolved relative/alias imports via path maps
       for (const imp of parsed.imports) {

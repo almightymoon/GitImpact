@@ -131,12 +131,6 @@ const NOISE_CALLEES = new Set([
   "patch",
   "use",
   "listen",
-  "findMany",
-  "findUnique",
-  "findFirst",
-  "update",
-  "upsert",
-  "count",
 ]);
 
 function isApplicationCall(call: ResolvedCall): boolean {

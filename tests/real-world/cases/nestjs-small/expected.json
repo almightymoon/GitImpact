@@ -1,27 +1,42 @@
 {
-  "description": "NestJS-style decorators + constructor DI (adversarial for resolver)",
+  "description": "NestJS-style decorators + constructor DI (v0.5 framework intel)",
   "unsupportedPatterns": [
-    "nestjs-decorators",
-    "constructor-di",
     "module-providers-metadata"
   ],
   "mustCall": [
     {
       "from": "METHOD:src/users.service.ts:UsersService.findAll",
       "to": "METHOD:src/users.service.ts:UsersService.findOne"
-    }
-  ],
-  "softMustCall": [
+    },
     {
       "from": "METHOD:src/users.controller.ts:UsersController.list",
-      "to": "METHOD:src/users.service.ts:UsersService.findAll",
-      "note": "Constructor-injected UsersService may not resolve through DI"
+      "to": "METHOD:src/users.service.ts:UsersService.findAll"
     },
     {
       "from": "METHOD:src/users.controller.ts:UsersController.create",
-      "to": "METHOD:src/users.service.ts:UsersService.findOne",
-      "note": "Constructor-injected UsersService may not resolve through DI"
+      "to": "METHOD:src/users.service.ts:UsersService.findOne"
     }
+  ],
+  "mustEdge": [
+    {
+      "from": "CLASS:src/users.controller.ts:UsersController",
+      "to": "CLASS:src/users.service.ts:UsersService",
+      "type": "DEPENDS_ON"
+    },
+    {
+      "from": "API_ROUTE:nestjs:GET:/users:src/users.controller.ts",
+      "to": "METHOD:src/users.controller.ts:UsersController.list",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:nestjs:POST:/users:src/users.controller.ts",
+      "to": "METHOD:src/users.controller.ts:UsersController.create",
+      "type": "HANDLED_BY"
+    }
+  ],
+  "mustDetectRoutes": [
+    { "method": "GET", "path": "/users" },
+    { "method": "POST", "path": "/users" }
   ],
   "mustImport": [
     { "from": "FILE:src/users.controller.ts", "to": "FILE:src/users.service.ts" },
@@ -29,10 +44,6 @@
     { "from": "FILE:src/users.module.ts", "to": "FILE:src/users.service.ts" }
   ],
   "knownUnresolved": [
-    {
-      "pattern": "constructor-di",
-      "note": "this.users.findAll() via injected private field"
-    },
     {
       "pattern": "module-providers-metadata",
       "note": "Module({ providers }) is data, not a call graph edge"

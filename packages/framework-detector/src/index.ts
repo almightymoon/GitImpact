@@ -218,6 +218,61 @@ export class ExpressAnalyzer implements FrameworkAnalyzer {
   }
 }
 
+export class NestJSAnalyzer implements FrameworkAnalyzer {
+  name = "NestJS";
+
+  detect(files: ParsedFile[], packageDeps: Record<string, string> = {}): boolean {
+    if (packageDeps["@nestjs/core"] || packageDeps["@nestjs/common"]) return true;
+    return files.some((file) =>
+      file.classes.some(
+        (cls) =>
+          cls.decorators?.some((d) => d.name === "Controller" || d.name === "Injectable") ||
+          cls.methods.some((m) =>
+            m.decorators?.some((d) =>
+              ["Get", "Post", "Put", "Patch", "Delete", "Options", "Head", "All"].includes(d.name),
+            ),
+          ),
+      ),
+    );
+  }
+
+  extractRoutes(files: ParsedFile[]): DetectedRoute[] {
+    const routes: DetectedRoute[] = [];
+    const http = new Set(["Get", "Post", "Put", "Patch", "Delete", "Options", "Head", "All"]);
+
+    for (const file of files) {
+      for (const cls of file.classes) {
+        const controller = cls.decorators?.find((d) => d.name === "Controller");
+        if (!controller) continue;
+        const prefix = (controller.args[0] ?? "").replace(/^\//, "");
+
+        for (const method of cls.methods) {
+          for (const decorator of method.decorators ?? []) {
+            if (!http.has(decorator.name)) continue;
+            const suffix = (decorator.args[0] ?? "").replace(/^\//, "");
+            const segments = [prefix, suffix].filter(Boolean);
+            const routePath = `/${segments.join("/")}`;
+            const httpMethod = decorator.name.toUpperCase() as HttpMethod;
+            routes.push({
+              id: routeId("nestjs", httpMethod, routePath, file.path),
+              framework: "nestjs",
+              method: httpMethod,
+              path: routePath,
+              file: file.path,
+              handlerName: method.name,
+              handlerClass: cls.name,
+              confidence: "HIGH",
+              startLine: method.startLine,
+            });
+          }
+        }
+      }
+    }
+
+    return routes;
+  }
+}
+
 export function detectFrameworkNames(
   files: ParsedFile[],
   packageDeps: Record<string, string> = {},
@@ -225,9 +280,10 @@ export function detectFrameworkNames(
   const names: string[] = [];
   const next = new NextJSAnalyzer();
   const express = new ExpressAnalyzer();
+  const nest = new NestJSAnalyzer();
   if (next.detect(files, packageDeps)) names.push("Next.js");
   if (express.detect(files, packageDeps)) names.push("Express");
-  if (packageDeps["@nestjs/core"]) names.push("NestJS");
+  if (nest.detect(files, packageDeps)) names.push("NestJS");
   if (packageDeps.react && !names.includes("Next.js")) names.push("React");
   if (packageDeps.fastify) names.push("Fastify");
   if (packageDeps.prisma || packageDeps["@prisma/client"]) names.push("Prisma");
@@ -243,19 +299,21 @@ export function extractAllRoutes(
   const routes: DetectedRoute[] = [];
   const next = new NextJSAnalyzer();
   const express = new ExpressAnalyzer();
+  const nest = new NestJSAnalyzer();
 
   if (next.detect(files, packageDeps)) {
     routes.push(...next.extractRoutes(files));
   }
   if (express.detect(files, packageDeps) || contents.size > 0) {
-    // Always try express extraction when contents provided — cheap and high signal
     const expressRoutes = express.extractRoutes(files, contents);
     if (expressRoutes.length > 0 || express.detect(files, packageDeps)) {
       routes.push(...expressRoutes);
     }
   }
+  if (nest.detect(files, packageDeps)) {
+    routes.push(...nest.extractRoutes(files));
+  }
 
-  // Deduplicate by id
   const seen = new Set<string>();
   return routes.filter((route) => {
     if (seen.has(route.id)) return false;

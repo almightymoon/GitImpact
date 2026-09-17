@@ -32,6 +32,7 @@ export type RelationType =
   | "EMITS"
   | "LISTENS_TO"
   | "DEPENDS_ON"
+  | "HANDLED_BY"
   | "TESTS"
   | "RENDERS"
   | "FETCHES"
@@ -79,6 +80,8 @@ export interface ParsedImport {
   defaultImport?: string;
   isTypeOnly: boolean;
   resolvedPath?: string;
+  /** True when sourced from `import("...")` rather than a static ImportDeclaration */
+  isDynamic?: boolean;
 }
 
 export interface ResolvedCall {
@@ -90,7 +93,7 @@ export interface ResolvedCall {
   resolvedSymbol?: string;
   /** Owning class when the declaration is a method */
   resolvedClassName?: string;
-  resolvedKind: "FUNCTION" | "METHOD" | "CLASS" | "UNRESOLVED";
+  resolvedKind: "FUNCTION" | "METHOD" | "CLASS" | "MODULE" | "QUERY" | "UNRESOLVED";
   confidence: ConfidenceLevel;
   startLine?: number;
 }
@@ -102,6 +105,8 @@ export interface ParsedFunction {
   exported: boolean;
   calls: ResolvedCall[];
   parameters: string[];
+  /** Prisma-style model queries discovered in this function */
+  queries?: Array<{ model: string; method: string }>;
 }
 
 export interface ParsedMethod {
@@ -111,6 +116,8 @@ export interface ParsedMethod {
   endLine: number;
   calls: ResolvedCall[];
   parameters: string[];
+  decorators?: Array<{ name: string; args: string[] }>;
+  queries?: Array<{ model: string; method: string }>;
 }
 
 export interface ParsedClass {
@@ -121,6 +128,10 @@ export interface ParsedClass {
   extends?: string;
   implements: string[];
   methods: ParsedMethod[];
+  /** Constructor-injected type names (NestJS-style DI) */
+  dependencies?: Array<{ paramName: string; typeName: string }>;
+  /** Class-level Nest-style decorators (Controller, Injectable, …) */
+  decorators?: Array<{ name: string; args: string[] }>;
 }
 
 export interface ParsedFile {
@@ -273,6 +284,8 @@ export interface DetectedRoute {
   path: string;
   file: string;
   handlerName?: string;
+  /** Owning class for NestJS controller methods */
+  handlerClass?: string;
   confidence: ConfidenceLevel;
   startLine?: number;
 }

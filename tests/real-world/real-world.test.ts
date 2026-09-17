@@ -24,6 +24,7 @@ type FixtureExpected = {
   mustCall?: EdgeExpectation[];
   mustNotCall?: EdgeExpectation[];
   mustImport?: EdgeExpectation[];
+  mustEdge?: EdgeExpectation[];
   softMustCall?: EdgeExpectation[];
   mustDetectRoutes?: Array<{ method: string; path: string }>;
   unsupportedPatterns?: string[];
@@ -96,6 +97,20 @@ describe("GitImpact real-world benchmark", async () => {
         const hit = hasEdge(graph.edges, { ...edge, type: "IMPORTS" }, "IMPORTS");
         reporter.expectHit("importGraph", hit);
         expect(hit, `missing IMPORTS ${edge.from} -> ${edge.to}`).toBe(true);
+      }
+
+      for (const edge of expected.mustEdge ?? []) {
+        const type = edge.type ?? "CALLS";
+        const bucket =
+          type === "IMPORTS"
+            ? "importGraph"
+            : type === "CALLS"
+              ? "callGraph"
+              : "callGraph";
+        const hit = hasEdge(graph.edges, edge, type);
+        // Framework edges (DEPENDS_ON / HANDLED_BY / QUERIES) count toward callGraph score
+        reporter.expectHit(bucket, hit);
+        expect(hit, `missing ${type} ${edge.from} -> ${edge.to}`).toBe(true);
       }
 
       for (const route of expected.mustDetectRoutes ?? []) {

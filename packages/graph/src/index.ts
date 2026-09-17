@@ -46,7 +46,21 @@ function inferFileType(file: ParsedFile): NodeType {
 }
 
 function targetIdFromResolvedCall(call: ResolvedCall): string | undefined {
-  if (call.resolvedKind === "UNRESOLVED" || !call.resolvedFile || !call.resolvedSymbol) {
+  if (call.resolvedKind === "UNRESOLVED") {
+    return undefined;
+  }
+  if (call.resolvedKind === "MODULE") {
+    return call.resolvedFile ? nodeId("FILE", call.resolvedFile) : undefined;
+  }
+  if (call.resolvedKind === "QUERY") {
+    // Synthetic model id — created during pass 2 when queries are wired
+    if (call.resolvedClassName?.startsWith("Prisma.")) {
+      const model = call.resolvedClassName.slice("Prisma.".length);
+      return nodeId("DATABASE_MODEL", call.resolvedFile ?? "prisma", model);
+    }
+    return undefined;
+  }
+  if (!call.resolvedFile || !call.resolvedSymbol) {
     return undefined;
   }
   if (call.resolvedKind === "METHOD" && call.resolvedClassName) {
@@ -185,27 +199,112 @@ export class DependencyGraphBuilder {
             addEdge(fileNodeId, targetFn, "USES", "HIGH");
           } else if (nodes.has(targetClass)) {
             addEdge(fileNodeId, targetClass, "USES", "HIGH");
+          } else {
+            // Barrel re-export: find unique exported symbol with this name elsewhere
+            const matches = [...nodes.values()].filter(
+              (n) =>
+                (n.type === "FUNCTION" || n.type === "CLASS") && n.name === named,
+            );
+            if (matches.length === 1) {
+              addEdge(fileNodeId, matches[0].id, "USES", "MEDIUM");
+            }
           }
         }
       }
 
+      const resolveCallTarget = (call: ResolvedCall): string | undefined => {
+        let target = targetIdFromResolvedCall(call);
+        if (target && call.resolvedKind === "QUERY") {
+          const model = call.resolvedClassName?.replace(/^Prisma\./, "") ?? call.calleeName;
+          addNode({
+            id: target,
+            type: "DATABASE_MODEL",
+            name: model,
+            file: call.resolvedFile ?? file.path,
+            metadata: { orm: "prisma", method: call.calleeName },
+          });
+          return target;
+        }
+        if (target && nodes.has(target)) return target;
+        // Dynamic import / barrel: resolve unique function by symbol name
+        if (
+          call.resolvedKind === "FUNCTION" &&
+          call.resolvedSymbol &&
+          (!target || !nodes.has(target))
+        ) {
+          const matches = [...nodes.values()].filter(
+            (n) => n.type === "FUNCTION" && n.name === call.resolvedSymbol,
+          );
+          if (matches.length === 1) return matches[0].id;
+        }
+        if (target && call.resolvedKind === "MODULE" && nodes.has(target)) {
+          return target;
+        }
+        return target && nodes.has(target) ? target : undefined;
+      };
+
       const wireCalls = (fromId: string, calls: ResolvedCall[]) => {
         for (const call of calls) {
-          const target = targetIdFromResolvedCall(call);
+          const target = resolveCallTarget(call);
           if (!target) continue;
-          // Only link when target exists in graph — never invent nodes from unresolved names
-          if (!nodes.has(target)) continue;
+          if (call.resolvedKind === "MODULE") {
+            addEdge(fromId, target, "IMPORTS", call.confidence);
+            addEdge(fileNodeId, target, "IMPORTS", call.confidence);
+            continue;
+          }
+          if (call.resolvedKind === "QUERY") {
+            addEdge(fromId, target, "QUERIES", call.confidence);
+            continue;
+          }
           addEdge(fromId, target, "CALLS", call.confidence);
         }
       };
 
       for (const fn of file.functions) {
-        wireCalls(nodeId("FUNCTION", file.path, fn.name), fn.calls);
+        const fromId = nodeId("FUNCTION", file.path, fn.name);
+        wireCalls(fromId, fn.calls);
+        for (const query of fn.queries ?? []) {
+          const modelId = nodeId("DATABASE_MODEL", file.path, query.model);
+          addNode({
+            id: modelId,
+            type: "DATABASE_MODEL",
+            name: query.model,
+            file: file.path,
+            metadata: { orm: "prisma", method: query.method },
+          });
+          addEdge(fromId, modelId, "QUERIES", "MEDIUM");
+        }
       }
 
       for (const cls of file.classes) {
+        const classId = nodeId("CLASS", file.path, cls.name);
+        for (const dep of cls.dependencies ?? []) {
+          const matches = [...nodes.values()].filter(
+            (n) => n.type === "CLASS" && n.name === dep.typeName,
+          );
+          if (matches.length === 1) {
+            addEdge(classId, matches[0].id, "DEPENDS_ON", "HIGH");
+          } else {
+            const local = nodeId("CLASS", file.path, dep.typeName);
+            if (nodes.has(local)) {
+              addEdge(classId, local, "DEPENDS_ON", "HIGH");
+            }
+          }
+        }
         for (const method of cls.methods) {
-          wireCalls(methodNodeId(file.path, cls.name, method.name), method.calls);
+          const fromId = methodNodeId(file.path, cls.name, method.name);
+          wireCalls(fromId, method.calls);
+          for (const query of method.queries ?? []) {
+            const modelId = nodeId("DATABASE_MODEL", file.path, query.model);
+            addNode({
+              id: modelId,
+              type: "DATABASE_MODEL",
+              name: query.model,
+              file: file.path,
+              metadata: { orm: "prisma", method: query.method },
+            });
+            addEdge(fromId, modelId, "QUERIES", "MEDIUM");
+          }
         }
       }
 
@@ -232,6 +331,7 @@ export class DependencyGraphBuilder {
           method: route.method,
           path: route.path,
           handlerName: route.handlerName,
+          handlerClass: route.handlerClass,
           confidence: route.confidence,
         },
       });
@@ -240,9 +340,19 @@ export class DependencyGraphBuilder {
       addEdge(route.id, fileNodeId, "DEPENDS_ON", route.confidence);
       addEdge(fileNodeId, route.id, "CONFIGURES", route.confidence);
 
-      if (route.handlerName && route.handlerName !== "default" && route.handlerName !== "ALL") {
+      if (route.handlerClass && route.handlerName) {
+        const handlerMethod = methodNodeId(route.file, route.handlerClass, route.handlerName);
+        if (nodes.has(handlerMethod)) {
+          addEdge(route.id, handlerMethod, "HANDLED_BY", route.confidence);
+        }
+      } else if (
+        route.handlerName &&
+        route.handlerName !== "default" &&
+        route.handlerName !== "ALL"
+      ) {
         const handlerFn = nodeId("FUNCTION", route.file, route.handlerName);
         if (nodes.has(handlerFn)) {
+          addEdge(route.id, handlerFn, "HANDLED_BY", route.confidence);
           addEdge(route.id, handlerFn, "USES", route.confidence);
         }
       }

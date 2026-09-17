@@ -1,8 +1,6 @@
 {
-  "description": "Prisma-style generated client + dynamic import (adversarial)",
+  "description": "Prisma-style generated client + dynamic import (v0.5)",
   "unsupportedPatterns": [
-    "prisma-delegate-methods",
-    "dynamic-import",
     "generated-client"
   ],
   "mustCall": [
@@ -19,21 +17,27 @@
     { "from": "FILE:src/app.ts", "to": "FILE:src/users.repo.ts" },
     { "from": "FILE:src/users.repo.ts", "to": "FILE:src/generated-client.ts" }
   ],
-  "softMustCall": [
+  "mustEdge": [
     {
       "from": "FUNCTION:src/users.repo.ts:listUsers",
-      "to": "METHOD:src/generated-client.ts:PrismaClient.findMany",
-      "note": "prisma.user.findMany is a nested delegate, not a class method node"
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "type": "QUERIES"
+    },
+    {
+      "from": "FUNCTION:src/users.repo.ts:getUser",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "type": "QUERIES"
+    },
+    {
+      "from": "FUNCTION:src/users.repo.ts:createUser",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "type": "QUERIES"
     }
   ],
   "knownUnresolved": [
     {
-      "pattern": "prisma-delegate-methods",
-      "note": "client.model.method() chain"
-    },
-    {
-      "pattern": "dynamic-import",
-      "note": "await import('./generated-client')"
+      "pattern": "generated-client",
+      "note": "Full Prisma client generation still approximated"
     }
   ]
 }
