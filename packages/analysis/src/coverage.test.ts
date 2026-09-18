@@ -91,7 +91,7 @@ describe("buildAnalysisCoverage", () => {
       graphNodeCount: 20,
       allRelativeFiles: [
         "src/a.ts",
-        ...Array.from({ length: 42 }, (_, i) => `scripts/job_${i}.py`),
+        ...Array.from({ length: 42 }, (_, i) => `scripts/job_${i}.lua`),
       ],
       codeFilePaths: ["src/a.ts"],
       frameworks: ["NestJS", "Express"],
@@ -100,7 +100,39 @@ describe("buildAnalysisCoverage", () => {
     expect(report.frameworks.find((f) => f.name === "Express")?.confidence).toBe("MEDIUM");
     expect(report.edgeConfidence.highPercent).toBe(80);
     expect(report.edgeConfidence.mediumPercent).toBe(20);
-    expect(report.blindSpots.some((s) => /Python/i.test(s))).toBe(true);
+    expect(report.blindSpots.some((s) => /Lua/i.test(s))).toBe(true);
+  });
+
+  it("explains MEDIUM confidence when unsupported formats dwarf parse surface", () => {
+    const report = buildAnalysisCoverage({
+      analysisHealth: {
+        filesDiscovered: 100,
+        filesParsed: 100,
+        filesIgnored: 0,
+        filesUnsupported: 250,
+        parseFailures: 0,
+        truncated: false,
+      },
+      graphEdges: Array.from({ length: 5 }, (_, i) => ({
+        id: `e${i}`,
+        from: "a",
+        to: "b",
+        type: "CALLS",
+        confidence: "HIGH" as const,
+      })),
+      graphNodeCount: 10,
+      allRelativeFiles: [
+        "src/a.ts",
+        ...Array.from({ length: 140 }, (_, i) => `lua/job_${i}.lua`),
+        ...Array.from({ length: 80 }, (_, i) => `sql/mig_${i}.sql`),
+      ],
+      codeFilePaths: ["src/a.ts"],
+    });
+    expect(report.confidence).toBe("MEDIUM");
+    expect(
+      report.reasons.some((r) => /Medium confidence is intentional/i.test(r) && /Lua/i.test(r)),
+    ).toBe(true);
+    expect(report.blindSpots.some((s) => /Redis-side/i.test(s))).toBe(true);
   });
 });
 

@@ -1,0 +1,19 @@
+{
+  "description": "Python Flask-shaped imports + cross-module CALLS",
+  "mustImport": [
+    {
+      "from": "FILE:app.py",
+      "to": "FILE:services/auth.py"
+    }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:app.py:login",
+      "to": "FUNCTION:services/auth.py:issue_token"
+    },
+    {
+      "from": "FUNCTION:app.py:me",
+      "to": "FUNCTION:services/auth.py:verify_token"
+    }
+  ]
+}

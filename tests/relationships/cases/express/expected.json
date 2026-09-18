@@ -1,0 +1,32 @@
+{
+  "description": "Express core — application.js requires View and utils (CJS)",
+  "maxFiles": 80,
+  "mustImport": [
+    {
+      "id": "app-view",
+      "from": "FILE:lib/application.js",
+      "to": "FILE:lib/view.js",
+      "type": "IMPORTS"
+    },
+    {
+      "id": "app-utils",
+      "from": "FILE:lib/application.js",
+      "to": "FILE:lib/utils.js",
+      "type": "IMPORTS"
+    },
+    {
+      "id": "express-entry",
+      "from": "FILE:lib/express.js",
+      "to": "FILE:lib/application.js",
+      "type": "IMPORTS"
+    }
+  ],
+  "mustNotCall": [
+    {
+      "from": "FILE:lib/view.js",
+      "to": "FILE:lib/application.js",
+      "type": "CALLS",
+      "note": "View should not call Application"
+    }
+  ]
+}

@@ -55,6 +55,10 @@ function targetIdFromResolvedCall(call: ResolvedCall): string | undefined {
   if (call.resolvedKind === "UNRESOLVED") {
     return undefined;
   }
+  if (call.resolvedKind === "EXTERNAL") {
+    const host = call.resolvedSymbol ?? call.resolvedFile ?? "http";
+    return `EXTERNAL_SERVICE:${host}`;
+  }
   if (call.resolvedKind === "MODULE") {
     return call.resolvedFile ? nodeId("FILE", call.resolvedFile) : undefined;
   }
@@ -248,6 +252,17 @@ export class DependencyGraphBuilder {
 
       const resolveCallTarget = (call: ResolvedCall): string | undefined => {
         let target = targetIdFromResolvedCall(call);
+        if (target && call.resolvedKind === "EXTERNAL") {
+          const host = call.resolvedSymbol ?? call.resolvedFile ?? "http";
+          addNode({
+            id: target,
+            type: "EXTERNAL_SERVICE",
+            name: host,
+            file: file.path,
+            metadata: { kind: "http", via: "fetch" },
+          });
+          return target;
+        }
         if (target && call.resolvedKind === "QUERY") {
           const model = call.resolvedClassName?.replace(/^Prisma\./, "") ?? call.calleeName;
           addNode({
@@ -299,6 +314,10 @@ export class DependencyGraphBuilder {
           }
           if (call.resolvedKind === "QUERY") {
             addEdge(fromId, target, "QUERIES", call.confidence, evidence);
+            continue;
+          }
+          if (call.resolvedKind === "EXTERNAL") {
+            addEdge(fromId, target, "FETCHES", call.confidence, evidence);
             continue;
           }
           addEdge(fromId, target, "CALLS", call.confidence, evidence);

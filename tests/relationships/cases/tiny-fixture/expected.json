@@ -1,0 +1,60 @@
+{
+  "description": "AuthController → AuthService → UserRepository (product-shaped fixture)",
+  "mustCall": [
+    {
+      "id": "ctrl-login-svc",
+      "from": "METHOD:src/auth.controller.ts:AuthController.loginHandler",
+      "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "type": "CALLS"
+    },
+    {
+      "id": "ctrl-token-svc",
+      "from": "METHOD:src/auth.controller.ts:AuthController.tokenHandler",
+      "to": "METHOD:src/auth.service.ts:AuthService.generateToken",
+      "type": "CALLS"
+    },
+    {
+      "id": "svc-auth-repo",
+      "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "to": "METHOD:src/users.ts:UserRepository.findByEmail",
+      "type": "CALLS"
+    },
+    {
+      "id": "svc-register-create",
+      "from": "METHOD:src/auth.service.ts:AuthService.register",
+      "to": "FUNCTION:src/users.ts:createUser",
+      "type": "CALLS"
+    },
+    {
+      "id": "fn-login",
+      "from": "FUNCTION:src/auth.controller.ts:loginHandler",
+      "to": "FUNCTION:src/auth.service.ts:authenticate",
+      "type": "CALLS"
+    }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/auth.controller.ts",
+      "to": "FILE:src/auth.service.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "from": "FILE:src/auth.service.ts",
+      "to": "FILE:src/users.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "from": "FILE:src/routes/auth.router.ts",
+      "to": "FILE:src/auth.service.ts",
+      "type": "IMPORTS"
+    }
+  ],
+  "mustNotCall": [
+    {
+      "from": "FUNCTION:src/users.ts:createUser",
+      "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "type": "CALLS",
+      "note": "Repository must not call AuthService"
+    }
+  ]
+}

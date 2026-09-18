@@ -1,0 +1,80 @@
+{
+  "id": "express",
+  "classifications": [
+    {
+      "expectationId": "app-view",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:lib/application.js",
+      "to": "FILE:lib/view.js",
+      "matchedEdgeId": "FILE:lib/application.js->FILE:lib/view.js:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "app-utils",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:lib/application.js",
+      "to": "FILE:lib/utils.js",
+      "matchedEdgeId": "FILE:lib/application.js->FILE:lib/utils.js:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "express-entry",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:lib/express.js",
+      "to": "FILE:lib/application.js",
+      "matchedEdgeId": "FILE:lib/express.js->FILE:lib/application.js:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FILE:lib/view.js→FILE:lib/application.js:3",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FILE:lib/view.js",
+      "to": "FILE:lib/application.js",
+      "note": "View should not call Application"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 4,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "IMPORTS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "CALLS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 4,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

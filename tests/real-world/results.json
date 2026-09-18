@@ -1,33 +1,39 @@
 {
-  "generatedAt": "2026-09-18T12:46:31.067Z",
-  "fixtures": 5,
-  "assertions": 36,
-  "softMisses": 2,
-  "unsupportedPatternCount": 6,
+  "generatedAt": "2026-09-18T18:29:57.069Z",
+  "fixtures": 6,
+  "assertions": 41,
+  "softMisses": 0,
+  "unsupportedPatternCount": 5,
   "coverage": {
-    "totalCalls": 22,
-    "resolvedCalls": 22,
-    "unresolvedCalls": 0,
-    "resolutionCoverage": 1,
-    "resolutionCoveragePct": "100.0%",
-    "unresolvedSamples": []
+    "totalCalls": 33,
+    "resolvedCalls": 32,
+    "unresolvedCalls": 1,
+    "resolutionCoverage": 0.9696969696969697,
+    "resolutionCoveragePct": "97.0%",
+    "unresolvedSamples": [
+      {
+        "file": "express-small:src/routes/auth.ts",
+        "calleeName": "express",
+        "container": "createApp"
+      }
+    ]
   },
   "metrics": {
     "callGraph": {
-      "truePositives": 19,
+      "truePositives": 23,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 19,
+      "assertions": 23,
       "precision": 1,
       "recall": 1,
       "precisionPct": "100.0%",
       "recallPct": "100.0%"
     },
     "importGraph": {
-      "truePositives": 13,
+      "truePositives": 14,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 13,
+      "assertions": 14,
       "precision": 1,
       "recall": 1,
       "precisionPct": "100.0%",
@@ -47,25 +53,30 @@
   "summary": {
     "precision": "100.0%",
     "recall": "100.0%",
-    "resolutionCoverage": "100.0%",
-    "unsupportedPatternCount": 6
+    "resolutionCoverage": "97.0%",
+    "unsupportedPatternCount": 5
   },
-  "headline": "Resolved calls: 22 / 22 (100.0%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 6.",
+  "headline": "Resolved calls: 32 / 33 (97.0%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 5.",
   "cases": [
     {
       "name": "express-small",
-      "totalCalls": 4,
-      "resolvedCalls": 4,
-      "unresolvedCalls": 0,
-      "resolutionCoverage": 1,
-      "resolutionCoveragePct": "100.0%",
-      "unresolvedSamples": [],
+      "totalCalls": 7,
+      "resolvedCalls": 6,
+      "unresolvedCalls": 1,
+      "resolutionCoverage": 0.8571428571428571,
+      "resolutionCoveragePct": "85.7%",
+      "unresolvedSamples": [
+        {
+          "file": "src/routes/auth.ts",
+          "calleeName": "express",
+          "container": "createApp"
+        }
+      ],
       "unsupportedPatterns": [
-        "middleware-compose-hof",
         "framework-app-post-binding"
       ],
-      "knownUnresolved": 1,
-      "softMisses": 2
+      "knownUnresolved": 0,
+      "softMisses": 0
     },
     {
       "name": "monorepo-project",
@@ -120,6 +131,18 @@
         "generated-client"
       ],
       "knownUnresolved": 1,
+      "softMisses": 0
+    },
+    {
+      "name": "python-flask-small",
+      "totalCalls": 8,
+      "resolvedCalls": 8,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
       "softMisses": 0
     }
   ]

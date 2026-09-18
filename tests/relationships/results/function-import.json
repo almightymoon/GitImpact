@@ -1,0 +1,82 @@
+{
+  "id": "function-import",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:src/caller.ts:caller→FUNCTION:src/foo.ts:foo:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/foo.ts:foo",
+      "matchedEdgeId": "FUNCTION:src/caller.ts:caller->FUNCTION:src/foo.ts:foo:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/caller.ts→FILE:src/foo.ts:1",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/foo.ts",
+      "matchedEdgeId": "FILE:src/caller.ts->FILE:src/foo.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "USES:FILE:src/caller.ts→FUNCTION:src/foo.ts:foo:2",
+      "class": "TRUE_POSITIVE",
+      "type": "USES",
+      "from": "FILE:src/caller.ts",
+      "to": "FUNCTION:src/foo.ts:foo",
+      "matchedEdgeId": "FILE:src/caller.ts->FUNCTION:src/foo.ts:foo:USES",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 3,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "USES",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 3,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

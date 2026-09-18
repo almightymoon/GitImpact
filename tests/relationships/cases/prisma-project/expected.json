@@ -1,0 +1,43 @@
+{
+  "description": "Prisma-style generated client + dynamic import (v0.5)",
+  "unsupportedPatterns": [
+    "generated-client"
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/app.ts:register",
+      "to": "FUNCTION:src/users.repo.ts:createUser"
+    },
+    {
+      "from": "FUNCTION:src/app.ts:register",
+      "to": "FUNCTION:src/users.repo.ts:listUsers"
+    }
+  ],
+  "mustImport": [
+    { "from": "FILE:src/app.ts", "to": "FILE:src/users.repo.ts" },
+    { "from": "FILE:src/users.repo.ts", "to": "FILE:src/generated-client.ts" }
+  ],
+  "mustEdge": [
+    {
+      "from": "FUNCTION:src/users.repo.ts:listUsers",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "type": "QUERIES"
+    },
+    {
+      "from": "FUNCTION:src/users.repo.ts:getUser",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "type": "QUERIES"
+    },
+    {
+      "from": "FUNCTION:src/users.repo.ts:createUser",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "type": "QUERIES"
+    }
+  ],
+  "knownUnresolved": [
+    {
+      "pattern": "generated-client",
+      "note": "Full Prisma client generation still approximated"
+    }
+  ]
+}

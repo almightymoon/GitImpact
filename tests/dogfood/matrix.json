@@ -323,17 +323,21 @@
       "id": "python-flask",
       "url": "https://github.com/pallets/flask",
       "shape": "python-web",
-      "priority": 9,
-      "status": "planned",
-      "why": "v1.1 language track — after JS/TS miss rate stabilizes"
+      "priority": 5,
+      "wave": 5,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "v1.1.2 Python track — Flask framework + language inventory"
     },
     {
       "id": "python-fastapi",
       "url": "https://github.com/tiangolo/fastapi",
       "shape": "python-web",
-      "priority": 9,
-      "status": "planned",
-      "why": "v1.1 language track — after Flask baseline"
+      "priority": 5,
+      "wave": 5,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "v1.1.2 Python track — FastAPI after Flask baseline"
     },
     {
       "id": "go-echo",

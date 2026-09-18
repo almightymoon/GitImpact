@@ -21,6 +21,7 @@
     "dogfood": "pnpm --filter @gitimpact/dogfood dogfood",
     "dogfood:miss": "pnpm --filter @gitimpact/dogfood miss",
     "dogfood:misses": "pnpm --filter @gitimpact/dogfood misses",
+    "relationships": "pnpm --filter @gitimpact/relationships relationships",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

@@ -1,0 +1,125 @@
+{
+  "id": "tiny-fixture",
+  "classifications": [
+    {
+      "expectationId": "ctrl-login-svc",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/auth.controller.ts:AuthController.loginHandler",
+      "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "matchedEdgeId": "METHOD:src/auth.controller.ts:AuthController.loginHandler->METHOD:src/auth.service.ts:AuthService.authenticate:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "ctrl-token-svc",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/auth.controller.ts:AuthController.tokenHandler",
+      "to": "METHOD:src/auth.service.ts:AuthService.generateToken",
+      "matchedEdgeId": "METHOD:src/auth.controller.ts:AuthController.tokenHandler->METHOD:src/auth.service.ts:AuthService.generateToken:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "svc-auth-repo",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "to": "METHOD:src/users.ts:UserRepository.findByEmail",
+      "matchedEdgeId": "METHOD:src/auth.service.ts:AuthService.authenticate->METHOD:src/users.ts:UserRepository.findByEmail:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "svc-register-create",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/auth.service.ts:AuthService.register",
+      "to": "FUNCTION:src/users.ts:createUser",
+      "matchedEdgeId": "METHOD:src/auth.service.ts:AuthService.register->FUNCTION:src/users.ts:createUser:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "fn-login",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/auth.controller.ts:loginHandler",
+      "to": "FUNCTION:src/auth.service.ts:authenticate",
+      "matchedEdgeId": "FUNCTION:src/auth.controller.ts:loginHandler->FUNCTION:src/auth.service.ts:authenticate:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/auth.controller.ts→FILE:src/auth.service.ts:5",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/auth.controller.ts",
+      "to": "FILE:src/auth.service.ts",
+      "matchedEdgeId": "FILE:src/auth.controller.ts->FILE:src/auth.service.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/auth.service.ts→FILE:src/users.ts:6",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/auth.service.ts",
+      "to": "FILE:src/users.ts",
+      "matchedEdgeId": "FILE:src/auth.service.ts->FILE:src/users.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/routes/auth.router.ts→FILE:src/auth.service.ts:7",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/routes/auth.router.ts",
+      "to": "FILE:src/auth.service.ts",
+      "matchedEdgeId": "FILE:src/routes/auth.router.ts->FILE:src/auth.service.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/users.ts:createUser→METHOD:src/auth.service.ts:AuthService.authenticate:8",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/users.ts:createUser",
+      "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "note": "Repository must not call AuthService"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 9,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 6,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 9,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

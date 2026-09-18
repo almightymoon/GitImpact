@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-18T16:11:21.359Z",
-  "fixtures": 22,
-  "assertions": 98,
+  "generatedAt": "2026-09-18T18:29:48.483Z",
+  "fixtures": 24,
+  "assertions": 101,
   "softMisses": 2,
   "metrics": {
     "symbolResolution": {
@@ -16,10 +16,10 @@
       "recallPct": "100.0%"
     },
     "callGraph": {
-      "truePositives": 27,
+      "truePositives": 29,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 27,
+      "assertions": 29,
       "precision": 1,
       "recall": 1,
       "f1": 1,
@@ -27,10 +27,10 @@
       "recallPct": "100.0%"
     },
     "importGraph": {
-      "truePositives": 18,
+      "truePositives": 19,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 18,
+      "assertions": 19,
       "precision": 1,
       "recall": 1,
       "f1": 1,
@@ -114,6 +114,13 @@
       "falseNegatives": 0
     },
     {
+      "name": "cjs-require",
+      "assertions": 2,
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
       "name": "class-method",
       "assertions": 5,
       "truePositives": 5,
@@ -145,6 +152,13 @@
       "name": "express-route",
       "assertions": 3,
       "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    {
+      "name": "fetch-external",
+      "assertions": 1,
+      "truePositives": 1,
       "falsePositives": 0,
       "falseNegatives": 0
     },

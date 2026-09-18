@@ -107,7 +107,7 @@ export interface ResolvedCall {
   resolvedSymbol?: string;
   /** Owning class when the declaration is a method */
   resolvedClassName?: string;
-  resolvedKind: "FUNCTION" | "METHOD" | "CLASS" | "MODULE" | "QUERY" | "UNRESOLVED";
+  resolvedKind: "FUNCTION" | "METHOD" | "CLASS" | "MODULE" | "QUERY" | "EXTERNAL" | "UNRESOLVED";
   confidence: ConfidenceLevel;
   startLine?: number;
 }
@@ -150,7 +150,7 @@ export interface ParsedClass {
 
 export interface ParsedFile {
   path: string;
-  language: "typescript" | "javascript" | "tsx" | "jsx";
+  language: "typescript" | "javascript" | "tsx" | "jsx" | "python";
   imports: ParsedImport[];
   exports: string[];
   functions: ParsedFunction[];
@@ -329,6 +329,7 @@ export const CODE_EXTENSIONS = [
   ".jsx",
   ".mjs",
   ".cjs",
+  ".py",
 ] as const;
 
 export const SECRET_PATTERNS = [

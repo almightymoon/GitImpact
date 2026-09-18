@@ -1,0 +1,100 @@
+{
+  "id": "python-flask-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:app.py:login→FUNCTION:services/auth.py:issue_token:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:app.py:login",
+      "to": "FUNCTION:services/auth.py:issue_token",
+      "matchedEdgeId": "FUNCTION:app.py:login->FUNCTION:services/auth.py:issue_token:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:app.py:me→FUNCTION:services/auth.py:verify_token:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:app.py:me",
+      "to": "FUNCTION:services/auth.py:verify_token",
+      "matchedEdgeId": "FUNCTION:app.py:me->FUNCTION:services/auth.py:verify_token:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:services/auth.py:require_auth→FUNCTION:services/auth.py:verify_token:2",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:services/auth.py:require_auth",
+      "to": "FUNCTION:services/auth.py:verify_token",
+      "matchedEdgeId": "FUNCTION:services/auth.py:require_auth->FUNCTION:services/auth.py:verify_token:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:app.py→FILE:services/auth.py:3",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:app.py",
+      "to": "FILE:services/auth.py",
+      "matchedEdgeId": "FILE:app.py->FILE:services/auth.py:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "USES:FILE:app.py→FUNCTION:services/auth.py:issue_token:4",
+      "class": "TRUE_POSITIVE",
+      "type": "USES",
+      "from": "FILE:app.py",
+      "to": "FUNCTION:services/auth.py:issue_token",
+      "matchedEdgeId": "FILE:app.py->FUNCTION:services/auth.py:issue_token:USES",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 5,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "USES",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 5,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

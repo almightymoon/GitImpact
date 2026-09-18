@@ -1,0 +1,40 @@
+{
+  "description": "NestJS typescript-starter — AppController.getHello → AppService.getHello",
+  "mustCall": [
+    {
+      "id": "ctrl-svc-hello",
+      "from": "METHOD:src/app.controller.ts:AppController.getHello",
+      "to": "METHOD:src/app.service.ts:AppService.getHello",
+      "type": "CALLS"
+    }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/app.controller.ts",
+      "to": "FILE:src/app.service.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "from": "FILE:src/app.module.ts",
+      "to": "FILE:src/app.controller.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "from": "FILE:src/app.module.ts",
+      "to": "FILE:src/app.service.ts",
+      "type": "IMPORTS"
+    }
+  ],
+  "mustEdge": [
+    {
+      "from": "CLASS:src/app.controller.ts:AppController",
+      "to": "CLASS:src/app.service.ts:AppService",
+      "type": "DEPENDS_ON"
+    },
+    {
+      "fromContains": "API_ROUTE:nestjs:GET",
+      "to": "METHOD:src/app.controller.ts:AppController.getHello",
+      "type": "HANDLED_BY"
+    }
+  ]
+}

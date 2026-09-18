@@ -172,4 +172,26 @@ describe("Express detection", () => {
     expect(isExpressModuleSpecifier("express/lib/router")).toBe(true);
     expect(isExpressModuleSpecifier("@fastify/express")).toBe(false);
   });
+
+  it("detects Flask from Python imports", () => {
+    const files = [
+      {
+        path: "app.py",
+        language: "python" as const,
+        imports: [
+          {
+            moduleSpecifier: "flask",
+            namedImports: ["Flask"],
+            isTypeOnly: false,
+          },
+        ],
+        exports: ["app"],
+        functions: [],
+        classes: [],
+        isTest: false,
+        envVariables: [],
+      },
+    ];
+    expect(detectFrameworkNames(files)).toContain("Flask");
+  });
 });

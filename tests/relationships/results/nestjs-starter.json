@@ -1,0 +1,119 @@
+{
+  "id": "nestjs-starter",
+  "classifications": [
+    {
+      "expectationId": "ctrl-svc-hello",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/app.controller.ts:AppController.getHello",
+      "to": "METHOD:src/app.service.ts:AppService.getHello",
+      "matchedEdgeId": "METHOD:src/app.controller.ts:AppController.getHello->METHOD:src/app.service.ts:AppService.getHello:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/app.controller.ts→FILE:src/app.service.ts:1",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/app.controller.ts",
+      "to": "FILE:src/app.service.ts",
+      "matchedEdgeId": "FILE:src/app.controller.ts->FILE:src/app.service.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/app.module.ts→FILE:src/app.controller.ts:2",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/app.module.ts",
+      "to": "FILE:src/app.controller.ts",
+      "matchedEdgeId": "FILE:src/app.module.ts->FILE:src/app.controller.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/app.module.ts→FILE:src/app.service.ts:3",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/app.module.ts",
+      "to": "FILE:src/app.service.ts",
+      "matchedEdgeId": "FILE:src/app.module.ts->FILE:src/app.service.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "DEPENDS_ON:CLASS:src/app.controller.ts:AppController→CLASS:src/app.service.ts:AppService:4",
+      "class": "TRUE_POSITIVE",
+      "type": "DEPENDS_ON",
+      "from": "CLASS:src/app.controller.ts:AppController",
+      "to": "CLASS:src/app.service.ts:AppService",
+      "matchedEdgeId": "CLASS:src/app.controller.ts:AppController->CLASS:src/app.service.ts:AppService:DEPENDS_ON",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:nestjs:GET→METHOD:src/app.controller.ts:AppController.getHello:5",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:nestjs:GET:/:src/app.controller.ts",
+      "to": "METHOD:src/app.controller.ts:AppController.getHello",
+      "matchedEdgeId": "API_ROUTE:nestjs:GET:/:src/app.controller.ts->METHOD:src/app.controller.ts:AppController.getHello:HANDLED_BY",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 6,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "DEPENDS_ON",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 6,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

@@ -97,6 +97,11 @@ const PRODUCT_FRAMEWORKS = new Set([
   "Angular",
   "Zod",
   "Preact",
+  "Flask",
+  "FastAPI",
+  "Django",
+  "Celery",
+  "SQLAlchemy",
 ]);
 
 /** Score framework labels so adapters / supporting libs read as Medium when a product stack is present. */
@@ -145,7 +150,6 @@ export function buildBlindSpots(input: {
   }
 
   const languageBlind = new Set([
-    "Python",
     "Go",
     "Rust",
     "Java",
@@ -156,7 +160,19 @@ export function buildBlindSpots(input: {
   ]);
   for (const group of input.unsupportedGroups) {
     if (languageBlind.has(group.kind) && group.fileCount > 0) {
-      spots.push(`${group.fileCount} ${group.kind} file${group.fileCount === 1 ? "" : "s"} unsupported`);
+      if (group.kind === "Lua") {
+        spots.push(
+          `${group.fileCount} Lua file${group.fileCount === 1 ? "" : "s"} unsupported — may contain Redis-side job/worker logic`,
+        );
+      } else if (group.kind === "SQL") {
+        spots.push(
+          `${group.fileCount} SQL file${group.fileCount === 1 ? "" : "s"} unsupported — schema/migration logic not in the graph`,
+        );
+      } else {
+        spots.push(
+          `${group.fileCount} ${group.kind} file${group.fileCount === 1 ? "" : "s"} unsupported`,
+        );
+      }
     }
   }
 
@@ -266,6 +282,27 @@ export function buildAnalysisCoverage(input: {
       top
         ? `${health.filesUnsupported} non-JS/TS inventory files were not parsed as code — top: ${top}.`
         : `${health.filesUnsupported} non-JS/TS inventory files were not parsed as code.`,
+    );
+  }
+  // Explicit MEDIUM explanation when unsupported formats dwarf the parse surface
+  if (
+    health.filesUnsupported > health.filesParsed * 2 &&
+    health.filesParsed > 0
+  ) {
+    const lua = unsupportedGroups.find((g) => g.kind === "Lua");
+    const sql = unsupportedGroups.find((g) => g.kind === "SQL");
+    const bits: string[] = [];
+    if (lua) bits.push(`Lua scripts (${lua.fileCount}) that may hold Redis-side logic`);
+    if (sql) bits.push(`SQL files (${sql.fileCount})`);
+    const detail =
+      bits.length > 0
+        ? `, including ${bits.join(" and ")}`
+        : ` (top: ${unsupportedGroups
+            .slice(0, 2)
+            .map((g) => g.kind)
+            .join(", ")})`;
+    reasons.push(
+      `Medium confidence is intentional: ${health.filesUnsupported} files use unsupported formats${detail}.`,
     );
   }
   if (highConfidenceEdgePercent !== null && highConfidenceEdgePercent < 60) {

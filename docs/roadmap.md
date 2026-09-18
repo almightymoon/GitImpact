@@ -4,8 +4,6 @@
 
 A developer pastes a random real repository and GitImpact explains it correctly enough that they trust it.
 
-No language expansion or AI until that bar is met for today’s TypeScript/JavaScript surface.
-
 ---
 
 ## Version line
@@ -13,8 +11,9 @@ No language expansion or AI until that bar is met for today’s TypeScript/JavaS
 | Version | Theme | Status |
 |---------|--------|--------|
 | **v1.0** | Public beta / production hardening | RC in progress — see `docs/release-candidate.md` |
-| **v1.1** | Real-world accuracy + adoption | Steps 1–5 done; languages deferred |
-| **v1.1.1** | Trust, coverage & explainability | **Next** |
+| **v1.1** | Real-world accuracy + adoption | Steps 1–5 done |
+| **v1.1.1** | Trust, coverage & explainability | Done |
+| **v1.1.2** | Relationship accuracy + Python surface | **In progress** |
 | **v1.2** | Team collaboration + history + reports | Later |
 | **v1.3** | Optional AI layer / BYOK | Later |
 
@@ -37,10 +36,8 @@ Production stack, durable queue, private GitHub App path, quotas, ops. Tag `1.0.
 3. ~~Fix relationship / framework / monorepo accuracy from that log~~ ✅ (waves 1–3; 0 open)
 4. ~~Surface **coverage / confidence** so trust is measurable~~ ✅ (baseline)
 5. ~~Adoption polish (GitHub App onboarding, demos, docs)~~ ✅ (samples, feedback, local CLI, examples doc)
-6. **Then** add Python ← blocked until miss log stays quiet on JS/TS
+6. ~~**Python surface**~~ ✅ (parser + Flask/FastAPI labels + relationship fixture; dogfood wave 5)
 7. **Then** add Go
-
-Do **not** add languages before the miss log stops growing on the core JS/TS matrix.
 
 ---
 
@@ -52,19 +49,54 @@ Do **not** add languages before the miss log stops growing on the core JS/TS mat
 
 1. ~~**Held-out dogfood wave 4** — 10–15 repos unused in waves 1–3~~ ✅ (12 repos)
 2. ~~Record every miss~~ ✅ (see `tests/dogfood/misses.jsonl`)
-3. ~~Fix only real misses; add regression fixtures/tests~~ ✅ (framework identity / optional peers / type-only Express; open: payload cap, bullmq lua MEDIUM)
+3. ~~Fix only real misses; add regression fixtures/tests~~ ✅ (framework identity / optional peers / type-only Express; open: bullmq MEDIUM — intentional)
 4. ~~**Richer coverage reporting**~~ ✅ (inventory counts, edge mix, framework confidence, blind spots)
 5. ~~**Edge evidence**~~ ✅ (CALLS/IMPORTS carry file/snippet/resolution; graph edge inspect panel)
 6. ~~**Monorepo architecture**~~ ✅ (apps/packages as systems + cross-package uses/calls)
 7. ~~**Local CLI expansion**~~ ✅ (`analyze`, `structure`, `impact`, `pr`, `export architecture.md`)
-8. Only then reconsider Python
+8. ~~Reconsider Python after relationship benchmark~~ ✅
 
 ### Explicitly deferred
 
 - Private-repo / webhook RC E2E → finish under v1.0 when App credentials are available
-- Languages (Python/Go) → after wave-4 miss rate is quiet
+- Go → after Python dogfood wave 5 is green
 - History / team dashboards → **v1.2**
 - AI → **v1.3**
+
+---
+
+## v1.1.2 — Relationship accuracy + Python
+
+**Goal:** Prove the graph understands *dependencies*, not only repo classification/framework labels. Impact analysis is only trustworthy if CALLS/IMPORTS/USES/… edges are correct. Python joins the supported surface once JS/TS relationship targets hold.
+
+### Order of work
+
+1. ~~**Curate ~10 repos** with 10–20 hand-verified relationships each~~ ✅ (expanded local + dogfood cases in `tests/relationships`)
+2. ~~**Classify every expectation**~~ ✅ (TP / FP / MISSING / WRONG_TARGET / WRONG_TYPE / LOW_CONFIDENCE)
+3. ~~**Score precision/recall by relation type**~~ ✅ (`pnpm relationships`)
+4. ~~**Fix graph false positives** from the log~~ ✅
+5. ~~**Fix important missing edges**~~ ✅ (CommonJS `require()`, HOF `compose()` attribution, `fetch()` → FETCHES)
+6. ~~**Add regression fixtures**~~ ✅ (`cjs-require`, `fetch-external`, express-small HOF hard asserts)
+7. ~~**Python language parsing**~~ ✅ (`.py` inventory, imports/defs/calls, Flask/FastAPI/Django labels)
+8. **Publish targets** / dogfood wave 5 (`python-flask`, `python-fastapi`)
+
+### Targets
+
+| Relation | Precision | Recall |
+|----------|-----------|--------|
+| CALLS | ≥ 90% | ≥ 80% |
+| IMPORTS | ≥ 95% | ≥ 90% |
+| USES | ≥ 90% | ≥ 75% |
+| HANDLED_BY | ≥ 90% | ≥ 85% |
+| QUERIES | ≥ 85% | ≥ 80% |
+| FETCHES | ≥ 85% | ≥ 70% |
+| Overall important edges | ≥ 90% | ≥ 80% |
+
+Run: `pnpm relationships` → `tests/relationships/results/summary.json`
+
+### BullMQ / unsupported-format note
+
+MEDIUM confidence when Lua/SQL inventory dominates is **correct** — do not raise confidence artificially. The trust UI must explain that unsupported formats (e.g. Redis Lua) are a real blind spot.
 
 ---
 
@@ -77,47 +109,28 @@ Do **not** add languages before the miss log stops growing on the core JS/TS mat
 - Improve monorepo root & workspace detection
 - Repository analysis confidence / coverage report
 - Parser-failure / unsupported-file telemetry (product-visible, not vanity)
+- Python dogfood wave 5 → deepen FastAPI / Django route intel
 
 **B — Developer experience & adoption**
 
 - GitHub App onboarding polish (Connect CTA, setup hints, docs)
 - Hosted demo / sample repositories
 - Public examples & short case studies
-- Issue-feedback flow for incorrect analysis
-- Better CLI for local/offline analysis
 
-**C — Light workflow (only if A is green)**
+**C — Languages**
 
-- PR report readability improvements
-- Shareable / exportable architecture summary (static, no AI)
+- ~~Python~~ ✅ baseline
+- Go next
 
 ---
 
-## v1.2 — Team collaboration + history + reports
-
-- Analysis history / compare over time
-- Deeper PR review summaries (still deterministic)
-- Team-oriented saved views and exports
-- Stronger sharing of architecture packs
-
----
-
-## v1.3 — Optional AI (BYOK)
-
-- Open-source / self-host: bring your own key
-- Optional SaaS managed AI later
-- Never a substitute for the deterministic graph; AI explains or drafts only on top of verified structure
-
----
-
-## Dogfood loop
+## Commands
 
 ```bash
-pnpm build:packages
-pnpm dogfood              # priority 1 matrix
-pnpm dogfood -- --wave 4  # held-out wave-4 set
-pnpm dogfood -- --all     # full matrix
-pnpm dogfood:misses       # print miss log summary
+pnpm dogfood               # default priority ≤ 1
+pnpm dogfood -- --wave 4   # held-out JS/TS wave
+pnpm dogfood -- --wave 5   # Python flask/fastapi
+pnpm relationships         # v1.1.2 relationship precision/recall
+pnpm test:accuracy
+pnpm test:real-world
 ```
-
-See `docs/dogfood.md` and `tests/dogfood/`.

@@ -1,0 +1,72 @@
+{
+  "id": "class-method",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:src/caller.ts:login→METHOD:src/auth.service.ts:AuthService.authenticate:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/caller.ts:login",
+      "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "matchedEdgeId": "FUNCTION:src/caller.ts:login->METHOD:src/auth.service.ts:AuthService.authenticate:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:METHOD:src/auth.service.ts:AuthService.authenticate→METHOD:src/auth.service.ts:AuthService.issueToken:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "to": "METHOD:src/auth.service.ts:AuthService.issueToken",
+      "matchedEdgeId": "METHOD:src/auth.service.ts:AuthService.authenticate->METHOD:src/auth.service.ts:AuthService.issueToken:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/caller.ts→FILE:src/auth.service.ts:2",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/auth.service.ts",
+      "matchedEdgeId": "FILE:src/caller.ts->FILE:src/auth.service.ts:IMPORTS",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 3,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 3,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

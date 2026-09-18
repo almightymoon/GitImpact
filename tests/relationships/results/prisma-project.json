@@ -1,0 +1,118 @@
+{
+  "id": "prisma-project",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:src/app.ts:register→FUNCTION:src/users.repo.ts:createUser:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/app.ts:register",
+      "to": "FUNCTION:src/users.repo.ts:createUser",
+      "matchedEdgeId": "FUNCTION:src/app.ts:register->FUNCTION:src/users.repo.ts:createUser:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/app.ts:register→FUNCTION:src/users.repo.ts:listUsers:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/app.ts:register",
+      "to": "FUNCTION:src/users.repo.ts:listUsers",
+      "matchedEdgeId": "FUNCTION:src/app.ts:register->FUNCTION:src/users.repo.ts:listUsers:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/app.ts→FILE:src/users.repo.ts:2",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/app.ts",
+      "to": "FILE:src/users.repo.ts",
+      "matchedEdgeId": "FILE:src/app.ts->FILE:src/users.repo.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/users.repo.ts→FILE:src/generated-client.ts:3",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/users.repo.ts",
+      "to": "FILE:src/generated-client.ts",
+      "matchedEdgeId": "FILE:src/users.repo.ts->FILE:src/generated-client.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "QUERIES:FUNCTION:src/users.repo.ts:listUsers→DATABASE_MODEL:src/users.repo.ts:User:4",
+      "class": "TRUE_POSITIVE",
+      "type": "QUERIES",
+      "from": "FUNCTION:src/users.repo.ts:listUsers",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "matchedEdgeId": "FUNCTION:src/users.repo.ts:listUsers->DATABASE_MODEL:src/users.repo.ts:User:QUERIES",
+      "confidence": "MEDIUM"
+    },
+    {
+      "expectationId": "QUERIES:FUNCTION:src/users.repo.ts:getUser→DATABASE_MODEL:src/users.repo.ts:User:5",
+      "class": "TRUE_POSITIVE",
+      "type": "QUERIES",
+      "from": "FUNCTION:src/users.repo.ts:getUser",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "matchedEdgeId": "FUNCTION:src/users.repo.ts:getUser->DATABASE_MODEL:src/users.repo.ts:User:QUERIES",
+      "confidence": "MEDIUM"
+    },
+    {
+      "expectationId": "QUERIES:FUNCTION:src/users.repo.ts:createUser→DATABASE_MODEL:src/users.repo.ts:User:6",
+      "class": "TRUE_POSITIVE",
+      "type": "QUERIES",
+      "from": "FUNCTION:src/users.repo.ts:createUser",
+      "to": "DATABASE_MODEL:src/users.repo.ts:User",
+      "matchedEdgeId": "FUNCTION:src/users.repo.ts:createUser->DATABASE_MODEL:src/users.repo.ts:User:QUERIES",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 7,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "QUERIES",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 7,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

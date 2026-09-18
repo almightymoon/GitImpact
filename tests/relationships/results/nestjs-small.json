@@ -1,0 +1,146 @@
+{
+  "id": "nestjs-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:METHOD:src/users.service.ts:UsersService.findAll→METHOD:src/users.service.ts:UsersService.findOne:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/users.service.ts:UsersService.findAll",
+      "to": "METHOD:src/users.service.ts:UsersService.findOne",
+      "matchedEdgeId": "METHOD:src/users.service.ts:UsersService.findAll->METHOD:src/users.service.ts:UsersService.findOne:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:METHOD:src/users.controller.ts:UsersController.list→METHOD:src/users.service.ts:UsersService.findAll:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/users.controller.ts:UsersController.list",
+      "to": "METHOD:src/users.service.ts:UsersService.findAll",
+      "matchedEdgeId": "METHOD:src/users.controller.ts:UsersController.list->METHOD:src/users.service.ts:UsersService.findAll:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:METHOD:src/users.controller.ts:UsersController.create→METHOD:src/users.service.ts:UsersService.findOne:2",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/users.controller.ts:UsersController.create",
+      "to": "METHOD:src/users.service.ts:UsersService.findOne",
+      "matchedEdgeId": "METHOD:src/users.controller.ts:UsersController.create->METHOD:src/users.service.ts:UsersService.findOne:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/users.controller.ts→FILE:src/users.service.ts:3",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/users.controller.ts",
+      "to": "FILE:src/users.service.ts",
+      "matchedEdgeId": "FILE:src/users.controller.ts->FILE:src/users.service.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/users.module.ts→FILE:src/users.controller.ts:4",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/users.module.ts",
+      "to": "FILE:src/users.controller.ts",
+      "matchedEdgeId": "FILE:src/users.module.ts->FILE:src/users.controller.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/users.module.ts→FILE:src/users.service.ts:5",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/users.module.ts",
+      "to": "FILE:src/users.service.ts",
+      "matchedEdgeId": "FILE:src/users.module.ts->FILE:src/users.service.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "DEPENDS_ON:CLASS:src/users.controller.ts:UsersController→CLASS:src/users.service.ts:UsersService:6",
+      "class": "TRUE_POSITIVE",
+      "type": "DEPENDS_ON",
+      "from": "CLASS:src/users.controller.ts:UsersController",
+      "to": "CLASS:src/users.service.ts:UsersService",
+      "matchedEdgeId": "CLASS:src/users.controller.ts:UsersController->CLASS:src/users.service.ts:UsersService:DEPENDS_ON",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:nestjs:GET:/users:src/users.controller.ts→METHOD:src/users.controller.ts:UsersController.list:7",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:nestjs:GET:/users:src/users.controller.ts",
+      "to": "METHOD:src/users.controller.ts:UsersController.list",
+      "matchedEdgeId": "API_ROUTE:nestjs:GET:/users:src/users.controller.ts->METHOD:src/users.controller.ts:UsersController.list:HANDLED_BY",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:nestjs:POST:/users:src/users.controller.ts→METHOD:src/users.controller.ts:UsersController.create:8",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:nestjs:POST:/users:src/users.controller.ts",
+      "to": "METHOD:src/users.controller.ts:UsersController.create",
+      "matchedEdgeId": "API_ROUTE:nestjs:POST:/users:src/users.controller.ts->METHOD:src/users.controller.ts:UsersController.create:HANDLED_BY",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 9,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "DEPENDS_ON",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 9,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

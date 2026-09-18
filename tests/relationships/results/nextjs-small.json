@@ -1,0 +1,108 @@
+{
+  "id": "nextjs-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:src/app/api/users/route.ts:GET→FUNCTION:src/lib/auth.ts:verifySession:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/app/api/users/route.ts:GET",
+      "to": "FUNCTION:src/lib/auth.ts:verifySession",
+      "matchedEdgeId": "FUNCTION:src/app/api/users/route.ts:GET->FUNCTION:src/lib/auth.ts:verifySession:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/app/api/users/route.ts:GET→FUNCTION:src/lib/users.ts:listUsers:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/app/api/users/route.ts:GET",
+      "to": "FUNCTION:src/lib/users.ts:listUsers",
+      "matchedEdgeId": "FUNCTION:src/app/api/users/route.ts:GET->FUNCTION:src/lib/users.ts:listUsers:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/lib/users.ts:listUsers→FUNCTION:src/lib/users.ts:findUser:2",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/lib/users.ts:listUsers",
+      "to": "FUNCTION:src/lib/users.ts:findUser",
+      "matchedEdgeId": "FUNCTION:src/lib/users.ts:listUsers->FUNCTION:src/lib/users.ts:findUser:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/lib/actions.ts:createAccount→FUNCTION:src/lib/auth.ts:hashPassword:3",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/lib/actions.ts:createAccount",
+      "to": "FUNCTION:src/lib/auth.ts:hashPassword",
+      "matchedEdgeId": "FUNCTION:src/lib/actions.ts:createAccount->FUNCTION:src/lib/auth.ts:hashPassword:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/app/api/users/route.ts→FILE:src/lib/auth.ts:4",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/app/api/users/route.ts",
+      "to": "FILE:src/lib/auth.ts",
+      "matchedEdgeId": "FILE:src/app/api/users/route.ts->FILE:src/lib/auth.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/app/api/users/route.ts→FILE:src/lib/users.ts:5",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/app/api/users/route.ts",
+      "to": "FILE:src/lib/users.ts",
+      "matchedEdgeId": "FILE:src/app/api/users/route.ts->FILE:src/lib/users.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/lib/actions.ts→FILE:src/lib/auth.ts:6",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/lib/actions.ts",
+      "to": "FILE:src/lib/auth.ts",
+      "matchedEdgeId": "FILE:src/lib/actions.ts->FILE:src/lib/auth.ts:IMPORTS",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 7,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 4,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 7,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

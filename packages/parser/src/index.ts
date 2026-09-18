@@ -23,13 +23,16 @@ import {
   type ResolvedCall,
 } from "@gitimpact/shared";
 import {
+  collectCommonJsRequires,
   collectDynamicImports,
   extractConstructorDependencies,
   extractDecoratorMeta,
   tryResolveDynamicBindingCall,
   tryResolveDynamicImportCall,
+  tryResolveFetchCall,
   tryResolvePrismaCall,
 } from "./framework-intel.js";
+import { linkPythonCalls, parsePythonFile } from "./python-parser.js";
 
 export interface LanguageParser {
   parseFile(filePath: string, content: string): ParsedFile;
@@ -59,6 +62,7 @@ function isTestFile(filePath: string): boolean {
 }
 
 function languageFromPath(filePath: string): ParsedFile["language"] {
+  if (filePath.endsWith(".py")) return "python";
   if (filePath.endsWith(".tsx")) return "tsx";
   if (filePath.endsWith(".jsx")) return "jsx";
   if (filePath.endsWith(".ts")) return "typescript";
@@ -246,16 +250,23 @@ function collectCallsInNode(
   const queries: Array<{ model: string; method: string }> = [];
   const seen = new Set<string>();
 
-  body.forEachDescendant((node) => {
-    if (node.getKind() !== SyntaxKind.CallExpression) return;
-    const call = node.asKindOrThrow(SyntaxKind.CallExpression);
-
+  const visitCall = (call: CallExpression) => {
     const dynamicImport = tryResolveDynamicImportCall(call, resolveSpecifier);
     if (dynamicImport) {
       const key = `MODULE|${dynamicImport.resolvedFile ?? ""}|import|${dynamicImport.startLine ?? 0}`;
       if (!seen.has(key)) {
         seen.add(key);
         calls.push(dynamicImport);
+      }
+      return;
+    }
+
+    const fetchCall = tryResolveFetchCall(call);
+    if (fetchCall) {
+      const key = `EXTERNAL|${fetchCall.resolvedSymbol ?? "http"}|fetch|${fetchCall.startLine ?? 0}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        calls.push(fetchCall);
       }
       return;
     }
@@ -287,6 +298,16 @@ function collectCallsInNode(
     if (seen.has(key)) return;
     seen.add(key);
     calls.push(resolved);
+  };
+
+  // Include the root node when it is itself a CallExpression
+  // (e.g. `const loginHandler = compose(...)` — forEachDescendant skips self).
+  if (body.getKind() === SyntaxKind.CallExpression) {
+    visitCall(body.asKindOrThrow(SyntaxKind.CallExpression));
+  }
+  body.forEachDescendant((node) => {
+    if (node.getKind() !== SyntaxKind.CallExpression) return;
+    visitCall(node.asKindOrThrow(SyntaxKind.CallExpression));
   });
 
   return { calls, queries };
@@ -326,6 +347,26 @@ function parseSourceFileDetailed(
 
   const dynamic = collectDynamicImports(sourceFile, resolveSpecifier);
   imports.push(...dynamic.imports);
+  const cjsImports = collectCommonJsRequires(sourceFile, resolveSpecifier);
+  imports.push(...cjsImports);
+
+  // Merge CJS destructured require bindings into the dynamic binding map
+  // so `const { issueToken } = require("./tokens"); issueToken()` resolves.
+  const bindingMap = new Map(dynamic.bindingMap);
+  for (const imp of cjsImports) {
+    if (!imp.resolvedPath) continue;
+    for (const name of imp.namedImports) {
+      if (!bindingMap.has(name)) {
+        bindingMap.set(name, { modulePath: imp.resolvedPath, exportName: name });
+      }
+    }
+    if (imp.defaultImport && !bindingMap.has(imp.defaultImport)) {
+      bindingMap.set(imp.defaultImport, {
+        modulePath: imp.resolvedPath,
+        exportName: "*",
+      });
+    }
+  }
 
   const exports: string[] = [];
   for (const decl of sourceFile.getExportedDeclarations()) {
@@ -341,7 +382,7 @@ function parseSourceFileDetailed(
       checker,
       rootDir,
       knownFiles,
-      dynamic.bindingMap,
+      bindingMap,
       resolveSpecifier,
     );
     functions.push({
@@ -359,18 +400,30 @@ function parseSourceFileDetailed(
     for (const declaration of statement.getDeclarations()) {
       const initializer = declaration.getInitializer();
       if (!initializer) continue;
+      const kind = initializer.getKind();
+      // Direct function binding: const login = () => { ... }
+      // HOF binding: const loginHandler = compose(a, async () => { issueToken() })
+      // — attribute nested callback calls to the outer const for impact analysis.
       if (
-        initializer.getKind() === SyntaxKind.ArrowFunction ||
-        initializer.getKind() === SyntaxKind.FunctionExpression
+        kind === SyntaxKind.ArrowFunction ||
+        kind === SyntaxKind.FunctionExpression ||
+        kind === SyntaxKind.CallExpression
       ) {
         const collected = collectCallsInNode(
           initializer,
           checker,
           rootDir,
           knownFiles,
-          dynamic.bindingMap,
+          bindingMap,
           resolveSpecifier,
         );
+        if (
+          kind === SyntaxKind.CallExpression &&
+          collected.calls.length === 0 &&
+          collected.queries.length === 0
+        ) {
+          continue;
+        }
         functions.push({
           name: declaration.getName(),
           startLine: getLine(declaration),
@@ -392,7 +445,7 @@ function parseSourceFileDetailed(
         checker,
         rootDir,
         knownFiles,
-        dynamic.bindingMap,
+        bindingMap,
         resolveSpecifier,
       );
       return {
@@ -587,7 +640,10 @@ export async function parseRepository(
     },
   });
 
-  for (const relativePath of limited) {
+  const jsTsFiles = limited.filter((p) => !p.replace(/\\/g, "/").endsWith(".py"));
+  const pythonFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".py"));
+
+  for (const relativePath of jsTsFiles) {
     const absolute = path.join(rootDir, relativePath);
     try {
       const content = await readFile(absolute, "utf8");
@@ -599,10 +655,20 @@ export async function parseRepository(
     }
   }
 
+  for (const relativePath of pythonFiles) {
+    const absolute = path.join(rootDir, relativePath);
+    try {
+      const content = await readFile(absolute, "utf8");
+      contentsByPath.set(relativePath, content);
+    } catch {
+      parseFailures += 1;
+    }
+  }
+
   const checker = project.getTypeChecker();
   const files: ParsedFile[] = [];
 
-  for (const relativePath of limited) {
+  for (const relativePath of jsTsFiles) {
     const content = contentsByPath.get(relativePath);
     if (!content) continue;
     const sourceFile = project.getSourceFile(relativePath);
@@ -620,7 +686,6 @@ export async function parseRepository(
         checker,
         resolveSpecifier,
       );
-      // Fill unresolved relative/alias imports via path maps
       for (const imp of parsed.imports) {
         if (imp.resolvedPath) continue;
         imp.resolvedPath =
@@ -633,6 +698,20 @@ export async function parseRepository(
       continue;
     }
   }
+
+  const pythonKnown = new Set(
+    [...knownFiles].map((p) => p.replace(/\\/g, "/")).filter((p) => p.endsWith(".py")),
+  );
+  for (const relativePath of pythonFiles) {
+    const content = contentsByPath.get(relativePath);
+    if (!content) continue;
+    try {
+      files.push(parsePythonFile(relativePath, content, pythonKnown));
+    } catch {
+      parseFailures += 1;
+    }
+  }
+  linkPythonCalls(files);
 
   const packageManifest = await readPackageManifest(rootDir);
   const packageDeps = packageManifest.deps;
@@ -956,9 +1035,11 @@ export function detectLanguages(files: ParsedFile[]): LanguageStats[] {
   const counts = new Map<string, number>();
   for (const file of files) {
     const label =
-      file.language === "tsx" || file.language === "typescript"
-        ? "TypeScript"
-        : "JavaScript";
+      file.language === "python"
+        ? "Python"
+        : file.language === "tsx" || file.language === "typescript"
+          ? "TypeScript"
+          : "JavaScript";
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   const total = files.length || 1;
@@ -1116,7 +1197,54 @@ export async function detectFrameworks(
     frameworks.add("Next.js");
   }
 
+  const pythonFrameworks = await detectPythonFrameworks(rootDir, files);
+  for (const fw of pythonFrameworks) frameworks.add(fw);
+
   return [...frameworks];
+}
+
+async function detectPythonFrameworks(
+  rootDir: string,
+  files: ParsedFile[],
+): Promise<string[]> {
+  const names = new Set<string>();
+  const hasPy = files.some((f) => f.language === "python");
+  if (!hasPy) return [];
+
+  const depTextParts: string[] = [];
+  for (const candidate of [
+    "requirements.txt",
+    "requirements-dev.txt",
+    "pyproject.toml",
+    "setup.cfg",
+    "Pipfile",
+  ]) {
+    try {
+      depTextParts.push(await readFile(path.join(rootDir, candidate), "utf8"));
+    } catch {
+      // missing
+    }
+  }
+  const blob = depTextParts.join("\n").toLowerCase();
+  if (/^\s*flask[\s=\[]/m.test(blob) || /\bflask\b/.test(blob)) names.add("Flask");
+  if (/fastapi/.test(blob)) names.add("FastAPI");
+  if (/django/.test(blob)) names.add("Django");
+  if (/celery/.test(blob)) names.add("Celery");
+  if (/sqlalchemy/.test(blob)) names.add("SQLAlchemy");
+
+  // Import-based fallback when manifests are sparse
+  const importBlob = files
+    .filter((f) => f.language === "python")
+    .flatMap((f) => f.imports.map((i) => i.moduleSpecifier))
+    .join("\n")
+    .toLowerCase();
+  if (/(^|\n)flask(\.|$)/m.test(importBlob) || importBlob.includes("flask")) {
+    names.add("Flask");
+  }
+  if (importBlob.includes("fastapi")) names.add("FastAPI");
+  if (importBlob.includes("django")) names.add("Django");
+
+  return [...names];
 }
 
 export function resolveImportPath(

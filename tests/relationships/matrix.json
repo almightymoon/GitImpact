@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "description": "v1.1.2 relationship accuracy — hand-verified edges, not framework labels",
+  "targets": {
+    "CALLS": { "precision": 0.9, "recall": 0.8 },
+    "IMPORTS": { "precision": 0.95, "recall": 0.9 },
+    "USES": { "precision": 0.9, "recall": 0.75 },
+    "HANDLED_BY": { "precision": 0.9, "recall": 0.85 },
+    "QUERIES": { "precision": 0.85, "recall": 0.8 },
+    "FETCHES": { "precision": 0.85, "recall": 0.7 },
+    "overall": { "precision": 0.9, "recall": 0.8 }
+  },
+  "cases": [
+    {
+      "id": "nestjs-small",
+      "source": "local",
+      "fixture": "../real-world/cases/nestjs-small",
+      "shape": "controller-service",
+      "why": "Controller → Service CALLS + HANDLED_BY routes"
+    },
+    {
+      "id": "express-small",
+      "source": "local",
+      "fixture": "../real-world/cases/express-small",
+      "shape": "middleware-service",
+      "why": "Middleware → Service CALLS + route IMPORTS"
+    },
+    {
+      "id": "nextjs-small",
+      "source": "local",
+      "fixture": "../real-world/cases/nextjs-small",
+      "shape": "api-handler",
+      "why": "Route handler → lib CALLS + App Router"
+    },
+    {
+      "id": "monorepo-project",
+      "source": "local",
+      "fixture": "../real-world/cases/monorepo-project",
+      "shape": "package-graph",
+      "why": "App → packages/db + packages/ui cross-package"
+    },
+    {
+      "id": "prisma-project",
+      "source": "local",
+      "fixture": "../real-world/cases/prisma-project",
+      "shape": "service-repo-queries",
+      "why": "Service → Repository CALLS + QUERIES models"
+    },
+    {
+      "id": "tiny-fixture",
+      "source": "local",
+      "fixture": "../../examples/tiny-fixture",
+      "shape": "controller-service",
+      "why": "AuthController → AuthService → UserRepository"
+    },
+    {
+      "id": "class-method",
+      "source": "local",
+      "fixture": "../accuracy/cases/class-method",
+      "shape": "method-calls",
+      "why": "Method CALLS across classes"
+    },
+    {
+      "id": "function-import",
+      "source": "local",
+      "fixture": "../accuracy/cases/function-import",
+      "shape": "function-calls",
+      "why": "Imported function CALLS"
+    },
+    {
+      "id": "cjs-require",
+      "source": "local",
+      "fixture": "../accuracy/cases/cjs-require",
+      "shape": "commonjs-require",
+      "why": "require() → IMPORTS + CALLS regression"
+    },
+    {
+      "id": "fetch-external",
+      "source": "local",
+      "fixture": "../accuracy/cases/fetch-external",
+      "shape": "http-fetch",
+      "why": "fetch() → FETCHES external service"
+    },
+    {
+      "id": "python-flask-small",
+      "source": "local",
+      "fixture": "../real-world/cases/python-flask-small",
+      "shape": "python-web",
+      "why": "Python imports + cross-module CALLS (Flask-shaped)"
+    },
+    {
+      "id": "nestjs-starter",
+      "source": "dogfood",
+      "dogfoodId": "nestjs-starter",
+      "clonePath": "../../.repos/dogfood/nestjs/typescript-starter",
+      "shape": "controller-service",
+      "why": "Held-out real Nest starter: AppController → AppService"
+    },
+    {
+      "id": "express",
+      "source": "dogfood",
+      "dogfoodId": "express",
+      "clonePath": "../../.repos/dogfood/expressjs/express",
+      "shape": "framework-core",
+      "why": "Express core: application → Router / View IMPORTS"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "description": "Next.js App Router handlers + server actions with @/ aliases",
+  "pathAliases": {
+    "@/*": ["src/*"]
+  },
+  "unsupportedPatterns": [
+    "server-actions-directive",
+    "dynamic-import"
+  ],
+  "mustDetectRoutes": [
+    { "method": "GET", "path": "/api/users" }
+  ],
+  "mustImport": [
+    { "from": "FILE:src/app/api/users/route.ts", "to": "FILE:src/lib/auth.ts" },
+    { "from": "FILE:src/app/api/users/route.ts", "to": "FILE:src/lib/users.ts" },
+    { "from": "FILE:src/lib/actions.ts", "to": "FILE:src/lib/auth.ts" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/app/api/users/route.ts:GET",
+      "to": "FUNCTION:src/lib/auth.ts:verifySession"
+    },
+    {
+      "from": "FUNCTION:src/app/api/users/route.ts:GET",
+      "to": "FUNCTION:src/lib/users.ts:listUsers"
+    },
+    {
+      "from": "FUNCTION:src/lib/users.ts:listUsers",
+      "to": "FUNCTION:src/lib/users.ts:findUser"
+    },
+    {
+      "from": "FUNCTION:src/lib/actions.ts:createAccount",
+      "to": "FUNCTION:src/lib/auth.ts:hashPassword"
+    }
+  ],
+  "knownUnresolved": [
+    {
+      "pattern": "dynamic-import",
+      "note": "await import('@/lib/users') style loaders are not resolved as CALLS"
+    }
+  ]
+}

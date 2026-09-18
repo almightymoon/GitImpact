@@ -1,0 +1,1531 @@
+{
+  "generatedAt": "2026-09-18T18:30:17.580Z",
+  "caseCount": 13,
+  "scoredCases": 13,
+  "counts": {
+    "TRUE_POSITIVE": 70,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  },
+  "overall": {
+    "type": "overall",
+    "truePositives": 70,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 30,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 26,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "DEPENDS_ON",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "USES",
+      "truePositives": 4,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "QUERIES",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "FETCHES",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "targets": {
+    "CALLS": {
+      "precision": 0.9,
+      "recall": 0.8
+    },
+    "IMPORTS": {
+      "precision": 0.95,
+      "recall": 0.9
+    },
+    "USES": {
+      "precision": 0.9,
+      "recall": 0.75
+    },
+    "HANDLED_BY": {
+      "precision": 0.9,
+      "recall": 0.85
+    },
+    "QUERIES": {
+      "precision": 0.85,
+      "recall": 0.8
+    },
+    "FETCHES": {
+      "precision": 0.85,
+      "recall": 0.7
+    },
+    "overall": {
+      "precision": 0.9,
+      "recall": 0.8
+    }
+  },
+  "targetHits": {
+    "CALLS": {
+      "precisionOk": true,
+      "recallOk": true
+    },
+    "IMPORTS": {
+      "precisionOk": true,
+      "recallOk": true
+    },
+    "USES": {
+      "precisionOk": true,
+      "recallOk": true
+    },
+    "HANDLED_BY": {
+      "precisionOk": true,
+      "recallOk": true
+    },
+    "QUERIES": {
+      "precisionOk": true,
+      "recallOk": true
+    },
+    "FETCHES": {
+      "precisionOk": true,
+      "recallOk": true
+    },
+    "overall": {
+      "precisionOk": true,
+      "recallOk": true
+    }
+  },
+  "cases": [
+    {
+      "id": "nestjs-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 1117,
+      "shape": "controller-service",
+      "edgeCount": 48,
+      "checked": 9,
+      "counts": {
+        "TRUE_POSITIVE": 9,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 9,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "DEPENDS_ON",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "HANDLED_BY",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:METHOD:src/users.service.ts:UsersService.findAll→METHOD:src/users.service.ts:UsersService.findOne:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/users.service.ts:UsersService.findAll",
+          "to": "METHOD:src/users.service.ts:UsersService.findOne",
+          "matchedEdgeId": "METHOD:src/users.service.ts:UsersService.findAll->METHOD:src/users.service.ts:UsersService.findOne:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:METHOD:src/users.controller.ts:UsersController.list→METHOD:src/users.service.ts:UsersService.findAll:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/users.controller.ts:UsersController.list",
+          "to": "METHOD:src/users.service.ts:UsersService.findAll",
+          "matchedEdgeId": "METHOD:src/users.controller.ts:UsersController.list->METHOD:src/users.service.ts:UsersService.findAll:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:METHOD:src/users.controller.ts:UsersController.create→METHOD:src/users.service.ts:UsersService.findOne:2",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/users.controller.ts:UsersController.create",
+          "to": "METHOD:src/users.service.ts:UsersService.findOne",
+          "matchedEdgeId": "METHOD:src/users.controller.ts:UsersController.create->METHOD:src/users.service.ts:UsersService.findOne:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/users.controller.ts→FILE:src/users.service.ts:3",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/users.controller.ts",
+          "to": "FILE:src/users.service.ts",
+          "matchedEdgeId": "FILE:src/users.controller.ts->FILE:src/users.service.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/users.module.ts→FILE:src/users.controller.ts:4",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/users.module.ts",
+          "to": "FILE:src/users.controller.ts",
+          "matchedEdgeId": "FILE:src/users.module.ts->FILE:src/users.controller.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/users.module.ts→FILE:src/users.service.ts:5",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/users.module.ts",
+          "to": "FILE:src/users.service.ts",
+          "matchedEdgeId": "FILE:src/users.module.ts->FILE:src/users.service.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "DEPENDS_ON:CLASS:src/users.controller.ts:UsersController→CLASS:src/users.service.ts:UsersService:6",
+          "class": "TRUE_POSITIVE",
+          "type": "DEPENDS_ON",
+          "from": "CLASS:src/users.controller.ts:UsersController",
+          "to": "CLASS:src/users.service.ts:UsersService",
+          "matchedEdgeId": "CLASS:src/users.controller.ts:UsersController->CLASS:src/users.service.ts:UsersService:DEPENDS_ON",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:nestjs:GET:/users:src/users.controller.ts→METHOD:src/users.controller.ts:UsersController.list:7",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:nestjs:GET:/users:src/users.controller.ts",
+          "to": "METHOD:src/users.controller.ts:UsersController.list",
+          "matchedEdgeId": "API_ROUTE:nestjs:GET:/users:src/users.controller.ts->METHOD:src/users.controller.ts:UsersController.list:HANDLED_BY",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:nestjs:POST:/users:src/users.controller.ts→METHOD:src/users.controller.ts:UsersController.create:8",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:nestjs:POST:/users:src/users.controller.ts",
+          "to": "METHOD:src/users.controller.ts:UsersController.create",
+          "matchedEdgeId": "API_ROUTE:nestjs:POST:/users:src/users.controller.ts->METHOD:src/users.controller.ts:UsersController.create:HANDLED_BY",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "express-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 601,
+      "shape": "middleware-service",
+      "edgeCount": 28,
+      "checked": 8,
+      "counts": {
+        "TRUE_POSITIVE": 8,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 8,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "USES",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:src/middleware/auth.ts:requireAuth→FUNCTION:src/services/auth.ts:verifyToken:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/middleware/auth.ts:requireAuth",
+          "to": "FUNCTION:src/services/auth.ts:verifyToken",
+          "matchedEdgeId": "FUNCTION:src/middleware/auth.ts:requireAuth->FUNCTION:src/services/auth.ts:verifyToken:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:src/routes/auth.ts:loginHandler→FUNCTION:src/services/auth.ts:issueToken:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+          "to": "FUNCTION:src/services/auth.ts:issueToken",
+          "matchedEdgeId": "FUNCTION:src/routes/auth.ts:loginHandler->FUNCTION:src/services/auth.ts:issueToken:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:src/routes/auth.ts:loginHandler→FUNCTION:src/middleware/compose.ts:compose:2",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+          "to": "FUNCTION:src/middleware/compose.ts:compose",
+          "matchedEdgeId": "FUNCTION:src/routes/auth.ts:loginHandler->FUNCTION:src/middleware/compose.ts:compose:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/middleware/auth.ts→FILE:src/services/auth.ts:3",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/middleware/auth.ts",
+          "to": "FILE:src/services/auth.ts",
+          "matchedEdgeId": "FILE:src/middleware/auth.ts->FILE:src/services/auth.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/routes/auth.ts→FILE:src/middleware/auth.ts:4",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/routes/auth.ts",
+          "to": "FILE:src/middleware/auth.ts",
+          "matchedEdgeId": "FILE:src/routes/auth.ts->FILE:src/middleware/auth.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/routes/auth.ts→FILE:src/services/auth.ts:5",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/routes/auth.ts",
+          "to": "FILE:src/services/auth.ts",
+          "matchedEdgeId": "FILE:src/routes/auth.ts->FILE:src/services/auth.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "USES:FILE:src/routes/auth.ts→FUNCTION:src/services/auth.ts:issueToken:6",
+          "class": "TRUE_POSITIVE",
+          "type": "USES",
+          "from": "FILE:src/routes/auth.ts",
+          "to": "FUNCTION:src/services/auth.ts:issueToken",
+          "matchedEdgeId": "FILE:src/routes/auth.ts->FUNCTION:src/services/auth.ts:issueToken:USES",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "USES:FILE:src/middleware/auth.ts→FUNCTION:src/services/auth.ts:verifyToken:7",
+          "class": "TRUE_POSITIVE",
+          "type": "USES",
+          "from": "FILE:src/middleware/auth.ts",
+          "to": "FUNCTION:src/services/auth.ts:verifyToken",
+          "matchedEdgeId": "FILE:src/middleware/auth.ts->FUNCTION:src/services/auth.ts:verifyToken:USES",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "nextjs-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 502,
+      "shape": "api-handler",
+      "edgeCount": 26,
+      "checked": 7,
+      "counts": {
+        "TRUE_POSITIVE": 7,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 7,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 4,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:src/app/api/users/route.ts:GET→FUNCTION:src/lib/auth.ts:verifySession:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/app/api/users/route.ts:GET",
+          "to": "FUNCTION:src/lib/auth.ts:verifySession",
+          "matchedEdgeId": "FUNCTION:src/app/api/users/route.ts:GET->FUNCTION:src/lib/auth.ts:verifySession:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:src/app/api/users/route.ts:GET→FUNCTION:src/lib/users.ts:listUsers:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/app/api/users/route.ts:GET",
+          "to": "FUNCTION:src/lib/users.ts:listUsers",
+          "matchedEdgeId": "FUNCTION:src/app/api/users/route.ts:GET->FUNCTION:src/lib/users.ts:listUsers:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:src/lib/users.ts:listUsers→FUNCTION:src/lib/users.ts:findUser:2",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/lib/users.ts:listUsers",
+          "to": "FUNCTION:src/lib/users.ts:findUser",
+          "matchedEdgeId": "FUNCTION:src/lib/users.ts:listUsers->FUNCTION:src/lib/users.ts:findUser:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:src/lib/actions.ts:createAccount→FUNCTION:src/lib/auth.ts:hashPassword:3",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/lib/actions.ts:createAccount",
+          "to": "FUNCTION:src/lib/auth.ts:hashPassword",
+          "matchedEdgeId": "FUNCTION:src/lib/actions.ts:createAccount->FUNCTION:src/lib/auth.ts:hashPassword:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/app/api/users/route.ts→FILE:src/lib/auth.ts:4",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/app/api/users/route.ts",
+          "to": "FILE:src/lib/auth.ts",
+          "matchedEdgeId": "FILE:src/app/api/users/route.ts->FILE:src/lib/auth.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/app/api/users/route.ts→FILE:src/lib/users.ts:5",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/app/api/users/route.ts",
+          "to": "FILE:src/lib/users.ts",
+          "matchedEdgeId": "FILE:src/app/api/users/route.ts->FILE:src/lib/users.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/lib/actions.ts→FILE:src/lib/auth.ts:6",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/lib/actions.ts",
+          "to": "FILE:src/lib/auth.ts",
+          "matchedEdgeId": "FILE:src/lib/actions.ts->FILE:src/lib/auth.ts:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "monorepo-project",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 463,
+      "shape": "package-graph",
+      "edgeCount": 16,
+      "checked": 5,
+      "counts": {
+        "TRUE_POSITIVE": 5,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 5,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:apps/web/src/page.ts:HomePage→FUNCTION:packages/db/src/query.ts:queryUsers:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:apps/web/src/page.ts:HomePage",
+          "to": "FUNCTION:packages/db/src/query.ts:queryUsers",
+          "matchedEdgeId": "FUNCTION:apps/web/src/page.ts:HomePage->FUNCTION:packages/db/src/query.ts:queryUsers:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:apps/web/src/page.ts:HomePage→FUNCTION:packages/ui/src/button.ts:Button:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:apps/web/src/page.ts:HomePage",
+          "to": "FUNCTION:packages/ui/src/button.ts:Button",
+          "matchedEdgeId": "FUNCTION:apps/web/src/page.ts:HomePage->FUNCTION:packages/ui/src/button.ts:Button:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:apps/web/src/page.ts:lazyHome→FUNCTION:packages/db/src/query.ts:queryUsers:2",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:apps/web/src/page.ts:lazyHome",
+          "to": "FUNCTION:packages/db/src/query.ts:queryUsers",
+          "matchedEdgeId": "FUNCTION:apps/web/src/page.ts:lazyHome->FUNCTION:packages/db/src/query.ts:queryUsers:CALLS",
+          "confidence": "MEDIUM"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:apps/web/src/page.ts→FILE:packages/db/src/index.ts:3",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:apps/web/src/page.ts",
+          "to": "FILE:packages/db/src/index.ts",
+          "matchedEdgeId": "FILE:apps/web/src/page.ts->FILE:packages/db/src/index.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:apps/web/src/page.ts→FILE:packages/ui/src/index.ts:4",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:apps/web/src/page.ts",
+          "to": "FILE:packages/ui/src/index.ts",
+          "matchedEdgeId": "FILE:apps/web/src/page.ts->FILE:packages/ui/src/index.ts:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "prisma-project",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 480,
+      "shape": "service-repo-queries",
+      "edgeCount": 28,
+      "checked": 7,
+      "counts": {
+        "TRUE_POSITIVE": 7,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 7,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "QUERIES",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:src/app.ts:register→FUNCTION:src/users.repo.ts:createUser:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/app.ts:register",
+          "to": "FUNCTION:src/users.repo.ts:createUser",
+          "matchedEdgeId": "FUNCTION:src/app.ts:register->FUNCTION:src/users.repo.ts:createUser:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:src/app.ts:register→FUNCTION:src/users.repo.ts:listUsers:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/app.ts:register",
+          "to": "FUNCTION:src/users.repo.ts:listUsers",
+          "matchedEdgeId": "FUNCTION:src/app.ts:register->FUNCTION:src/users.repo.ts:listUsers:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/app.ts→FILE:src/users.repo.ts:2",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/app.ts",
+          "to": "FILE:src/users.repo.ts",
+          "matchedEdgeId": "FILE:src/app.ts->FILE:src/users.repo.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/users.repo.ts→FILE:src/generated-client.ts:3",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/users.repo.ts",
+          "to": "FILE:src/generated-client.ts",
+          "matchedEdgeId": "FILE:src/users.repo.ts->FILE:src/generated-client.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "QUERIES:FUNCTION:src/users.repo.ts:listUsers→DATABASE_MODEL:src/users.repo.ts:User:4",
+          "class": "TRUE_POSITIVE",
+          "type": "QUERIES",
+          "from": "FUNCTION:src/users.repo.ts:listUsers",
+          "to": "DATABASE_MODEL:src/users.repo.ts:User",
+          "matchedEdgeId": "FUNCTION:src/users.repo.ts:listUsers->DATABASE_MODEL:src/users.repo.ts:User:QUERIES",
+          "confidence": "MEDIUM"
+        },
+        {
+          "expectationId": "QUERIES:FUNCTION:src/users.repo.ts:getUser→DATABASE_MODEL:src/users.repo.ts:User:5",
+          "class": "TRUE_POSITIVE",
+          "type": "QUERIES",
+          "from": "FUNCTION:src/users.repo.ts:getUser",
+          "to": "DATABASE_MODEL:src/users.repo.ts:User",
+          "matchedEdgeId": "FUNCTION:src/users.repo.ts:getUser->DATABASE_MODEL:src/users.repo.ts:User:QUERIES",
+          "confidence": "MEDIUM"
+        },
+        {
+          "expectationId": "QUERIES:FUNCTION:src/users.repo.ts:createUser→DATABASE_MODEL:src/users.repo.ts:User:6",
+          "class": "TRUE_POSITIVE",
+          "type": "QUERIES",
+          "from": "FUNCTION:src/users.repo.ts:createUser",
+          "to": "DATABASE_MODEL:src/users.repo.ts:User",
+          "matchedEdgeId": "FUNCTION:src/users.repo.ts:createUser->DATABASE_MODEL:src/users.repo.ts:User:QUERIES",
+          "confidence": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "tiny-fixture",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 477,
+      "shape": "controller-service",
+      "edgeCount": 96,
+      "checked": 9,
+      "counts": {
+        "TRUE_POSITIVE": 9,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 9,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 6,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "ctrl-login-svc",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/auth.controller.ts:AuthController.loginHandler",
+          "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+          "matchedEdgeId": "METHOD:src/auth.controller.ts:AuthController.loginHandler->METHOD:src/auth.service.ts:AuthService.authenticate:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "ctrl-token-svc",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/auth.controller.ts:AuthController.tokenHandler",
+          "to": "METHOD:src/auth.service.ts:AuthService.generateToken",
+          "matchedEdgeId": "METHOD:src/auth.controller.ts:AuthController.tokenHandler->METHOD:src/auth.service.ts:AuthService.generateToken:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "svc-auth-repo",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+          "to": "METHOD:src/users.ts:UserRepository.findByEmail",
+          "matchedEdgeId": "METHOD:src/auth.service.ts:AuthService.authenticate->METHOD:src/users.ts:UserRepository.findByEmail:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "svc-register-create",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/auth.service.ts:AuthService.register",
+          "to": "FUNCTION:src/users.ts:createUser",
+          "matchedEdgeId": "METHOD:src/auth.service.ts:AuthService.register->FUNCTION:src/users.ts:createUser:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "fn-login",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/auth.controller.ts:loginHandler",
+          "to": "FUNCTION:src/auth.service.ts:authenticate",
+          "matchedEdgeId": "FUNCTION:src/auth.controller.ts:loginHandler->FUNCTION:src/auth.service.ts:authenticate:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/auth.controller.ts→FILE:src/auth.service.ts:5",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/auth.controller.ts",
+          "to": "FILE:src/auth.service.ts",
+          "matchedEdgeId": "FILE:src/auth.controller.ts->FILE:src/auth.service.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/auth.service.ts→FILE:src/users.ts:6",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/auth.service.ts",
+          "to": "FILE:src/users.ts",
+          "matchedEdgeId": "FILE:src/auth.service.ts->FILE:src/users.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/routes/auth.router.ts→FILE:src/auth.service.ts:7",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/routes/auth.router.ts",
+          "to": "FILE:src/auth.service.ts",
+          "matchedEdgeId": "FILE:src/routes/auth.router.ts->FILE:src/auth.service.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:src/users.ts:createUser→METHOD:src/auth.service.ts:AuthService.authenticate:8",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/users.ts:createUser",
+          "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+          "note": "Repository must not call AuthService"
+        }
+      ]
+    },
+    {
+      "id": "class-method",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 464,
+      "shape": "method-calls",
+      "edgeCount": 12,
+      "checked": 3,
+      "counts": {
+        "TRUE_POSITIVE": 3,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 3,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:src/caller.ts:login→METHOD:src/auth.service.ts:AuthService.authenticate:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/caller.ts:login",
+          "to": "METHOD:src/auth.service.ts:AuthService.authenticate",
+          "matchedEdgeId": "FUNCTION:src/caller.ts:login->METHOD:src/auth.service.ts:AuthService.authenticate:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:METHOD:src/auth.service.ts:AuthService.authenticate→METHOD:src/auth.service.ts:AuthService.issueToken:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+          "to": "METHOD:src/auth.service.ts:AuthService.issueToken",
+          "matchedEdgeId": "METHOD:src/auth.service.ts:AuthService.authenticate->METHOD:src/auth.service.ts:AuthService.issueToken:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/caller.ts→FILE:src/auth.service.ts:2",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/caller.ts",
+          "to": "FILE:src/auth.service.ts",
+          "matchedEdgeId": "FILE:src/caller.ts->FILE:src/auth.service.ts:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "function-import",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 402,
+      "shape": "function-calls",
+      "edgeCount": 7,
+      "checked": 3,
+      "counts": {
+        "TRUE_POSITIVE": 3,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 3,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "USES",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:src/caller.ts:caller→FUNCTION:src/foo.ts:foo:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/caller.ts:caller",
+          "to": "FUNCTION:src/foo.ts:foo",
+          "matchedEdgeId": "FUNCTION:src/caller.ts:caller->FUNCTION:src/foo.ts:foo:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/caller.ts→FILE:src/foo.ts:1",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/caller.ts",
+          "to": "FILE:src/foo.ts",
+          "matchedEdgeId": "FILE:src/caller.ts->FILE:src/foo.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "USES:FILE:src/caller.ts→FUNCTION:src/foo.ts:foo:2",
+          "class": "TRUE_POSITIVE",
+          "type": "USES",
+          "from": "FILE:src/caller.ts",
+          "to": "FUNCTION:src/foo.ts:foo",
+          "matchedEdgeId": "FILE:src/caller.ts->FUNCTION:src/foo.ts:foo:USES",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "cjs-require",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 438,
+      "shape": "commonjs-require",
+      "edgeCount": 8,
+      "checked": 2,
+      "counts": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:src/routes/login.js:login→FUNCTION:src/lib/tokens.js:issueToken:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/routes/login.js:login",
+          "to": "FUNCTION:src/lib/tokens.js:issueToken",
+          "matchedEdgeId": "FUNCTION:src/routes/login.js:login->FUNCTION:src/lib/tokens.js:issueToken:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/routes/login.js→FILE:src/lib/tokens.js:1",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/routes/login.js",
+          "to": "FILE:src/lib/tokens.js",
+          "matchedEdgeId": "FILE:src/routes/login.js->FILE:src/lib/tokens.js:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "fetch-external",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 389,
+      "shape": "http-fetch",
+      "edgeCount": 6,
+      "checked": 2,
+      "counts": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "FETCHES",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "FETCHES:FUNCTION:src/client.ts:ping→EXTERNAL_SERVICE:api.example.com:0",
+          "class": "TRUE_POSITIVE",
+          "type": "FETCHES",
+          "from": "FUNCTION:src/client.ts:ping",
+          "to": "EXTERNAL_SERVICE:api.example.com",
+          "matchedEdgeId": "FUNCTION:src/client.ts:ping->EXTERNAL_SERVICE:api.example.com:FETCHES",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "FETCHES:FUNCTION:src/client.ts:loadProfile→EXTERNAL_SERVICE::1",
+          "class": "TRUE_POSITIVE",
+          "type": "FETCHES",
+          "from": "FUNCTION:src/client.ts:loadProfile",
+          "to": "EXTERNAL_SERVICE:api.example.com",
+          "matchedEdgeId": "FUNCTION:src/client.ts:loadProfile->EXTERNAL_SERVICE:api.example.com:FETCHES",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python-flask-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 12,
+      "shape": "python-web",
+      "edgeCount": 16,
+      "checked": 5,
+      "counts": {
+        "TRUE_POSITIVE": 5,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 5,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "USES",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:app.py:login→FUNCTION:services/auth.py:issue_token:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:app.py:login",
+          "to": "FUNCTION:services/auth.py:issue_token",
+          "matchedEdgeId": "FUNCTION:app.py:login->FUNCTION:services/auth.py:issue_token:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:app.py:me→FUNCTION:services/auth.py:verify_token:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:app.py:me",
+          "to": "FUNCTION:services/auth.py:verify_token",
+          "matchedEdgeId": "FUNCTION:app.py:me->FUNCTION:services/auth.py:verify_token:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:services/auth.py:require_auth→FUNCTION:services/auth.py:verify_token:2",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:services/auth.py:require_auth",
+          "to": "FUNCTION:services/auth.py:verify_token",
+          "matchedEdgeId": "FUNCTION:services/auth.py:require_auth->FUNCTION:services/auth.py:verify_token:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:app.py→FILE:services/auth.py:3",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:app.py",
+          "to": "FILE:services/auth.py",
+          "matchedEdgeId": "FILE:app.py->FILE:services/auth.py:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "USES:FILE:app.py→FUNCTION:services/auth.py:issue_token:4",
+          "class": "TRUE_POSITIVE",
+          "type": "USES",
+          "from": "FILE:app.py",
+          "to": "FUNCTION:services/auth.py:issue_token",
+          "matchedEdgeId": "FILE:app.py->FUNCTION:services/auth.py:issue_token:USES",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "nestjs-starter",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 506,
+      "shape": "controller-service",
+      "edgeCount": 37,
+      "checked": 6,
+      "counts": {
+        "TRUE_POSITIVE": 6,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 6,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "DEPENDS_ON",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "HANDLED_BY",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "ctrl-svc-hello",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:src/app.controller.ts:AppController.getHello",
+          "to": "METHOD:src/app.service.ts:AppService.getHello",
+          "matchedEdgeId": "METHOD:src/app.controller.ts:AppController.getHello->METHOD:src/app.service.ts:AppService.getHello:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/app.controller.ts→FILE:src/app.service.ts:1",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/app.controller.ts",
+          "to": "FILE:src/app.service.ts",
+          "matchedEdgeId": "FILE:src/app.controller.ts->FILE:src/app.service.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/app.module.ts→FILE:src/app.controller.ts:2",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/app.module.ts",
+          "to": "FILE:src/app.controller.ts",
+          "matchedEdgeId": "FILE:src/app.module.ts->FILE:src/app.controller.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/app.module.ts→FILE:src/app.service.ts:3",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/app.module.ts",
+          "to": "FILE:src/app.service.ts",
+          "matchedEdgeId": "FILE:src/app.module.ts->FILE:src/app.service.ts:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "DEPENDS_ON:CLASS:src/app.controller.ts:AppController→CLASS:src/app.service.ts:AppService:4",
+          "class": "TRUE_POSITIVE",
+          "type": "DEPENDS_ON",
+          "from": "CLASS:src/app.controller.ts:AppController",
+          "to": "CLASS:src/app.service.ts:AppService",
+          "matchedEdgeId": "CLASS:src/app.controller.ts:AppController->CLASS:src/app.service.ts:AppService:DEPENDS_ON",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:nestjs:GET→METHOD:src/app.controller.ts:AppController.getHello:5",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:nestjs:GET:/:src/app.controller.ts",
+          "to": "METHOD:src/app.controller.ts:AppController.getHello",
+          "matchedEdgeId": "API_ROUTE:nestjs:GET:/:src/app.controller.ts->METHOD:src/app.controller.ts:AppController.getHello:HANDLED_BY",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "express",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 1628,
+      "shape": "framework-core",
+      "edgeCount": 546,
+      "checked": 4,
+      "counts": {
+        "TRUE_POSITIVE": 4,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 4,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "IMPORTS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "app-view",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:lib/application.js",
+          "to": "FILE:lib/view.js",
+          "matchedEdgeId": "FILE:lib/application.js->FILE:lib/view.js:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "app-utils",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:lib/application.js",
+          "to": "FILE:lib/utils.js",
+          "matchedEdgeId": "FILE:lib/application.js->FILE:lib/utils.js:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "express-entry",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:lib/express.js",
+          "to": "FILE:lib/application.js",
+          "matchedEdgeId": "FILE:lib/express.js->FILE:lib/application.js:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FILE:lib/view.js→FILE:lib/application.js:3",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FILE:lib/view.js",
+          "to": "FILE:lib/application.js",
+          "note": "View should not call Application"
+        }
+      ]
+    }
+  ]
+}

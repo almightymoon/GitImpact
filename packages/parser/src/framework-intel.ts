@@ -70,6 +70,66 @@ export function extractConstructorDependencies(
 }
 
 /**
+ * Collect CommonJS `require("...")` as ParsedImport records (Express-style .js).
+ * Only string-literal requires; dynamic `require(var)` is skipped.
+ */
+export function collectCommonJsRequires(
+  sourceFile: SourceFile,
+  resolveSpecifier: (specifier: string) => string | undefined,
+): ParsedImport[] {
+  const imports: ParsedImport[] = [];
+  const bySpec = new Map<string, ParsedImport>();
+
+  sourceFile.forEachDescendant((node) => {
+    if (node.getKind() !== SyntaxKind.CallExpression) return;
+    const call = node.asKindOrThrow(SyntaxKind.CallExpression);
+    const expr = call.getExpression();
+    if (expr.getKind() !== SyntaxKind.Identifier || expr.getText() !== "require") {
+      return;
+    }
+    const arg = call.getArguments()[0];
+    if (!arg || arg.getKind() !== SyntaxKind.StringLiteral) return;
+    const moduleSpecifier = arg.asKindOrThrow(SyntaxKind.StringLiteral).getLiteralText();
+    const resolvedPath = resolveSpecifier(moduleSpecifier);
+
+    let record = bySpec.get(moduleSpecifier);
+    if (!record) {
+      record = {
+        moduleSpecifier,
+        namedImports: [],
+        isTypeOnly: false,
+        resolvedPath,
+      };
+      bySpec.set(moduleSpecifier, record);
+      imports.push(record);
+    }
+
+    // const { issueToken } = require("./tokens")
+    // const tokens = require("./tokens")
+    const parent = call.getParent();
+    const init =
+      parent?.getKind() === SyntaxKind.AwaitExpression ? parent.getParent() : parent;
+    if (!init || init.getKind() !== SyntaxKind.VariableDeclaration) return;
+    const decl = init.asKindOrThrow(SyntaxKind.VariableDeclaration);
+    const nameNode = decl.getNameNode();
+    if (nameNode.getKind() === SyntaxKind.ObjectBindingPattern) {
+      const names = nameNode
+        .asKindOrThrow(SyntaxKind.ObjectBindingPattern)
+        .getElements()
+        .map((el) => el.getNameNode()?.getText())
+        .filter(Boolean) as string[];
+      for (const name of names) {
+        if (!record.namedImports.includes(name)) record.namedImports.push(name);
+      }
+    } else if (nameNode.getKind() === SyntaxKind.Identifier) {
+      record.defaultImport = nameNode.getText();
+    }
+  });
+
+  return imports;
+}
+
+/**
  * Collect `import("...")` / `await import("...")` as ParsedImport records.
  * Also returns a map of local binding name → { module, exportName } for follow-on call resolution.
  */
@@ -156,6 +216,45 @@ export function tryResolveDynamicImportCall(
     resolvedSymbol: specifier ?? "import",
     resolvedKind: resolvedPath ? "MODULE" : "UNRESOLVED",
     confidence: resolvedPath ? "HIGH" : "LOW",
+    startLine: call.getStartLineNumber(),
+  };
+}
+
+/**
+ * Global `fetch("https://host/...")` → EXTERNAL call for FETCHES edges.
+ * Template literals with a static https?:// prefix are also accepted.
+ */
+export function tryResolveFetchCall(call: CallExpression): ResolvedCall | null {
+  const expr = call.getExpression();
+  if (expr.getKind() !== SyntaxKind.Identifier || expr.getText() !== "fetch") {
+    return null;
+  }
+  const arg = call.getArguments()[0];
+  let url: string | undefined;
+  if (arg?.getKind() === SyntaxKind.StringLiteral) {
+    url = arg.asKindOrThrow(SyntaxKind.StringLiteral).getLiteralText();
+  } else if (arg?.getKind() === SyntaxKind.NoSubstitutionTemplateLiteral) {
+    url = arg.getText().slice(1, -1);
+  } else if (arg?.getKind() === SyntaxKind.TemplateExpression) {
+    const head = arg.getText();
+    const match = head.match(/^`?(https?:\/\/[^/`$\s]+)/);
+    url = match?.[1];
+  }
+  let host = "http";
+  if (url) {
+    try {
+      host = new URL(url).host || host;
+    } catch {
+      const m = url.match(/^https?:\/\/([^/]+)/);
+      if (m?.[1]) host = m[1];
+    }
+  }
+  return {
+    calleeName: "fetch",
+    resolvedFile: host,
+    resolvedSymbol: host,
+    resolvedKind: "EXTERNAL",
+    confidence: url ? "HIGH" : "MEDIUM",
     startLine: call.getStartLineNumber(),
   };
 }

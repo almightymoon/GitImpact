@@ -443,6 +443,30 @@ export function detectFrameworkNames(
   ) {
     names.push("Payload");
   }
+
+  // Python frameworks (imports / package deps mirrored from parser manifests)
+  const pythonImports = files
+    .filter((f) => f.language === "python")
+    .flatMap((f) => f.imports.map((i) => i.moduleSpecifier.toLowerCase()));
+  if (
+    pythonImports.some((m) => m === "flask" || m.startsWith("flask.")) ||
+    packageDeps.flask
+  ) {
+    names.push("Flask");
+  }
+  if (
+    pythonImports.some((m) => m === "fastapi" || m.startsWith("fastapi.")) ||
+    packageDeps.fastapi
+  ) {
+    names.push("FastAPI");
+  }
+  if (
+    pythonImports.some((m) => m === "django" || m.startsWith("django.")) ||
+    packageDeps.django
+  ) {
+    names.push("Django");
+  }
+
   return [...new Set(names)];
 }
 

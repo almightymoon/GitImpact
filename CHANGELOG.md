@@ -38,6 +38,12 @@
 - Relationship evidence on CALLS/IMPORTS/USES edges (file, snippet, resolved-through) with graph edge inspect UI
 - Monorepo architecture: `apps/*` / `packages/*` become first-class systems with cross-package uses/calls edges
 - CLI: `structure`, `impact`, `pr --base`, `export architecture.md` for local adoption without GitHub
+- v1.1.2 start: relationship accuracy benchmark (`pnpm relationships`) with TP/FP/MISSING taxonomy and precision/recall targets; MEDIUM confidence copy explains Lua/SQL blind spots instead of inflating trust
+- CommonJS `require("...")` now emits IMPORTS edges (Express-style .js) — fixed first relationship-benchmark miss
+- HOF attribution: `const loginHandler = compose(...)` includes the outer call + nested callback CALLS
+- Destructured `const { fn } = require(...)` bindings resolve to CALLS; USES probes in relationship suite
+- `fetch("https://host/...")` → FETCHES external-service edges
+- Python surface: `.py` in inventory, heuristic parser (imports/defs/classes/calls), Flask/FastAPI/Django detection, `python-flask-small` relationship fixture; dogfood wave 5 activated
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 

@@ -1,0 +1,53 @@
+{
+  "id": "fetch-external",
+  "classifications": [
+    {
+      "expectationId": "FETCHES:FUNCTION:src/client.ts:ping→EXTERNAL_SERVICE:api.example.com:0",
+      "class": "TRUE_POSITIVE",
+      "type": "FETCHES",
+      "from": "FUNCTION:src/client.ts:ping",
+      "to": "EXTERNAL_SERVICE:api.example.com",
+      "matchedEdgeId": "FUNCTION:src/client.ts:ping->EXTERNAL_SERVICE:api.example.com:FETCHES",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "FETCHES:FUNCTION:src/client.ts:loadProfile→EXTERNAL_SERVICE::1",
+      "class": "TRUE_POSITIVE",
+      "type": "FETCHES",
+      "from": "FUNCTION:src/client.ts:loadProfile",
+      "to": "EXTERNAL_SERVICE:api.example.com",
+      "matchedEdgeId": "FUNCTION:src/client.ts:loadProfile->EXTERNAL_SERVICE:api.example.com:FETCHES",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 2,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "FETCHES",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 2,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

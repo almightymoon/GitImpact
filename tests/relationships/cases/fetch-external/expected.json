@@ -1,0 +1,15 @@
+{
+  "description": "Global fetch() → FETCHES external service",
+  "mustEdge": [
+    {
+      "from": "FUNCTION:src/client.ts:ping",
+      "to": "EXTERNAL_SERVICE:api.example.com",
+      "type": "FETCHES"
+    },
+    {
+      "from": "FUNCTION:src/client.ts:loadProfile",
+      "toContains": "EXTERNAL_SERVICE:",
+      "type": "FETCHES"
+    }
+  ]
+}

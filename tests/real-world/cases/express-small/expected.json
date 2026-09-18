@@ -1,7 +1,6 @@
 {
   "description": "Express middleware composition + service calls",
   "unsupportedPatterns": [
-    "middleware-compose-hof",
     "framework-app-post-binding"
   ],
   "mustDetectRoutes": [
@@ -16,24 +15,14 @@
     {
       "from": "FUNCTION:src/middleware/auth.ts:requireAuth",
       "to": "FUNCTION:src/services/auth.ts:verifyToken"
-    }
-  ],
-  "softMustCall": [
-    {
-      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
-      "to": "FUNCTION:src/services/auth.ts:issueToken",
-      "note": "Call inside compose() HOF callback may not attach to loginHandler symbol"
     },
     {
-      "fromContains": "src/routes/auth.ts",
-      "to": "FUNCTION:src/middleware/compose.ts:compose",
-      "note": "compose() used as initializer may not emit a CALLS edge from a named function"
-    }
-  ],
-  "knownUnresolved": [
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/services/auth.ts:issueToken"
+    },
     {
-      "pattern": "middleware-compose-hof",
-      "note": "compose(...handlers) higher-order wiring"
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/middleware/compose.ts:compose"
     }
   ]
 }

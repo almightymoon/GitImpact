@@ -1,0 +1,40 @@
+{
+  "description": "Express middleware composition + service calls",
+  "unsupportedPatterns": [
+    "framework-app-post-binding"
+  ],
+  "mustDetectRoutes": [
+    { "method": "POST", "path": "/login" }
+  ],
+  "mustImport": [
+    { "from": "FILE:src/middleware/auth.ts", "to": "FILE:src/services/auth.ts" },
+    { "from": "FILE:src/routes/auth.ts", "to": "FILE:src/middleware/auth.ts" },
+    { "from": "FILE:src/routes/auth.ts", "to": "FILE:src/services/auth.ts" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/middleware/auth.ts:requireAuth",
+      "to": "FUNCTION:src/services/auth.ts:verifyToken"
+    },
+    {
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/services/auth.ts:issueToken"
+    },
+    {
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/middleware/compose.ts:compose"
+    }
+  ],
+  "mustEdge": [
+    {
+      "from": "FILE:src/routes/auth.ts",
+      "to": "FUNCTION:src/services/auth.ts:issueToken",
+      "type": "USES"
+    },
+    {
+      "from": "FILE:src/middleware/auth.ts",
+      "to": "FUNCTION:src/services/auth.ts:verifyToken",
+      "type": "USES"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "description": "CommonJS require() → IMPORTS regression (Express-style .js)",
+  "mustImport": [
+    {
+      "from": "FILE:src/routes/login.js",
+      "to": "FILE:src/lib/tokens.js"
+    }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/routes/login.js:login",
+      "to": "FUNCTION:src/lib/tokens.js:issueToken"
+    }
+  ]
+}

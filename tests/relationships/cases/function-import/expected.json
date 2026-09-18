@@ -1,0 +1,30 @@
+{
+  "description": "Named import calls resolve to the exporting function",
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/foo.ts:foo"
+    }
+  ],
+  "mustImport": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/foo.ts"
+    }
+  ],
+  "mustEdge": [
+    {
+      "from": "FILE:src/caller.ts",
+      "to": "FUNCTION:src/foo.ts:foo",
+      "type": "USES"
+    }
+  ],
+  "mustBlastRadius": [
+    {
+      "seed": "FUNCTION:src/foo.ts:foo",
+      "mustInclude": [
+        "FUNCTION:src/caller.ts:caller"
+      ]
+    }
+  ]
+}

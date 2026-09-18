@@ -1,0 +1,127 @@
+{
+  "id": "express-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:src/middleware/auth.ts:requireAuth→FUNCTION:src/services/auth.ts:verifyToken:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/middleware/auth.ts:requireAuth",
+      "to": "FUNCTION:src/services/auth.ts:verifyToken",
+      "matchedEdgeId": "FUNCTION:src/middleware/auth.ts:requireAuth->FUNCTION:src/services/auth.ts:verifyToken:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/routes/auth.ts:loginHandler→FUNCTION:src/services/auth.ts:issueToken:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/services/auth.ts:issueToken",
+      "matchedEdgeId": "FUNCTION:src/routes/auth.ts:loginHandler->FUNCTION:src/services/auth.ts:issueToken:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/routes/auth.ts:loginHandler→FUNCTION:src/middleware/compose.ts:compose:2",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/middleware/compose.ts:compose",
+      "matchedEdgeId": "FUNCTION:src/routes/auth.ts:loginHandler->FUNCTION:src/middleware/compose.ts:compose:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/middleware/auth.ts→FILE:src/services/auth.ts:3",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/middleware/auth.ts",
+      "to": "FILE:src/services/auth.ts",
+      "matchedEdgeId": "FILE:src/middleware/auth.ts->FILE:src/services/auth.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/routes/auth.ts→FILE:src/middleware/auth.ts:4",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/routes/auth.ts",
+      "to": "FILE:src/middleware/auth.ts",
+      "matchedEdgeId": "FILE:src/routes/auth.ts->FILE:src/middleware/auth.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/routes/auth.ts→FILE:src/services/auth.ts:5",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/routes/auth.ts",
+      "to": "FILE:src/services/auth.ts",
+      "matchedEdgeId": "FILE:src/routes/auth.ts->FILE:src/services/auth.ts:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "USES:FILE:src/routes/auth.ts→FUNCTION:src/services/auth.ts:issueToken:6",
+      "class": "TRUE_POSITIVE",
+      "type": "USES",
+      "from": "FILE:src/routes/auth.ts",
+      "to": "FUNCTION:src/services/auth.ts:issueToken",
+      "matchedEdgeId": "FILE:src/routes/auth.ts->FUNCTION:src/services/auth.ts:issueToken:USES",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "USES:FILE:src/middleware/auth.ts→FUNCTION:src/services/auth.ts:verifyToken:7",
+      "class": "TRUE_POSITIVE",
+      "type": "USES",
+      "from": "FILE:src/middleware/auth.ts",
+      "to": "FUNCTION:src/services/auth.ts:verifyToken",
+      "matchedEdgeId": "FILE:src/middleware/auth.ts->FUNCTION:src/services/auth.ts:verifyToken:USES",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 8,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "USES",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 8,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

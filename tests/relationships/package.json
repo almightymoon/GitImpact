@@ -1,0 +1,21 @@
+{
+  "name": "@gitimpact/relationships",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "relationships": "tsx run-relationships.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@gitimpact/parser": "workspace:*",
+    "@gitimpact/graph": "workspace:*",
+    "@gitimpact/framework-detector": "workspace:*",
+    "@gitimpact/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
+  }
+}
