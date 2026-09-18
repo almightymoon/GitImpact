@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "relationships": "tsx run-relationships.ts",
+    "sample": "tsx sample-emitted.ts",
     "test": "vitest run"
   },
   "dependencies": {

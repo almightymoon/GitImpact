@@ -405,7 +405,8 @@ export class DependencyGraphBuilder {
       addEdge(fileNodeId, route.id, "CONFIGURES", route.confidence);
 
       if (route.handlerClass && route.handlerName) {
-        const handlerMethod = methodNodeId(route.file, route.handlerClass, route.handlerName);
+        const handlerFile = route.handlerFile ?? route.file;
+        const handlerMethod = methodNodeId(handlerFile, route.handlerClass, route.handlerName);
         if (nodes.has(handlerMethod)) {
           addEdge(route.id, handlerMethod, "HANDLED_BY", route.confidence);
         }
@@ -414,7 +415,8 @@ export class DependencyGraphBuilder {
         route.handlerName !== "default" &&
         route.handlerName !== "ALL"
       ) {
-        const handlerFn = nodeId("FUNCTION", route.file, route.handlerName);
+        const handlerFile = route.handlerFile ?? route.file;
+        const handlerFn = nodeId("FUNCTION", handlerFile, route.handlerName);
         if (nodes.has(handlerFn)) {
           addEdge(route.id, handlerFn, "HANDLED_BY", route.confidence);
           addEdge(route.id, handlerFn, "USES", route.confidence);

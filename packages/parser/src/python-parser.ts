@@ -109,23 +109,34 @@ function extractImports(
     if (namesRaw.includes("\n") && !match[0].includes("(")) {
       // Avoid over-matching; only single-line or parenthesized
     }
-    const namedImports = namesRaw
-      .split(",")
-      .map((n) => n.trim().split(/\s+as\s+/)[0]!.trim())
-      .filter((n) => n && n !== "*" && /^[a-zA-Z_][\w]*$/.test(n));
+    const namedImports: string[] = [];
+    const aliases: Record<string, string> = {};
+    for (const part of namesRaw.split(",")) {
+      const trimmed = part.trim();
+      if (!trimmed || trimmed === "*") continue;
+      const asParts = trimmed.split(/\s+as\s+/);
+      const exported = asParts[0]!.trim();
+      const local = (asParts[1] ?? asParts[0]!).trim();
+      if (!/^[a-zA-Z_][\w]*$/.test(local)) continue;
+      namedImports.push(local);
+      if (local !== exported && /^[a-zA-Z_][\w]*$/.test(exported)) {
+        aliases[local] = exported;
+      }
+    }
     const key = `f:${moduleSpecifier}:${namedImports.join(",")}`;
     if (seen.has(key)) continue;
     seen.add(key);
     imports.push({
       moduleSpecifier,
       namedImports,
+      aliases: Object.keys(aliases).length ? aliases : undefined,
       isTypeOnly: false,
       resolvedPath: resolvePythonImport(
         filePath,
         moduleSpecifier,
         knownFiles,
         true,
-        namedImports[0],
+        Object.values(aliases)[0] ?? namedImports[0],
       ),
     });
   }
@@ -376,24 +387,21 @@ export function linkPythonCalls(files: ParsedFile[]): void {
 
   for (const file of files) {
     if (file.language !== "python") continue;
-    const imported = new Map<string, string>(); // local name → file
+    const imported = new Map<string, { file: string; symbol: string }>();
     for (const imp of file.imports) {
       if (!imp.resolvedPath) continue;
       for (const name of imp.namedImports) {
-        imported.set(name, imp.resolvedPath);
-      }
-      const mod = imp.moduleSpecifier.split(".").pop();
-      if (mod && !imp.moduleSpecifier.startsWith(".")) {
-        // import flask → skip; import local_mod as x handled loosely
+        const symbol = imp.aliases?.[name] ?? name;
+        imported.set(name, { file: imp.resolvedPath, symbol });
       }
     }
 
     const link = (calls: ResolvedCall[]) => {
       for (const call of calls) {
-        const targetFile = imported.get(call.calleeName);
-        if (targetFile) {
-          call.resolvedFile = targetFile;
-          call.resolvedSymbol = call.calleeName;
+        const target = imported.get(call.calleeName);
+        if (target) {
+          call.resolvedFile = target.file;
+          call.resolvedSymbol = target.symbol;
           call.resolvedKind = "FUNCTION";
           call.confidence = "HIGH";
         }

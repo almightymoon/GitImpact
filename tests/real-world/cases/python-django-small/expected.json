@@ -1,0 +1,32 @@
+{
+  "description": "Django urls.py → view → service CALLS",
+  "mustImport": [
+    { "from": "FILE:views.py", "to": "FILE:services/users.py" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:views.py:user_detail",
+      "to": "FUNCTION:services/users.py:get_user"
+    },
+    {
+      "from": "FUNCTION:views.py:users_index",
+      "to": "FUNCTION:services/users.py:list_users"
+    }
+  ],
+  "mustDetectRoutes": [
+    { "method": "ALL", "path": "/users/" },
+    { "method": "ALL", "path": "/users/<int:pk>/" }
+  ],
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:django:ALL:/users/:urls.py",
+      "to": "FUNCTION:views.py:users_index",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:django:ALL:/users/<int:pk>/:urls.py",
+      "to": "FUNCTION:views.py:user_detail",
+      "type": "HANDLED_BY"
+    }
+  ]
+}

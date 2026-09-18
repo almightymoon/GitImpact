@@ -1,10 +1,7 @@
 {
-  "description": "Python Flask-style imports + cross-module CALLS",
+  "description": "Python Flask decorator routes + service CALLS",
   "mustImport": [
-    {
-      "from": "FILE:app.py",
-      "to": "FILE:services/auth.py"
-    }
+    { "from": "FILE:app.py", "to": "FILE:services/auth.py" }
   ],
   "mustCall": [
     {
@@ -25,6 +22,16 @@
       "from": "FILE:app.py",
       "to": "FUNCTION:services/auth.py:issue_token",
       "type": "USES"
+    },
+    {
+      "from": "API_ROUTE:flask:POST:/login:app.py",
+      "to": "FUNCTION:app.py:login",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:flask:GET:/me:app.py",
+      "to": "FUNCTION:app.py:me",
+      "type": "HANDLED_BY"
     }
   ]
 }

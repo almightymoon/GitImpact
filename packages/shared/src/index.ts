@@ -96,6 +96,8 @@ export interface ParsedImport {
   resolvedPath?: string;
   /** True when sourced from `import("...")` rather than a static ImportDeclaration */
   isDynamic?: boolean;
+  /** Local binding → original export name for `from m import x as y`. */
+  aliases?: Record<string, string>;
 }
 
 export interface ResolvedCall {
@@ -293,13 +295,15 @@ export type HttpMethod =
 
 export interface DetectedRoute {
   id: string;
-  framework: "nextjs" | "express" | "nestjs" | "unknown";
+  framework: "nextjs" | "express" | "nestjs" | "flask" | "fastapi" | "django" | "unknown";
   method: HttpMethod;
   path: string;
   file: string;
   handlerName?: string;
   /** Owning class for NestJS controller methods */
   handlerClass?: string;
+  /** When the handler lives in a different file than the route declaration (e.g. Django urls → views). */
+  handlerFile?: string;
   confidence: ConfidenceLevel;
   startLine?: number;
 }
@@ -384,6 +388,24 @@ export interface AnalysisHealth {
   parseFailures: number;
   maxFilesCap?: number;
   truncated: boolean;
+  /** Present when the repo contains Python source or Python packaging manifests. */
+  pythonProject?: PythonProjectInfo;
+}
+
+export type PythonPackageManager =
+  | "pip"
+  | "poetry"
+  | "uv"
+  | "pipenv"
+  | "setuptools";
+
+export type PythonLayout = "flat" | "src" | "packages" | "unknown";
+
+export interface PythonProjectInfo {
+  packageManagers: PythonPackageManager[];
+  layout: PythonLayout;
+  manifests: string[];
+  srcLayout: boolean;
 }
 
 /** Overall trust signal for a repository analysis (product-facing). */

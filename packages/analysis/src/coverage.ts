@@ -188,6 +188,18 @@ export function buildBlindSpots(input: {
     );
   }
 
+  const pythonFiles = (input.files ?? []).filter((f) => f.language === "python");
+  if (pythonFiles.length > 0) {
+    const py = input.analysisHealth.pythonProject;
+    if (py && py.packageManagers.length === 0 && py.manifests.length === 0) {
+      spots.push("Python files present without a detected packaging manifest");
+    }
+    // Honest limits of the heuristic Python surface
+    spots.push(
+      "Python analysis is heuristic — dynamic imports, monkeypatch, runtime decorators, and metaclasses may be missed",
+    );
+  }
+
   const lowEdges = (input.graphEdges ?? []).filter((e) => e.confidence === "LOW").length;
   if (lowEdges >= 10) {
     spots.push(`${lowEdges} low-confidence relationship edges`);

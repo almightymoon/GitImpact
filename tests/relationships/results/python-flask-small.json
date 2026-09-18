@@ -45,11 +45,29 @@
       "to": "FUNCTION:services/auth.py:issue_token",
       "matchedEdgeId": "FILE:app.py->FUNCTION:services/auth.py:issue_token:USES",
       "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:flask:POST:/login:app.py→FUNCTION:app.py:login:5",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:flask:POST:/login:app.py",
+      "to": "FUNCTION:app.py:login",
+      "matchedEdgeId": "API_ROUTE:flask:POST:/login:app.py->FUNCTION:app.py:login:HANDLED_BY",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:flask:GET:/me:app.py→FUNCTION:app.py:me:6",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:flask:GET:/me:app.py",
+      "to": "FUNCTION:app.py:me",
+      "matchedEdgeId": "API_ROUTE:flask:GET:/me:app.py->FUNCTION:app.py:me:HANDLED_BY",
+      "confidence": "HIGH"
     }
   ],
   "overall": {
     "type": "overall",
-    "truePositives": 5,
+    "truePositives": 7,
     "falsePositives": 0,
     "falseNegatives": 0,
     "lowConfidence": 0,
@@ -87,10 +105,20 @@
       "softMisses": 0,
       "precision": 1,
       "recall": 1
+    },
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
     }
   ],
   "counts": {
-    "TRUE_POSITIVE": 5,
+    "TRUE_POSITIVE": 7,
     "FALSE_POSITIVE": 0,
     "MISSING_EDGE": 0,
     "WRONG_TARGET": 0,

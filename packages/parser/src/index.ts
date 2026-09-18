@@ -13,6 +13,7 @@ import {
   CODE_EXTENSIONS,
   IGNORE_PATTERNS,
   SECRET_PATTERNS,
+  type AnalysisHealth,
   type ConfidenceLevel,
   type LanguageStats,
   type ParsedClass,
@@ -20,6 +21,7 @@ import {
   type ParsedFunction,
   type ParsedImport,
   type ParsedMethod,
+  type PythonProjectInfo,
   type ResolvedCall,
 } from "@gitimpact/shared";
 import {
@@ -33,6 +35,7 @@ import {
   tryResolvePrismaCall,
 } from "./framework-intel.js";
 import { linkPythonCalls, parsePythonFile } from "./python-parser.js";
+import { detectPythonProject } from "./python-project.js";
 
 export interface LanguageParser {
   parseFile(filePath: string, content: string): ParsedFile;
@@ -598,16 +601,9 @@ export async function parseRepository(
   packageDeps: Record<string, string>;
   packageName?: string;
   packageNames?: string[];
-  analysisHealth: {
-    filesDiscovered: number;
-    filesParsed: number;
-    filesIgnored: number;
-    filesUnsupported: number;
-    parseFailures: number;
-    maxFilesCap?: number;
-    truncated: boolean;
-  };
+  analysisHealth: AnalysisHealth;
   allRelativeFiles: string[];
+  pythonProject: PythonProjectInfo | null;
 }> {
   const inventory = await inventoryRepositoryFiles(rootDir);
   const relativePaths = inventory.codeFiles;
@@ -722,6 +718,7 @@ export async function parseRepository(
     packageManifest.name,
     packageManifest.packageNames,
   );
+  const pythonProject = await detectPythonProject(rootDir, inventory.allRelativeFiles);
 
   return {
     files,
@@ -732,6 +729,7 @@ export async function parseRepository(
     packageName: packageManifest.name,
     packageNames: packageManifest.packageNames,
     allRelativeFiles: inventory.allRelativeFiles,
+    pythonProject,
     analysisHealth: {
       filesDiscovered: relativePaths.length,
       filesParsed: files.length,
@@ -740,6 +738,7 @@ export async function parseRepository(
       parseFailures,
       maxFilesCap: maxFiles,
       truncated,
+      pythonProject: pythonProject ?? undefined,
     },
   };
 }
@@ -1217,7 +1216,10 @@ async function detectPythonFrameworks(
     "requirements-dev.txt",
     "pyproject.toml",
     "setup.cfg",
+    "setup.py",
     "Pipfile",
+    "uv.lock",
+    "poetry.lock",
   ]) {
     try {
       depTextParts.push(await readFile(path.join(rootDir, candidate), "utf8"));

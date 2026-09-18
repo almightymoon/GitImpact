@@ -1,0 +1,32 @@
+{
+  "description": "FastAPI decorator routes + service CALLS",
+  "mustImport": [
+    { "from": "FILE:app.py", "to": "FILE:services/orders.py" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:app.py:get_orders",
+      "to": "FUNCTION:services/orders.py:list_orders"
+    },
+    {
+      "from": "FUNCTION:app.py:post_order",
+      "to": "FUNCTION:services/orders.py:create_order"
+    }
+  ],
+  "mustDetectRoutes": [
+    { "method": "GET", "path": "/orders" },
+    { "method": "POST", "path": "/orders" }
+  ],
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:fastapi:GET:/orders:app.py",
+      "to": "FUNCTION:app.py:get_orders",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:fastapi:POST:/orders:app.py",
+      "to": "FUNCTION:app.py:post_order",
+      "type": "HANDLED_BY"
+    }
+  ]
+}

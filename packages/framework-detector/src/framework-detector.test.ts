@@ -194,4 +194,45 @@ describe("Express detection", () => {
     ];
     expect(detectFrameworkNames(files)).toContain("Flask");
   });
+
+  it("extracts Flask decorator routes with handlers", () => {
+    const files = [
+      {
+        path: "app.py",
+        language: "python" as const,
+        imports: [
+          {
+            moduleSpecifier: "flask",
+            namedImports: ["Flask"],
+            isTypeOnly: false,
+          },
+        ],
+        exports: ["login"],
+        functions: [
+          {
+            name: "login",
+            startLine: 5,
+            endLine: 7,
+            exported: true,
+            calls: [],
+            parameters: [],
+          },
+        ],
+        classes: [],
+        isTest: false,
+        envVariables: [],
+      },
+    ];
+    const contents = new Map([
+      [
+        "app.py",
+        'from flask import Flask\napp = Flask(__name__)\n\n@app.post("/login")\ndef login():\n    return {}\n',
+      ],
+    ]);
+    const routes = extractAllRoutes(files, contents);
+    expect(routes.some((r) => r.method === "POST" && r.path === "/login")).toBe(
+      true,
+    );
+    expect(routes.find((r) => r.path === "/login")?.handlerName).toBe("login");
+  });
 });

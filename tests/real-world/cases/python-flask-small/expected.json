@@ -1,5 +1,5 @@
 {
-  "description": "Python Flask-shaped imports + cross-module CALLS",
+  "description": "Python Flask-shaped imports + decorator routes + CALLS",
   "mustImport": [
     {
       "from": "FILE:app.py",
@@ -14,6 +14,27 @@
     {
       "from": "FUNCTION:app.py:me",
       "to": "FUNCTION:services/auth.py:verify_token"
+    }
+  ],
+  "mustDetectRoutes": [
+    { "method": "POST", "path": "/login" },
+    { "method": "GET", "path": "/me" }
+  ],
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:flask:POST:/login:app.py",
+      "to": "FUNCTION:app.py:login",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:flask:GET:/me:app.py",
+      "to": "FUNCTION:app.py:me",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "FILE:app.py",
+      "to": "FUNCTION:services/auth.py:issue_token",
+      "type": "USES"
     }
   ]
 }

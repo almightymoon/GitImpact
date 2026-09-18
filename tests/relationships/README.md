@@ -1,10 +1,17 @@
-# Relationship accuracy benchmark (v1.1.2)
+# Relationship accuracy benchmark
 
 Measures whether GitImpact’s **graph edges** match reality — not just framework labels.
 
-## Taxonomy
+## Two complementary checks
 
-For each expected relationship we record one of:
+| Check | Question | Command |
+|-------|----------|---------|
+| **Curated expectations** | Did we find known-true edges? | `pnpm relationships` |
+| **Held-out emitted sample** | Of edges we emit, how often are they true? | `pnpm relationships:sample` |
+
+A curated 100/100 score is necessary but not sufficient. Review sampled emissions for FALSE positives.
+
+## Taxonomy (curated)
 
 | Class | Meaning |
 |-------|---------|
@@ -15,17 +22,22 @@ For each expected relationship we record one of:
 | `WRONG_TYPE` | Same from → to, different relation type |
 | `LOW_CONFIDENCE` | Correct edge exists but confidence is LOW |
 
+## Held-out labels
+
+| Label | Meaning |
+|-------|---------|
+| `TRUE` | Edge is correct |
+| `FALSE` | Edge should not exist / wrong target |
+| `AMBIGUOUS` | Unclear without more context (excluded from precision) |
+
 ## Run
 
 ```bash
 pnpm build:packages
 pnpm relationships
-pnpm relationships -- --id nestjs-small
+pnpm relationships -- --id python-flask-small
+pnpm relationships:sample
+pnpm relationships:sample -- --score tests/relationships/samples/pending-v1.1.3.json
 ```
 
 Results: `tests/relationships/results/summary.json`
-
-## Cases
-
-Local fixtures under `cases/*/expected.json` plus optional dogfood clones (`source: "dogfood"`).
-Dogfood cases skip gracefully when `.repos/dogfood/...` is missing — run `pnpm dogfood -- --id <id>` first.

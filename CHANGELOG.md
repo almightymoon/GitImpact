@@ -44,6 +44,7 @@
 - Destructured `const { fn } = require(...)` bindings resolve to CALLS; USES probes in relationship suite
 - `fetch("https://host/...")` → FETCHES external-service edges
 - Python surface: `.py` in inventory, heuristic parser (imports/defs/classes/calls), Flask/FastAPI/Django detection, `python-flask-small` relationship fixture; dogfood wave 5 activated
+- **v1.1.3 start:** Python route intelligence (Flask/FastAPI decorators + Django `urls.py` → `HANDLED_BY`), Python project detection (Poetry/uv/Pipenv/setuptools/src-layout), held-out emitted-edge sampler (`pnpm relationships:sample`), expanded wave-5 dogfood (Django, Click, Requests, fullstack template), FastAPI/Django fixtures
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 

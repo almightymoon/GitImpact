@@ -1,0 +1,403 @@
+{
+  "generatedAt": "2026-09-18T19:00:21.992Z",
+  "seed": "v1.1.3",
+  "instruction": "Set label to TRUE | FALSE | AMBIGUOUS for each sample, then run: pnpm relationships:sample -- --score <file>",
+  "quota": {
+    "CALLS": 12,
+    "IMPORTS": 10,
+    "USES": 6,
+    "FETCHES": 4,
+    "HANDLED_BY": 4,
+    "QUERIES": 4
+  },
+  "samples": [
+    {
+      "id": "nestjs-small:METHOD:src/users.controller.ts:UsersController.list->METHOD:src/users.service.ts:UsersService.findAll:CALLS",
+      "caseId": "nestjs-small",
+      "type": "CALLS",
+      "from": "METHOD:src/users.controller.ts:UsersController.list",
+      "to": "METHOD:src/users.service.ts:UsersService.findAll",
+      "confidence": "HIGH",
+      "evidenceSnippet": "findAll(…)"
+    },
+    {
+      "id": "nestjs-small:FILE:src/users.module.ts->FILE:src/users.service.ts:IMPORTS",
+      "caseId": "nestjs-small",
+      "type": "IMPORTS",
+      "from": "FILE:src/users.module.ts",
+      "to": "FILE:src/users.service.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { UsersService } from \"./users.service\""
+    },
+    {
+      "id": "nestjs-small:FILE:src/users.controller.ts->FUNCTION:src/decorators.ts:Get:USES",
+      "caseId": "nestjs-small",
+      "type": "USES",
+      "from": "FILE:src/users.controller.ts",
+      "to": "FUNCTION:src/decorators.ts:Get",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { Get } from \"./decorators\""
+    },
+    {
+      "id": "nestjs-small:API_ROUTE:nestjs:POST:/users:src/users.controller.ts->METHOD:src/users.controller.ts:UsersController.create:HANDLED_BY",
+      "caseId": "nestjs-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:nestjs:POST:/users:src/users.controller.ts",
+      "to": "METHOD:src/users.controller.ts:UsersController.create",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "express-small:FUNCTION:src/routes/auth.ts:loginHandler->FUNCTION:src/services/auth.ts:issueToken:CALLS",
+      "caseId": "express-small",
+      "type": "CALLS",
+      "from": "FUNCTION:src/routes/auth.ts:loginHandler",
+      "to": "FUNCTION:src/services/auth.ts:issueToken",
+      "confidence": "HIGH",
+      "evidenceSnippet": "issueToken(…)"
+    },
+    {
+      "id": "express-small:FILE:src/middleware/auth.ts->FILE:src/middleware/compose.ts:IMPORTS",
+      "caseId": "express-small",
+      "type": "IMPORTS",
+      "from": "FILE:src/middleware/auth.ts",
+      "to": "FILE:src/middleware/compose.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { Handler } from \"./compose\""
+    },
+    {
+      "id": "express-small:FILE:src/routes/auth.ts->FUNCTION:src/middleware/auth.ts:requireAuth:USES",
+      "caseId": "express-small",
+      "type": "USES",
+      "from": "FILE:src/routes/auth.ts",
+      "to": "FUNCTION:src/middleware/auth.ts:requireAuth",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { requireAuth } from \"../middleware/auth\""
+    },
+    {
+      "id": "nextjs-small:FUNCTION:src/lib/users.ts:listUsers->FUNCTION:src/lib/users.ts:findUser:CALLS",
+      "caseId": "nextjs-small",
+      "type": "CALLS",
+      "from": "FUNCTION:src/lib/users.ts:listUsers",
+      "to": "FUNCTION:src/lib/users.ts:findUser",
+      "confidence": "HIGH",
+      "evidenceSnippet": "findUser(…)"
+    },
+    {
+      "id": "nextjs-small:FILE:src/app/api/users/route.ts->FILE:src/lib/auth.ts:IMPORTS",
+      "caseId": "nextjs-small",
+      "type": "IMPORTS",
+      "from": "FILE:src/app/api/users/route.ts",
+      "to": "FILE:src/lib/auth.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { verifySession } from \"@/lib/auth\""
+    },
+    {
+      "id": "nextjs-small:FILE:src/app/api/users/route.ts->FUNCTION:src/lib/auth.ts:verifySession:USES",
+      "caseId": "nextjs-small",
+      "type": "USES",
+      "from": "FILE:src/app/api/users/route.ts",
+      "to": "FUNCTION:src/lib/auth.ts:verifySession",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { verifySession } from \"@/lib/auth\""
+    },
+    {
+      "id": "nextjs-small:API_ROUTE:nextjs:GET:/api/users:src/app/api/users/route.ts->FUNCTION:src/app/api/users/route.ts:GET:HANDLED_BY",
+      "caseId": "nextjs-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:nextjs:GET:/api/users:src/app/api/users/route.ts",
+      "to": "FUNCTION:src/app/api/users/route.ts:GET",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "monorepo-project:FUNCTION:apps/web/src/page.ts:HomePage->FUNCTION:packages/ui/src/button.ts:Button:CALLS",
+      "caseId": "monorepo-project",
+      "type": "CALLS",
+      "from": "FUNCTION:apps/web/src/page.ts:HomePage",
+      "to": "FUNCTION:packages/ui/src/button.ts:Button",
+      "confidence": "HIGH",
+      "evidenceSnippet": "Button(…)"
+    },
+    {
+      "id": "monorepo-project:FILE:apps/web/src/page.ts->FILE:packages/ui/src/index.ts:IMPORTS",
+      "caseId": "monorepo-project",
+      "type": "IMPORTS",
+      "from": "FILE:apps/web/src/page.ts",
+      "to": "FILE:packages/ui/src/index.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { Button } from \"@acme/ui\""
+    },
+    {
+      "id": "monorepo-project:FILE:apps/web/src/page.ts->FUNCTION:packages/ui/src/button.ts:Button:USES",
+      "caseId": "monorepo-project",
+      "type": "USES",
+      "from": "FILE:apps/web/src/page.ts",
+      "to": "FUNCTION:packages/ui/src/button.ts:Button",
+      "confidence": "MEDIUM",
+      "evidenceSnippet": "import { Button } from \"@acme/ui\""
+    },
+    {
+      "id": "prisma-project:FUNCTION:src/app.ts:register->FUNCTION:src/users.repo.ts:createUser:CALLS",
+      "caseId": "prisma-project",
+      "type": "CALLS",
+      "from": "FUNCTION:src/app.ts:register",
+      "to": "FUNCTION:src/users.repo.ts:createUser",
+      "confidence": "HIGH",
+      "evidenceSnippet": "createUser(…)"
+    },
+    {
+      "id": "prisma-project:FILE:src/users.repo.ts->FILE:src/generated-client.ts:IMPORTS",
+      "caseId": "prisma-project",
+      "type": "IMPORTS",
+      "from": "FILE:src/users.repo.ts",
+      "to": "FILE:src/generated-client.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { PrismaClient } from \"./generated-client\""
+    },
+    {
+      "id": "prisma-project:FILE:src/app.ts->FUNCTION:src/users.repo.ts:listUsers:USES",
+      "caseId": "prisma-project",
+      "type": "USES",
+      "from": "FILE:src/app.ts",
+      "to": "FUNCTION:src/users.repo.ts:listUsers",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { listUsers } from \"./users.repo\""
+    },
+    {
+      "id": "prisma-project:FUNCTION:src/users.repo.ts:listUsers->DATABASE_MODEL:prisma:User:QUERIES",
+      "caseId": "prisma-project",
+      "type": "QUERIES",
+      "from": "FUNCTION:src/users.repo.ts:listUsers",
+      "to": "DATABASE_MODEL:prisma:User",
+      "confidence": "MEDIUM",
+      "evidenceSnippet": "findMany(…)"
+    },
+    {
+      "id": "tiny-fixture:FUNCTION:src/components/LoginForm.tsx:LoginForm->FUNCTION:src/auth.controller.ts:loginHandler:CALLS",
+      "caseId": "tiny-fixture",
+      "type": "CALLS",
+      "from": "FUNCTION:src/components/LoginForm.tsx:LoginForm",
+      "to": "FUNCTION:src/auth.controller.ts:loginHandler",
+      "confidence": "HIGH",
+      "evidenceSnippet": "loginHandler(…)"
+    },
+    {
+      "id": "tiny-fixture:FILE:src/components/LoginForm.tsx->FILE:src/auth.controller.ts:IMPORTS",
+      "caseId": "tiny-fixture",
+      "type": "IMPORTS",
+      "from": "FILE:src/components/LoginForm.tsx",
+      "to": "FILE:src/auth.controller.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { loginHandler } from \"../auth.controller\""
+    },
+    {
+      "id": "tiny-fixture:FILE:src/auth.service.ts->CLASS:src/users.ts:UserRepository:USES",
+      "caseId": "tiny-fixture",
+      "type": "USES",
+      "from": "FILE:src/auth.service.ts",
+      "to": "CLASS:src/users.ts:UserRepository",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { UserRepository } from \"./users\""
+    },
+    {
+      "id": "tiny-fixture:API_ROUTE:nextjs:PUT:/api/auth/login:src/app/api/auth/login/route.ts->FUNCTION:src/app/api/auth/login/route.ts:PUT:HANDLED_BY",
+      "caseId": "tiny-fixture",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:nextjs:PUT:/api/auth/login:src/app/api/auth/login/route.ts",
+      "to": "FUNCTION:src/app/api/auth/login/route.ts:PUT",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "class-method:METHOD:src/auth.service.ts:AuthService.authenticate->METHOD:src/auth.service.ts:AuthService.issueToken:CALLS",
+      "caseId": "class-method",
+      "type": "CALLS",
+      "from": "METHOD:src/auth.service.ts:AuthService.authenticate",
+      "to": "METHOD:src/auth.service.ts:AuthService.issueToken",
+      "confidence": "HIGH",
+      "evidenceSnippet": "issueToken(…)"
+    },
+    {
+      "id": "class-method:FILE:src/caller.ts->FILE:src/auth.service.ts:IMPORTS",
+      "caseId": "class-method",
+      "type": "IMPORTS",
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/auth.service.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { AuthService } from \"./auth.service\""
+    },
+    {
+      "id": "class-method:FILE:src/caller.ts->CLASS:src/auth.service.ts:AuthService:USES",
+      "caseId": "class-method",
+      "type": "USES",
+      "from": "FILE:src/caller.ts",
+      "to": "CLASS:src/auth.service.ts:AuthService",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { AuthService } from \"./auth.service\""
+    },
+    {
+      "id": "function-import:FUNCTION:src/caller.ts:caller->FUNCTION:src/foo.ts:foo:CALLS",
+      "caseId": "function-import",
+      "type": "CALLS",
+      "from": "FUNCTION:src/caller.ts:caller",
+      "to": "FUNCTION:src/foo.ts:foo",
+      "confidence": "HIGH",
+      "evidenceSnippet": "foo(…)"
+    },
+    {
+      "id": "function-import:FILE:src/caller.ts->FILE:src/foo.ts:IMPORTS",
+      "caseId": "function-import",
+      "type": "IMPORTS",
+      "from": "FILE:src/caller.ts",
+      "to": "FILE:src/foo.ts",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { foo } from \"./foo\""
+    },
+    {
+      "id": "function-import:FILE:src/caller.ts->FUNCTION:src/foo.ts:foo:USES",
+      "caseId": "function-import",
+      "type": "USES",
+      "from": "FILE:src/caller.ts",
+      "to": "FUNCTION:src/foo.ts:foo",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { foo } from \"./foo\""
+    },
+    {
+      "id": "cjs-require:FUNCTION:src/routes/login.js:login->FUNCTION:src/lib/tokens.js:issueToken:CALLS",
+      "caseId": "cjs-require",
+      "type": "CALLS",
+      "from": "FUNCTION:src/routes/login.js:login",
+      "to": "FUNCTION:src/lib/tokens.js:issueToken",
+      "confidence": "HIGH",
+      "evidenceSnippet": "issueToken(…)"
+    },
+    {
+      "id": "cjs-require:FILE:src/routes/login.js->FILE:src/lib/tokens.js:IMPORTS",
+      "caseId": "cjs-require",
+      "type": "IMPORTS",
+      "from": "FILE:src/routes/login.js",
+      "to": "FILE:src/lib/tokens.js",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { issueToken } from \"../lib/tokens\""
+    },
+    {
+      "id": "cjs-require:FILE:src/routes/login.js->FUNCTION:src/lib/tokens.js:issueToken:USES",
+      "caseId": "cjs-require",
+      "type": "USES",
+      "from": "FILE:src/routes/login.js",
+      "to": "FUNCTION:src/lib/tokens.js:issueToken",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { issueToken } from \"../lib/tokens\""
+    },
+    {
+      "id": "fetch-external:FUNCTION:src/client.ts:loadProfile->EXTERNAL_SERVICE:api.example.com:FETCHES",
+      "caseId": "fetch-external",
+      "type": "FETCHES",
+      "from": "FUNCTION:src/client.ts:loadProfile",
+      "to": "EXTERNAL_SERVICE:api.example.com",
+      "confidence": "HIGH",
+      "evidenceSnippet": "fetch(…)"
+    },
+    {
+      "id": "python-flask-small:FUNCTION:app.py:login->FUNCTION:services/auth.py:issue_token:CALLS",
+      "caseId": "python-flask-small",
+      "type": "CALLS",
+      "from": "FUNCTION:app.py:login",
+      "to": "FUNCTION:services/auth.py:issue_token",
+      "confidence": "HIGH",
+      "evidenceSnippet": "issue_token(…)"
+    },
+    {
+      "id": "python-flask-small:FILE:app.py->FILE:services/auth.py:IMPORTS",
+      "caseId": "python-flask-small",
+      "type": "IMPORTS",
+      "from": "FILE:app.py",
+      "to": "FILE:services/auth.py",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { issue_token, verify_token } from \"services.auth\""
+    },
+    {
+      "id": "python-flask-small:API_ROUTE:flask:GET:/me:app.py->FUNCTION:app.py:me:USES",
+      "caseId": "python-flask-small",
+      "type": "USES",
+      "from": "API_ROUTE:flask:GET:/me:app.py",
+      "to": "FUNCTION:app.py:me",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "python-flask-small:API_ROUTE:flask:GET:/me:app.py->FUNCTION:app.py:me:HANDLED_BY",
+      "caseId": "python-flask-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:flask:GET:/me:app.py",
+      "to": "FUNCTION:app.py:me",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "python-fastapi-small:FUNCTION:app.py:get_orders->FUNCTION:services/orders.py:list_orders:CALLS",
+      "caseId": "python-fastapi-small",
+      "type": "CALLS",
+      "from": "FUNCTION:app.py:get_orders",
+      "to": "FUNCTION:services/orders.py:list_orders",
+      "confidence": "HIGH",
+      "evidenceSnippet": "list_orders(…)"
+    },
+    {
+      "id": "python-fastapi-small:FILE:app.py->FILE:services/orders.py:IMPORTS",
+      "caseId": "python-fastapi-small",
+      "type": "IMPORTS",
+      "from": "FILE:app.py",
+      "to": "FILE:services/orders.py",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { create_order, list_orders } from \"services.orders\""
+    },
+    {
+      "id": "python-fastapi-small:API_ROUTE:fastapi:GET:/orders:app.py->FUNCTION:app.py:get_orders:USES",
+      "caseId": "python-fastapi-small",
+      "type": "USES",
+      "from": "API_ROUTE:fastapi:GET:/orders:app.py",
+      "to": "FUNCTION:app.py:get_orders",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "python-fastapi-small:API_ROUTE:fastapi:POST:/orders:app.py->FUNCTION:app.py:post_order:HANDLED_BY",
+      "caseId": "python-fastapi-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:fastapi:POST:/orders:app.py",
+      "to": "FUNCTION:app.py:post_order",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "python-django-small:FUNCTION:views.py:user_detail->FUNCTION:services/users.py:get_user:CALLS",
+      "caseId": "python-django-small",
+      "type": "CALLS",
+      "from": "FUNCTION:views.py:user_detail",
+      "to": "FUNCTION:services/users.py:get_user",
+      "confidence": "HIGH",
+      "evidenceSnippet": "get_user(…)"
+    },
+    {
+      "id": "python-django-small:FILE:views.py->FILE:services/users.py:IMPORTS",
+      "caseId": "python-django-small",
+      "type": "IMPORTS",
+      "from": "FILE:views.py",
+      "to": "FILE:services/users.py",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { get_user, load_users } from \"services.users\""
+    },
+    {
+      "id": "python-django-small:FILE:views.py->FUNCTION:services/users.py:get_user:USES",
+      "caseId": "python-django-small",
+      "type": "USES",
+      "from": "FILE:views.py",
+      "to": "FUNCTION:services/users.py:get_user",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { get_user } from \"services.users\""
+    },
+    {
+      "id": "python-django-small:API_ROUTE:django:ALL:/users/<int:pk>/:urls.py->FUNCTION:views.py:user_detail:HANDLED_BY",
+      "caseId": "python-django-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:django:ALL:/users/<int:pk>/:urls.py",
+      "to": "FUNCTION:views.py:user_detail",
+      "confidence": "HIGH"
+    }
+  ]
+}

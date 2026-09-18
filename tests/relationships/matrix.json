@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "v1.1.2 relationship accuracy — hand-verified edges, not framework labels",
+  "description": "v1.1.2/v1.1.3 relationship accuracy — curated edges + Python route HANDLED_BY",
   "targets": {
     "CALLS": { "precision": 0.9, "recall": 0.8 },
     "IMPORTS": { "precision": 0.95, "recall": 0.9 },
@@ -86,7 +86,21 @@
       "source": "local",
       "fixture": "../real-world/cases/python-flask-small",
       "shape": "python-web",
-      "why": "Python imports + cross-module CALLS (Flask-shaped)"
+      "why": "Python Flask decorator routes + CALLS"
+    },
+    {
+      "id": "python-fastapi-small",
+      "source": "local",
+      "fixture": "../real-world/cases/python-fastapi-small",
+      "shape": "python-web",
+      "why": "Python FastAPI decorator routes + CALLS"
+    },
+    {
+      "id": "python-django-small",
+      "source": "local",
+      "fixture": "../real-world/cases/python-django-small",
+      "shape": "python-web",
+      "why": "Python Django urls.py → views HANDLED_BY"
     },
     {
       "id": "nestjs-starter",

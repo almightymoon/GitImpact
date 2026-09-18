@@ -1,0 +1,100 @@
+{
+  "id": "python-django-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:views.py:user_detail→FUNCTION:services/users.py:get_user:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:views.py:user_detail",
+      "to": "FUNCTION:services/users.py:get_user",
+      "matchedEdgeId": "FUNCTION:views.py:user_detail->FUNCTION:services/users.py:get_user:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:views.py:users_index→FUNCTION:services/users.py:list_users:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:views.py:users_index",
+      "to": "FUNCTION:services/users.py:list_users",
+      "matchedEdgeId": "FUNCTION:views.py:users_index->FUNCTION:services/users.py:list_users:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:views.py→FILE:services/users.py:2",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:views.py",
+      "to": "FILE:services/users.py",
+      "matchedEdgeId": "FILE:views.py->FILE:services/users.py:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:django:ALL:/users/:urls.py→FUNCTION:views.py:users_index:3",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:django:ALL:/users/:urls.py",
+      "to": "FUNCTION:views.py:users_index",
+      "matchedEdgeId": "API_ROUTE:django:ALL:/users/:urls.py->FUNCTION:views.py:users_index:HANDLED_BY",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:django:ALL:/users/<int:pk>/:urls.py→FUNCTION:views.py:user_detail:4",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:django:ALL:/users/<int:pk>/:urls.py",
+      "to": "FUNCTION:views.py:user_detail",
+      "matchedEdgeId": "API_ROUTE:django:ALL:/users/<int:pk>/:urls.py->FUNCTION:views.py:user_detail:HANDLED_BY",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 5,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 5,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

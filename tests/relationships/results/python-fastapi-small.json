@@ -1,0 +1,100 @@
+{
+  "id": "python-fastapi-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:app.py:get_orders→FUNCTION:services/orders.py:list_orders:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:app.py:get_orders",
+      "to": "FUNCTION:services/orders.py:list_orders",
+      "matchedEdgeId": "FUNCTION:app.py:get_orders->FUNCTION:services/orders.py:list_orders:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:app.py:post_order→FUNCTION:services/orders.py:create_order:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:app.py:post_order",
+      "to": "FUNCTION:services/orders.py:create_order",
+      "matchedEdgeId": "FUNCTION:app.py:post_order->FUNCTION:services/orders.py:create_order:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:app.py→FILE:services/orders.py:2",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:app.py",
+      "to": "FILE:services/orders.py",
+      "matchedEdgeId": "FILE:app.py->FILE:services/orders.py:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:fastapi:GET:/orders:app.py→FUNCTION:app.py:get_orders:3",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:fastapi:GET:/orders:app.py",
+      "to": "FUNCTION:app.py:get_orders",
+      "matchedEdgeId": "API_ROUTE:fastapi:GET:/orders:app.py->FUNCTION:app.py:get_orders:HANDLED_BY",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:fastapi:POST:/orders:app.py→FUNCTION:app.py:post_order:4",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:fastapi:POST:/orders:app.py",
+      "to": "FUNCTION:app.py:post_order",
+      "matchedEdgeId": "API_ROUTE:fastapi:POST:/orders:app.py->FUNCTION:app.py:post_order:HANDLED_BY",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 5,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 5,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

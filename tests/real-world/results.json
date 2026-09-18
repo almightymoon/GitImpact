@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-18T18:29:57.069Z",
-  "fixtures": 6,
-  "assertions": 41,
+  "generatedAt": "2026-09-18T19:00:14.897Z",
+  "fixtures": 8,
+  "assertions": 60,
   "softMisses": 0,
   "unsupportedPatternCount": 5,
   "coverage": {
-    "totalCalls": 33,
-    "resolvedCalls": 32,
+    "totalCalls": 45,
+    "resolvedCalls": 44,
     "unresolvedCalls": 1,
-    "resolutionCoverage": 0.9696969696969697,
-    "resolutionCoveragePct": "97.0%",
+    "resolutionCoverage": 0.9777777777777777,
+    "resolutionCoveragePct": "97.8%",
     "unresolvedSamples": [
       {
         "file": "express-small:src/routes/auth.ts",
@@ -20,30 +20,30 @@
   },
   "metrics": {
     "callGraph": {
-      "truePositives": 23,
+      "truePositives": 34,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 23,
+      "assertions": 34,
       "precision": 1,
       "recall": 1,
       "precisionPct": "100.0%",
       "recallPct": "100.0%"
     },
     "importGraph": {
-      "truePositives": 14,
+      "truePositives": 16,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 14,
+      "assertions": 16,
       "precision": 1,
       "recall": 1,
       "precisionPct": "100.0%",
       "recallPct": "100.0%"
     },
     "routeDetection": {
-      "truePositives": 4,
+      "truePositives": 10,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 4,
+      "assertions": 10,
       "precision": 1,
       "recall": 1,
       "precisionPct": "100.0%",
@@ -53,10 +53,10 @@
   "summary": {
     "precision": "100.0%",
     "recall": "100.0%",
-    "resolutionCoverage": "97.0%",
+    "resolutionCoverage": "97.8%",
     "unsupportedPatternCount": 5
   },
-  "headline": "Resolved calls: 32 / 33 (97.0%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 5.",
+  "headline": "Resolved calls: 44 / 45 (97.8%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 5.",
   "cases": [
     {
       "name": "express-small",
@@ -131,6 +131,30 @@
         "generated-client"
       ],
       "knownUnresolved": 1,
+      "softMisses": 0
+    },
+    {
+      "name": "python-django-small",
+      "totalCalls": 6,
+      "resolvedCalls": 6,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "python-fastapi-small",
+      "totalCalls": 6,
+      "resolvedCalls": 6,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
       "softMisses": 0
     },
     {

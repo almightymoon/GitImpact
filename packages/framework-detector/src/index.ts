@@ -1,4 +1,5 @@
 import type { DetectedRoute, HttpMethod, ParsedFile } from "@gitimpact/shared";
+import { extractPythonRoutes } from "./python-routes.js";
 
 export interface FrameworkAnalyzer {
   name: string;
@@ -492,6 +493,9 @@ export function extractAllRoutes(
     routes.push(...nest.extractRoutes(files));
   }
 
+  const frameworkNames = detectFrameworkNames(files, packageDeps, packageName);
+  routes.push(...extractPythonRoutes(files, contents, frameworkNames));
+
   const seen = new Set<string>();
   return routes.filter((route) => {
     if (seen.has(route.id)) return false;
@@ -501,3 +505,8 @@ export function extractAllRoutes(
 }
 
 export { EXPRESS_METHODS };
+export {
+  extractDjangoUrlRoutes,
+  extractPythonDecoratorRoutes,
+  extractPythonRoutes,
+} from "./python-routes.js";

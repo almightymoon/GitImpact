@@ -2,7 +2,7 @@
 
 ## North star
 
-A developer pastes a random real repository and GitImpact explains it correctly enough that they trust it.
+A developer pastes a random real repository and GitImpact explains it correctly enough that a developer trusts it.
 
 ---
 
@@ -11,9 +11,11 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 | Version | Theme | Status |
 |---------|--------|--------|
 | **v1.0** | Public beta / production hardening | RC in progress — see `docs/release-candidate.md` |
-| **v1.1** | Real-world accuracy + adoption | Steps 1–5 done |
+| **v1.1** | Real-world accuracy + adoption | Steps 1–6 done |
 | **v1.1.1** | Trust, coverage & explainability | Done |
-| **v1.1.2** | Relationship accuracy + Python surface | **In progress** |
+| **v1.1.2** | Relationship accuracy + Python baseline | Done |
+| **v1.1.3** | Python accuracy & framework intelligence | **Next** |
+| **v1.1.4** | Go support | After v1.1.3 |
 | **v1.2** | Team collaboration + history + reports | Later |
 | **v1.3** | Optional AI layer / BYOK | Later |
 
@@ -31,106 +33,89 @@ Production stack, durable queue, private GitHub App path, quotas, ops. Tag `1.0.
 
 ### Order of work (mandatory)
 
-1. ~~Dogfood **20–30** real public repositories (`pnpm dogfood`)~~ ✅ (~25 active matrix)
-2. ~~Record misses in `tests/dogfood/misses.jsonl`~~ ✅
-3. ~~Fix relationship / framework / monorepo accuracy from that log~~ ✅ (waves 1–3; 0 open)
-4. ~~Surface **coverage / confidence** so trust is measurable~~ ✅ (baseline)
-5. ~~Adoption polish (GitHub App onboarding, demos, docs)~~ ✅ (samples, feedback, local CLI, examples doc)
-6. ~~**Python surface**~~ ✅ (parser + Flask/FastAPI labels + relationship fixture; dogfood wave 5)
-7. **Then** add Go
+1. ~~Dogfood **20–30** real public repositories (`pnpm dogfood`)~~ ✅
+2. ~~Record misses~~ ✅
+3. ~~Fix relationship / framework / monorepo accuracy~~ ✅
+4. ~~Coverage / confidence~~ ✅
+5. ~~Adoption polish~~ ✅
+6. ~~**Python baseline**~~ ✅ (v1.1.2)
+7. ~~**Python accuracy**~~ ← **v1.1.3** (in progress)
+8. **Then** Go ← **v1.1.4**
+
+Do **not** start Go until Python wave 5 stays clean and Python relationship / held-out edge review targets hold.
 
 ---
 
-## v1.1.1 — Trust, coverage & explainability
+## v1.1.2 — Relationship accuracy + Python baseline ✅
 
-**Goal:** Developers believe the analysis because they can see *how much* of the repo was understood and *why* each relationship exists.
+**Shipped:** `pnpm relationships` harness (13 cases, P=1 / R=1 on curated set), CJS `require()`, HOF attribution, `fetch()` → FETCHES, `.py` inventory + heuristic parser, Flask/FastAPI/Django labels, `python-flask-small` fixture.
 
-### Order of work
-
-1. ~~**Held-out dogfood wave 4** — 10–15 repos unused in waves 1–3~~ ✅ (12 repos)
-2. ~~Record every miss~~ ✅ (see `tests/dogfood/misses.jsonl`)
-3. ~~Fix only real misses; add regression fixtures/tests~~ ✅ (framework identity / optional peers / type-only Express; open: bullmq MEDIUM — intentional)
-4. ~~**Richer coverage reporting**~~ ✅ (inventory counts, edge mix, framework confidence, blind spots)
-5. ~~**Edge evidence**~~ ✅ (CALLS/IMPORTS carry file/snippet/resolution; graph edge inspect panel)
-6. ~~**Monorepo architecture**~~ ✅ (apps/packages as systems + cross-package uses/calls)
-7. ~~**Local CLI expansion**~~ ✅ (`analyze`, `structure`, `impact`, `pr`, `export architecture.md`)
-8. ~~Reconsider Python after relationship benchmark~~ ✅
-
-### Explicitly deferred
-
-- Private-repo / webhook RC E2E → finish under v1.0 when App credentials are available
-- Go → after Python dogfood wave 5 is green
-- History / team dashboards → **v1.2**
-- AI → **v1.3**
+**Honest caveat:** 100/100 on a curated expectation set proves recall of labelled edges — it does **not** prove emitted-edge precision. That is the job of v1.1.3 held-out sampling.
 
 ---
 
-## v1.1.2 — Relationship accuracy + Python
+## v1.1.3 — Python accuracy & framework intelligence
 
-**Goal:** Prove the graph understands *dependencies*, not only repo classification/framework labels. Impact analysis is only trustworthy if CALLS/IMPORTS/USES/… edges are correct. Python joins the supported surface once JS/TS relationship targets hold.
+**Goal:** Prove Python the same way JS/TS was proved — dogfood → misses → fixtures → relationship edges → honest blind spots. No Go until this bar is met.
 
 ### Order of work
 
-1. ~~**Curate ~10 repos** with 10–20 hand-verified relationships each~~ ✅ (expanded local + dogfood cases in `tests/relationships`)
-2. ~~**Classify every expectation**~~ ✅ (TP / FP / MISSING / WRONG_TARGET / WRONG_TYPE / LOW_CONFIDENCE)
-3. ~~**Score precision/recall by relation type**~~ ✅ (`pnpm relationships`)
-4. ~~**Fix graph false positives** from the log~~ ✅
-5. ~~**Fix important missing edges**~~ ✅ (CommonJS `require()`, HOF `compose()` attribution, `fetch()` → FETCHES)
-6. ~~**Add regression fixtures**~~ ✅ (`cjs-require`, `fetch-external`, express-small HOF hard asserts)
-7. ~~**Python language parsing**~~ ✅ (`.py` inventory, imports/defs/calls, Flask/FastAPI/Django labels)
-8. **Publish targets** / dogfood wave 5 (`python-flask`, `python-fastapi`)
+1. **Dogfood wave 5** — Flask, FastAPI, Django, one CLI, one library, one monorepo-ish Python project
+2. **Record every miss** in `tests/dogfood/misses.jsonl`
+3. **Framework route intelligence** — decorator / urls.py → handler `HANDLED_BY`
+   - Flask: `@app.get("/users")` → `get_users`
+   - FastAPI: `@router.post("/orders")` → `create_order`
+   - Django: `urls.py` → view → service/model (incremental)
+4. **Python relationship benchmark** — IMPORTS, CALLS, route→handler, service→repo, class/method, package-relative imports
+5. **Python project detection** — `pyproject.toml`, requirements, Poetry, uv, Pipenv, `setup.py`, packages/modules, src-layout
+6. **Held-out emitted-edge review** — sample ~100 system-emitted edges (stratified by type), manually classify TRUE / FALSE / AMBIGUOUS
+7. **Confidence / blind spots** — dynamic imports, monkeypatch, runtime decorators, metaclasses, framework magic
+8. **Regression fixtures** for every real Flask/FastAPI/Django miss
 
 ### Targets
 
-| Relation | Precision | Recall |
-|----------|-----------|--------|
-| CALLS | ≥ 90% | ≥ 80% |
-| IMPORTS | ≥ 95% | ≥ 90% |
-| USES | ≥ 90% | ≥ 75% |
-| HANDLED_BY | ≥ 90% | ≥ 85% |
-| QUERIES | ≥ 85% | ≥ 80% |
-| FETCHES | ≥ 85% | ≥ 70% |
-| Overall important edges | ≥ 90% | ≥ 80% |
+| Metric | Target |
+|--------|--------|
+| Python relationship P/R (curated) | ≥ JS/TS targets for IMPORTS/CALLS/HANDLED_BY |
+| Held-out emitted-edge precision (TRUE / (TRUE+FALSE)) | ≥ 85% among non-AMBIGUOUS |
+| Wave-5 dogfood | 0 unexplained overview/framework misses |
 
-Run: `pnpm relationships` → `tests/relationships/results/summary.json`
+### Held-out edge sampling
 
-### BullMQ / unsupported-format note
+Curated benchmarks measure “did we find known-true edges?”  
+Sampling measures “of edges we emit, how often are they true?”
 
-MEDIUM confidence when Lua/SQL inventory dominates is **correct** — do not raise confidence artificially. The trust UI must explain that unsupported formats (e.g. Redis Lua) are a real blind spot.
+```bash
+pnpm relationships:sample          # write stratified sample for review
+pnpm relationships:sample -- --score samples/reviewed.json
+```
+
+Default mix (100 edges): CALLS 30 · IMPORTS 25 · USES 15 · FETCHES 10 · HANDLED_BY 10 · QUERIES 10.
 
 ---
 
-## v1.1 tracks (carry-forward)
+## v1.1.4 — Go support
 
-**A — Accuracy & framework coverage**
+After v1.1.3 is green: Echo + Cobra (already planned in dogfood matrix), then expand.
 
-- Expand dogfood matrix + real-world fixtures from recorded misses
-- Fix parsing / CALLS / IMPORTS / framework edges
-- Improve monorepo root & workspace detection
-- Repository analysis confidence / coverage report
-- Parser-failure / unsupported-file telemetry (product-visible, not vanity)
-- Python dogfood wave 5 → deepen FastAPI / Django route intel
+---
 
-**B — Developer experience & adoption**
+## Explicitly deferred
 
-- GitHub App onboarding polish (Connect CTA, setup hints, docs)
-- Hosted demo / sample repositories
-- Public examples & short case studies
-
-**C — Languages**
-
-- ~~Python~~ ✅ baseline
-- Go next
+- Private-repo / webhook RC E2E → v1.0 when App credentials are available
+- Go → **v1.1.4** only after Python accuracy holds
+- History / team dashboards → **v1.2**
+- AI → **v1.3**
+- More UI / platform infra → not the bottleneck; deepen language accuracy first
 
 ---
 
 ## Commands
 
 ```bash
-pnpm dogfood               # default priority ≤ 1
-pnpm dogfood -- --wave 4   # held-out JS/TS wave
-pnpm dogfood -- --wave 5   # Python flask/fastapi
-pnpm relationships         # v1.1.2 relationship precision/recall
+pnpm dogfood -- --wave 5           # Python accuracy dogfood
+pnpm relationships                 # curated edge precision/recall
+pnpm relationships:sample          # held-out emitted-edge sample
 pnpm test:accuracy
 pnpm test:real-world
 ```
