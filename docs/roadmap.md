@@ -60,17 +60,14 @@ Do **not** start Go until Python wave 5 stays clean and Python relationship / he
 
 ### Order of work
 
-1. **Dogfood wave 5** — Flask, FastAPI, Django, one CLI, one library, one monorepo-ish Python project
-2. **Record every miss** in `tests/dogfood/misses.jsonl`
-3. **Framework route intelligence** — decorator / urls.py → handler `HANDLED_BY`
-   - Flask: `@app.get("/users")` → `get_users`
-   - FastAPI: `@router.post("/orders")` → `create_order`
-   - Django: `urls.py` → view → service/model (incremental)
-4. **Python relationship benchmark** — IMPORTS, CALLS, route→handler, service→repo, class/method, package-relative imports
-5. **Python project detection** — `pyproject.toml`, requirements, Poetry, uv, Pipenv, `setup.py`, packages/modules, src-layout
-6. **Held-out emitted-edge review** — sample ~100 system-emitted edges (stratified by type), manually classify TRUE / FALSE / AMBIGUOUS
-7. **Confidence / blind spots** — dynamic imports, monkeypatch, runtime decorators, metaclasses, framework magic
-8. **Regression fixtures** for every real Flask/FastAPI/Django miss
+1. ~~**Dogfood wave 5** — Flask, FastAPI, Django, CLI, library, monorepo-ish~~ ✅ (6/6 ok)
+2. ~~**Record every miss**~~ ✅ (FastAPI Flask FP, route double-count, Click missing — fixed)
+3. ~~**Framework route intelligence**~~ ✅ (Flask/FastAPI decorators + Django urls → HANDLED_BY)
+4. **Python relationship benchmark** — expand curated cases from dogfood misses
+5. ~~**Python project detection**~~ ✅ (Poetry/uv/Pipenv/setuptools/src-layout)
+6. **Held-out emitted-edge review** — manually label `pnpm relationships:sample` output (≥85% precision)
+7. ~~**Confidence / blind spots**~~ ✅ (heuristic Python limits + inventory wording)
+8. **Regression fixtures** — continue for each new wave-5 miss
 
 ### Targets
 

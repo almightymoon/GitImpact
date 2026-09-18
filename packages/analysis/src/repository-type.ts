@@ -168,6 +168,7 @@ export function detectRepositoryType(input: {
   const hasBackend = frameworks.some((f) =>
     /express|nestjs|fastify|koa|hono|flask|fastapi|django/.test(f),
   );
+  const hasCli = frameworks.some((f) => /click|cobra|commander/.test(f));
   const hasNext = frameworks.some((f) => f.includes("next"));
   const codeFileCount = input.files.length;
   const yamlCount = paths.filter((p) => isYamlPath(p)).length;
@@ -229,6 +230,12 @@ export function detectRepositoryType(input: {
       label: hasBackend
         ? `${input.frameworks.find((f) => /express|nest|fastify|koa|hono|flask|fastapi|django/i.test(f)) ?? "API"} Service`
         : "API Service",
+    };
+  }
+  if (hasCli && !hasBackend && !hasFrontend) {
+    return {
+      type: "LIBRARY",
+      label: `${input.frameworks.find((f) => /click|cobra|commander/i.test(f)) ?? "CLI"} Library`,
     };
   }
   if (deps.react || deps.vue || deps.svelte) {

@@ -1210,41 +1210,94 @@ async function detectPythonFrameworks(
   const hasPy = files.some((f) => f.language === "python");
   if (!hasPy) return [];
 
-  const depTextParts: string[] = [];
+  const isPrimaryPy = (filePath: string) => {
+    const normalized = filePath.replace(/\\/g, "/");
+    return (
+      !/(^|\/)(__(tests|mocks)__|tests?|spec|docs?(?:_src)?|documentation|examples?|demos?|samples?|benchmarks?|fixtures?)\//i.test(
+        normalized,
+      ) && !/(^|\/)test_.*\.py$|_test\.py$/i.test(normalized)
+    );
+  };
+
+  // Prefer project metadata + primary dependencies — skip lockfiles (too noisy).
+  let projectName = "";
+  let primaryDepBlob = "";
   for (const candidate of [
-    "requirements.txt",
-    "requirements-dev.txt",
     "pyproject.toml",
+    "requirements.txt",
     "setup.cfg",
     "setup.py",
     "Pipfile",
-    "uv.lock",
-    "poetry.lock",
   ]) {
     try {
-      depTextParts.push(await readFile(path.join(rootDir, candidate), "utf8"));
+      const text = await readFile(path.join(rootDir, candidate), "utf8");
+      if (candidate === "pyproject.toml") {
+        const projectSection =
+          /\[project\]([\s\S]*?)(?=\n\[|\s*$)/i.exec(text)?.[1] ?? "";
+        const nameMatch = /^\s*name\s*=\s*["']([^"']+)["']/m.exec(projectSection);
+        if (nameMatch) projectName = nameMatch[1]!.toLowerCase();
+        // Only [project] dependencies / poetry main deps — not optional/test groups.
+        const projectDeps =
+          /\[project\][\s\S]*?dependencies\s*=\s*\[([\s\S]*?)\]/i.exec(text)?.[1] ??
+          "";
+        const poetryDeps =
+          /\[tool\.poetry\.dependencies\]([\s\S]*?)(\n\[|\s*$)/i.exec(text)?.[1] ??
+          "";
+        primaryDepBlob += `\n${projectDeps}\n${poetryDeps}`;
+      } else {
+        primaryDepBlob += `\n${text}`;
+      }
     } catch {
       // missing
     }
   }
-  const blob = depTextParts.join("\n").toLowerCase();
-  if (/^\s*flask[\s=\[]/m.test(blob) || /\bflask\b/.test(blob)) names.add("Flask");
-  if (/fastapi/.test(blob)) names.add("FastAPI");
-  if (/django/.test(blob)) names.add("Django");
-  if (/celery/.test(blob)) names.add("Celery");
-  if (/sqlalchemy/.test(blob)) names.add("SQLAlchemy");
 
-  // Import-based fallback when manifests are sparse
-  const importBlob = files
-    .filter((f) => f.language === "python")
-    .flatMap((f) => f.imports.map((i) => i.moduleSpecifier))
-    .join("\n")
-    .toLowerCase();
-  if (/(^|\n)flask(\.|$)/m.test(importBlob) || importBlob.includes("flask")) {
-    names.add("Flask");
+  const dep = primaryDepBlob.toLowerCase();
+  const hasDep = (name: string) =>
+    new RegExp(
+      String.raw`(^|[\s"',[\]])${name}(\s*([=<~>!]|\[|,|"]|$))`,
+      "m",
+    ).test(dep);
+
+  if (projectName === "flask" || hasDep("flask")) names.add("Flask");
+  if (projectName === "fastapi" || hasDep("fastapi")) names.add("FastAPI");
+  if (projectName === "django" || hasDep("django")) names.add("Django");
+  if (hasDep("celery")) names.add("Celery");
+  if (hasDep("sqlalchemy") || hasDep("sqlmodel")) names.add("SQLAlchemy");
+  if (projectName === "click" || hasDep("click")) names.add("Click");
+
+  // Import-based signals from primary source only (ignore docs/tests/examples).
+  const primaryImports = files
+    .filter((f) => f.language === "python" && isPrimaryPy(f.path))
+    .flatMap((f) => f.imports.map((i) => i.moduleSpecifier.toLowerCase()));
+  const hasImport = (...roots: string[]) =>
+    primaryImports.some((m) => roots.some((r) => m === r || m.startsWith(`${r}.`)));
+
+  if (hasImport("flask")) names.add("Flask");
+  if (hasImport("fastapi")) names.add("FastAPI");
+  if (hasImport("django")) names.add("Django");
+  if (hasImport("celery")) names.add("Celery");
+  if (hasImport("sqlalchemy", "sqlmodel")) names.add("SQLAlchemy");
+  if (hasImport("click")) names.add("Click");
+
+  // Identity: analyzing the framework package itself
+  if (projectName === "flask") names.add("Flask");
+  if (projectName === "fastapi") names.add("FastAPI");
+  if (projectName === "django") names.add("Django");
+  if (projectName === "click") names.add("Click");
+
+  // If FastAPI is the product and Flask only appears as an optional/test/docs signal, drop Flask.
+  if (names.has("FastAPI") && names.has("Flask")) {
+    const flaskPrimary = primaryImports.some(
+      (m) => m === "flask" || m.startsWith("flask."),
+    );
+    const fastapiPrimary = primaryImports.some(
+      (m) => m === "fastapi" || m.startsWith("fastapi."),
+    );
+    if (fastapiPrimary && !flaskPrimary && projectName !== "flask") {
+      names.delete("Flask");
+    }
   }
-  if (importBlob.includes("fastapi")) names.add("FastAPI");
-  if (importBlob.includes("django")) names.add("Django");
 
   return [...names];
 }

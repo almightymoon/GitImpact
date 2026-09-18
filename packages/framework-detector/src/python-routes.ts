@@ -205,13 +205,24 @@ export function extractPythonRoutes(
     const content = contents.get(file.path);
     if (!content) continue;
 
-    if (wantFlask || /from\s+flask\b|import\s+flask\b/.test(content)) {
+    const importsFlask = /(?:^|\n)\s*(?:from\s+flask\b|import\s+flask\b)/.test(
+      content,
+    );
+    const importsFastapi = /(?:^|\n)\s*(?:from\s+fastapi\b|import\s+fastapi\b)/.test(
+      content,
+    );
+
+    // Attribute decorator routes to at most one web framework per file —
+    // never emit both Flask and FastAPI for the same @app.get.
+    if (importsFastapi || (wantFastapi && !importsFlask)) {
+      if (importsFastapi || wantFastapi) {
+        routes.push(...extractPythonDecoratorRoutes(file.path, content, "fastapi"));
+      }
+    } else if (importsFlask || wantFlask) {
       routes.push(...extractPythonDecoratorRoutes(file.path, content, "flask"));
     }
-    if (wantFastapi || /from\s+fastapi\b|import\s+fastapi\b/.test(content)) {
-      routes.push(...extractPythonDecoratorRoutes(file.path, content, "fastapi"));
-    }
-    if (wantDjango || /django|urlpatterns/.test(content)) {
+
+    if (wantDjango || /django\.urls|urlpatterns\s*=/.test(content)) {
       routes.push(...extractDjangoUrlRoutes(file.path, content, knownFiles));
     }
   }

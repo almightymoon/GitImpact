@@ -445,27 +445,30 @@ export function detectFrameworkNames(
     names.push("Payload");
   }
 
-  // Python frameworks (imports / package deps mirrored from parser manifests)
+  // Python frameworks — primary-source imports only (docs/tests/examples ignored).
+  const isPrimaryPy = (filePath: string) => {
+    const normalized = filePath.replace(/\\/g, "/");
+    return (
+      !/(^|\/)(__(tests|mocks)__|tests?|spec|docs?(?:_src)?|documentation|examples?|demos?|samples?|benchmarks?|fixtures?)\//i.test(
+        normalized,
+      ) && !/(^|\/)test_.*\.py$|_test\.py$/i.test(normalized)
+    );
+  };
   const pythonImports = files
-    .filter((f) => f.language === "python")
+    .filter((f) => f.language === "python" && isPrimaryPy(f.path))
     .flatMap((f) => f.imports.map((i) => i.moduleSpecifier.toLowerCase()));
-  if (
-    pythonImports.some((m) => m === "flask" || m.startsWith("flask.")) ||
-    packageDeps.flask
-  ) {
-    names.push("Flask");
-  }
-  if (
-    pythonImports.some((m) => m === "fastapi" || m.startsWith("fastapi.")) ||
-    packageDeps.fastapi
-  ) {
-    names.push("FastAPI");
-  }
-  if (
-    pythonImports.some((m) => m === "django" || m.startsWith("django.")) ||
-    packageDeps.django
-  ) {
-    names.push("Django");
+  const hasPyImport = (...roots: string[]) =>
+    pythonImports.some((m) => roots.some((r) => m === r || m.startsWith(`${r}.`)));
+
+  if (hasPyImport("flask")) names.push("Flask");
+  if (hasPyImport("fastapi")) names.push("FastAPI");
+  if (hasPyImport("django")) names.push("Django");
+  if (hasPyImport("click") || packageName === "click") names.push("Click");
+
+  // FastAPI product should not inherit Flask from docs_src / test extras.
+  if (names.includes("FastAPI") && names.includes("Flask") && !hasPyImport("flask")) {
+    const filtered = names.filter((n) => n !== "Flask");
+    return [...new Set(filtered)];
   }
 
   return [...new Set(names)];

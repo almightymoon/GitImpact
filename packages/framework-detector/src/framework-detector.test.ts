@@ -195,6 +195,46 @@ describe("Express detection", () => {
     expect(detectFrameworkNames(files)).toContain("Flask");
   });
 
+  it("does not label Flask from docs_src when FastAPI dominates", () => {
+    const files = [
+      {
+        path: "fastapi/applications.py",
+        language: "python" as const,
+        imports: [
+          {
+            moduleSpecifier: "fastapi",
+            namedImports: ["FastAPI"],
+            isTypeOnly: false,
+          },
+        ],
+        exports: [],
+        functions: [],
+        classes: [],
+        isTest: false,
+        envVariables: [],
+      },
+      {
+        path: "docs_src/wsgi/tutorial001.py",
+        language: "python" as const,
+        imports: [
+          {
+            moduleSpecifier: "flask",
+            namedImports: ["Flask"],
+            isTypeOnly: false,
+          },
+        ],
+        exports: [],
+        functions: [],
+        classes: [],
+        isTest: false,
+        envVariables: [],
+      },
+    ];
+    const names = detectFrameworkNames(files);
+    expect(names).toContain("FastAPI");
+    expect(names).not.toContain("Flask");
+  });
+
   it("extracts Flask decorator routes with handlers", () => {
     const files = [
       {

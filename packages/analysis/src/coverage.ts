@@ -102,6 +102,7 @@ const PRODUCT_FRAMEWORKS = new Set([
   "Django",
   "Celery",
   "SQLAlchemy",
+  "Click",
 ]);
 
 /** Score framework labels so adapters / supporting libs read as Medium when a product stack is present. */
@@ -117,6 +118,8 @@ export function scoreFrameworkConfidence(
   return frameworks.map((name) => {
     let confidence: ConfidenceLevel = "HIGH";
     if (name === "Express" && (set.has("NestJS") || set.has("Remix") || set.has("tRPC"))) {
+      confidence = "MEDIUM";
+    } else if (name === "Click" && (set.has("Flask") || set.has("FastAPI") || set.has("Django"))) {
       confidence = "MEDIUM";
     } else if (name === "Zod" && set.has("Payload")) {
       confidence = "MEDIUM";
@@ -292,8 +295,8 @@ export function buildAnalysisCoverage(input: {
       .join(", ");
     reasons.push(
       top
-        ? `${health.filesUnsupported} non-JS/TS inventory files were not parsed as code — top: ${top}.`
-        : `${health.filesUnsupported} non-JS/TS inventory files were not parsed as code.`,
+        ? `${health.filesUnsupported} inventory files were not parsed as code — top: ${top}.`
+        : `${health.filesUnsupported} inventory files were not parsed as code.`,
     );
   }
   // Explicit MEDIUM explanation when unsupported formats dwarf the parse surface

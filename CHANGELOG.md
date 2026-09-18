@@ -45,6 +45,7 @@
 - `fetch("https://host/...")` → FETCHES external-service edges
 - Python surface: `.py` in inventory, heuristic parser (imports/defs/classes/calls), Flask/FastAPI/Django detection, `python-flask-small` relationship fixture; dogfood wave 5 activated
 - **v1.1.3 start:** Python route intelligence (Flask/FastAPI decorators + Django `urls.py` → `HANDLED_BY`), Python project detection (Poetry/uv/Pipenv/setuptools/src-layout), held-out emitted-edge sampler (`pnpm relationships:sample`), expanded wave-5 dogfood (Django, Click, Requests, fullstack template), FastAPI/Django fixtures
+- Wave-5 dogfood 6/6: drop FastAPI→Flask false positive (test-only deps / docs_src); stop double-counting decorator routes under two frameworks; label Click CLI packages; demote Click to MEDIUM under Flask/FastAPI/Django
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 
