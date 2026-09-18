@@ -91,6 +91,12 @@ export async function consumeRateLimit(
       windowSeconds,
     };
   } catch {
+    try {
+      const { resetRedisConnection } = await import("./redis.js");
+      resetRedisConnection();
+    } catch {
+      // ignore
+    }
     return memoryConsume(key, limit, windowSeconds);
   }
 }

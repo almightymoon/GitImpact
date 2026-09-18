@@ -197,6 +197,42 @@ export async function POST(request: Request) {
       { status: 202, headers: { "x-request-id": requestId } },
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/QUEUE_UNAVAILABLE/i.test(message)) {
+      log("error", "analyze_enqueue_failed", {
+        requestId,
+        code: "QUEUE_UNAVAILABLE",
+        detail: "Redis queue unavailable",
+      });
+      incMetric("analyses_failed_total", 1, { code: "QUEUE_UNAVAILABLE" });
+      return NextResponse.json(
+        apiError("QUEUE_UNAVAILABLE", "Analysis queue is temporarily unavailable.", {
+          requestId,
+          retryable: true,
+          action: "retry",
+        }),
+        { status: 503, headers: { "x-request-id": requestId } },
+      );
+    }
+    if (
+      /DATABASE_UNAVAILABLE|ECONNREFUSED|Connection terminated|Failed query/i.test(message)
+    ) {
+      log("error", "analyze_enqueue_failed", {
+        requestId,
+        code: "DATABASE_UNAVAILABLE",
+        detail: "database unavailable",
+      });
+      incMetric("analyses_failed_total", 1, { code: "DATABASE_UNAVAILABLE" });
+      return NextResponse.json(
+        apiError("DATABASE_UNAVAILABLE", "Database is temporarily unavailable.", {
+          requestId,
+          retryable: true,
+          action: "retry",
+        }),
+        { status: 503, headers: { "x-request-id": requestId } },
+      );
+    }
+
     const classified = classifyAnalysisError(error);
     const code = (classified.code as string) || "ANALYSIS_FAILED";
     const status =

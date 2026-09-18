@@ -28,6 +28,11 @@ export interface PersistedAnalysis {
   routes?: DetectedRoute[];
   intelligence?: RepositoryIntelligence;
   checks?: ChecksReport;
+  commitSha?: string;
+  baseSha?: string;
+  headSha?: string;
+  schemaVersion?: string;
+  expiresAt?: string;
 }
 
 function repoId(owner: string, name: string): string {
@@ -84,6 +89,11 @@ export async function saveAnalysis(analysis: PersistedAnalysis): Promise<void> {
       routes: analysis.routes ?? null,
       intelligence: analysis.intelligence ?? null,
       checks: analysis.checks ?? null,
+      commitSha: analysis.commitSha ?? null,
+      baseSha: analysis.baseSha ?? null,
+      headSha: analysis.headSha ?? null,
+      schemaVersion: analysis.schemaVersion ?? "1.0",
+      expiresAt: analysis.expiresAt ? new Date(analysis.expiresAt) : null,
       createdAt: new Date(analysis.createdAt),
       updatedAt: now,
     })
@@ -100,6 +110,11 @@ export async function saveAnalysis(analysis: PersistedAnalysis): Promise<void> {
         routes: analysis.routes ?? null,
         intelligence: analysis.intelligence ?? null,
         checks: analysis.checks ?? null,
+        commitSha: analysis.commitSha ?? null,
+        baseSha: analysis.baseSha ?? null,
+        headSha: analysis.headSha ?? null,
+        schemaVersion: analysis.schemaVersion ?? "1.0",
+        expiresAt: analysis.expiresAt ? new Date(analysis.expiresAt) : null,
         updatedAt: now,
       },
     });
@@ -150,7 +165,7 @@ export async function loadAnalysis(id: string): Promise<PersistedAnalysis | null
 
 export { isDatabaseConfigured };
 export { analyses, repositories, githubInstallations, webhookDeliveries, analysisJobs } from "./schema.js";
-export { getDb, createDb, closeDb } from "./client.js";
+export { getDb, createDb, closeDb, databasePing } from "./client.js";
 export {
   claimWebhookDelivery,
   updateWebhookDelivery,

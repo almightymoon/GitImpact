@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isDatabaseConfigured, getDb } from "@gitimpact/db";
+import { isDatabaseConfigured, databasePing } from "@gitimpact/db";
 import { redisPing, getRuntimeMode, validateConfig } from "@gitimpact/ops";
 
 export const runtime = "nodejs";
@@ -11,15 +11,8 @@ export async function GET() {
   const checks: Record<string, { ok: boolean; detail?: string }> = {};
 
   if (isDatabaseConfigured()) {
-    try {
-      const db = getDb();
-      checks.database = { ok: Boolean(db), detail: db ? undefined : "client null" };
-    } catch (error) {
-      checks.database = {
-        ok: false,
-        detail: error instanceof Error ? error.message : "unavailable",
-      };
-    }
+    const dbOk = await databasePing();
+    checks.database = { ok: dbOk, detail: dbOk ? undefined : "ping failed" };
   } else if (mode !== "production") {
     checks.database = { ok: true, detail: "optional in development (memory)" };
   } else {

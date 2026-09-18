@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: gitimpact
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gitimpact}
       POSTGRES_DB: gitimpact
+    ports:
+      - "5432:5432"
     volumes:
       - gitimpact_pg:/var/lib/postgresql/data
       - ./packages/db/drizzle/0000_init.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
@@ -24,6 +26,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -43,12 +47,13 @@ services:
       GITHUB_APP_ID: ${GITHUB_APP_ID}
       GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITIMPACT_PUBLIC_URL: ${GITIMPACT_PUBLIC_URL}
       GITIMPACT_MAX_FILES: ${GITIMPACT_MAX_FILES:-800}
       GITIMPACT_ANALYZE_RATE_LIMIT: ${GITIMPACT_ANALYZE_RATE_LIMIT:-10}
       GITIMPACT_ANALYZE_RATE_WINDOW_SECONDS: ${GITIMPACT_ANALYZE_RATE_WINDOW_SECONDS:-60}
     ports:
-      - "3000:3000"
+      - "${GITIMPACT_WEB_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,6 +72,8 @@ services:
       REDIS_URL: redis://redis:6379
       GITHUB_APP_ID: ${GITHUB_APP_ID}
       GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITIMPACT_PUBLIC_URL: ${GITIMPACT_PUBLIC_URL}
       GITIMPACT_MAX_FILES: ${GITIMPACT_MAX_FILES:-800}
       GITIMPACT_WORKER_CONCURRENCY: ${GITIMPACT_WORKER_CONCURRENCY:-2}

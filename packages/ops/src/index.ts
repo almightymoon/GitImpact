@@ -29,4 +29,4 @@ export {
   type RateLimitResult,
 } from "./rate-limit.js";
 
-export { getRedisConnection, closeRedis, redisPing } from "./redis.js";
+export { getRedisConnection, closeRedis, redisPing, resetRedisConnection } from "./redis.js";

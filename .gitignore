@@ -12,3 +12,4 @@ coverage
 tmp
 .repos
 *.tsbuildinfo
+.rc-tmp/

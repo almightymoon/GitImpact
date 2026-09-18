@@ -149,11 +149,21 @@ async function enqueueDurableOnce(
       return { jobId: payload.jobId, mode: "redis" };
     }
     if (getRuntimeMode() === "production") {
+      await updateAnalysisJob(payload.jobId, {
+        status: "FAILED",
+        finishedAt: new Date(),
+        lastError: "QUEUE_UNAVAILABLE",
+      });
       throw new Error("QUEUE_UNAVAILABLE");
     }
   }
 
   if (getRuntimeMode() === "production") {
+    await updateAnalysisJob(payload.jobId, {
+      status: "FAILED",
+      finishedAt: new Date(),
+      lastError: "QUEUE_UNAVAILABLE",
+    });
     throw new Error("QUEUE_UNAVAILABLE: REDIS_URL required in production");
   }
 
@@ -280,7 +290,12 @@ export async function runJobWithLifecycle(
         status: "DEAD_LETTER",
         durationMs: Date.now() - started,
       });
-      throw error;
+      // Prevent BullMQ from re-running deterministic / exhausted failures (expensive clones).
+      if (process.env.REDIS_URL) {
+        const { UnrecoverableError } = await import("bullmq");
+        throw new UnrecoverableError(message);
+      }
+      return;
     }
 
     await updateAnalysisJob(payload.jobId, {
@@ -375,9 +390,40 @@ export async function retryDeadLetterJob(jobId: string): Promise<EnqueueResult |
     lastError: null,
     finishedAt: null,
     startedAt: null,
+    phase: "QUEUED",
   });
   const nextPayload = { ...job.payload, jobId, requestedAt: new Date().toISOString() };
-  return enqueueDurable(nextPayload, job.dedupeKey);
+
+  const preferRedis =
+    Boolean(process.env.REDIS_URL) &&
+    !(getRuntimeMode() !== "production" && process.env.GITIMPACT_FORCE_INLINE_QUEUE === "1");
+
+  if (preferRedis) {
+    const { addBullJob } = await import("./bull.js");
+    const added = await addBullJob(nextPayload, job.maxAttempts ?? getResourceQuotas().jobMaxAttempts);
+    if (!added) {
+      await updateAnalysisJob(jobId, {
+        status: "FAILED",
+        finishedAt: new Date(),
+        lastError: "QUEUE_UNAVAILABLE",
+      });
+      throw new Error("QUEUE_UNAVAILABLE");
+    }
+    return { jobId, mode: "redis", deduped: false };
+  }
+
+  if (getRuntimeMode() === "production") {
+    await updateAnalysisJob(jobId, {
+      status: "FAILED",
+      finishedAt: new Date(),
+      lastError: "QUEUE_UNAVAILABLE",
+    });
+    throw new Error("QUEUE_UNAVAILABLE");
+  }
+
+  inlinePending.push(nextPayload);
+  void pumpInline();
+  return { jobId, mode: "inline", deduped: false };
 }
 
 export { listFailedJobs, listDeadLetterJobs, getAnalysisJob };

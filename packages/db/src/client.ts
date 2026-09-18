@@ -29,11 +29,29 @@ export function getDb(): Database | null {
     client = postgres(process.env.DATABASE_URL!, {
       max: 10,
       idle_timeout: 20,
-      connect_timeout: 10,
+      connect_timeout: 5,
     });
     db = drizzle(client, { schema });
   }
   return db;
+}
+
+/** True when Postgres accepts a trivial query. */
+export async function databasePing(): Promise<boolean> {
+  if (!isDatabaseConfigured()) return false;
+  try {
+    const sql = getDb();
+    if (!sql || !client) return false;
+    await Promise.race([
+      client`select 1 as ok`,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("database ping timeout")), 3_000),
+      ),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function closeDb(): Promise<void> {
