@@ -715,30 +715,141 @@ function tryKnown(candidate: string, knownFiles: Set<string>): string | undefine
   return undefined;
 }
 
+async function readJsonPackage(
+  filePath: string,
+): Promise<{
+  name?: string;
+  private?: boolean;
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  workspaces?: string[] | { packages?: string[] };
+} | null> {
+  try {
+    const raw = await readFile(filePath, "utf8");
+    return JSON.parse(raw) as {
+      name?: string;
+      private?: boolean;
+      dependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+      workspaces?: string[] | { packages?: string[] };
+    };
+  } catch {
+    return null;
+  }
+}
+
+function prodAndPeerDeps(pkg: {
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+}): Record<string, string> {
+  return {
+    ...pkg.dependencies,
+    ...pkg.peerDependencies,
+  };
+}
+
+async function listWorkspacePackageDirs(rootDir: string): Promise<string[]> {
+  const dirs = new Set<string>();
+  const addChildren = async (baseRel: string) => {
+    const abs = path.join(rootDir, baseRel);
+    try {
+      const entries = await readdir(abs, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && entry.name !== "node_modules") {
+          dirs.add(path.join(abs, entry.name));
+        }
+      }
+    } catch {
+      // missing dir
+    }
+  };
+
+  const rootPkg = await readJsonPackage(path.join(rootDir, "package.json"));
+  const workspaceGlobs = Array.isArray(rootPkg?.workspaces)
+    ? rootPkg.workspaces
+    : rootPkg?.workspaces?.packages ?? [];
+  for (const glob of workspaceGlobs) {
+    if (typeof glob !== "string") continue;
+    if (glob.endsWith("/*")) {
+      await addChildren(glob.slice(0, -2));
+    }
+  }
+
+  // Common monorepo layouts even when workspaces field is missing / pnpm-only
+  await addChildren("packages");
+  await addChildren("apps");
+
+  try {
+    const pnpmWs = await readFile(path.join(rootDir, "pnpm-workspace.yaml"), "utf8");
+    for (const match of pnpmWs.matchAll(/^\s*-\s*['"]?([^'"\n]+?)['"]?\s*$/gm)) {
+      const glob = match[1]?.trim();
+      if (!glob || glob.startsWith("!")) continue;
+      if (glob.endsWith("/*")) await addChildren(glob.slice(0, -2));
+    }
+  } catch {
+    // no pnpm workspace file
+  }
+
+  return [...dirs];
+}
+
+function shortPackageName(name: string): string {
+  const trimmed = name.trim();
+  if (trimmed.startsWith("@")) {
+    const parts = trimmed.split("/");
+    return parts[1] ?? trimmed;
+  }
+  return trimmed;
+}
+
+function pickPrimaryPackageName(
+  rootName: string | undefined,
+  workspaceNames: string[],
+): string | undefined {
+  const avoid = /(?:^|-)(project|monorepo|web|website|docs|examples?)$/i;
+  const scored = workspaceNames
+    .filter((n) => n && !avoid.test(shortPackageName(n)))
+    .map((n) => ({
+      name: n,
+      short: shortPackageName(n),
+      score: (n.startsWith("@") ? 1 : 0) + shortPackageName(n).length,
+    }))
+    .sort((a, b) => a.score - b.score);
+  if (scored[0]?.name) return scored[0].short;
+  if (rootName && !avoid.test(shortPackageName(rootName))) {
+    return shortPackageName(rootName);
+  }
+  return rootName ? shortPackageName(rootName) : undefined;
+}
+
 async function readPackageManifest(rootDir: string): Promise<{
   name?: string;
   deps: Record<string, string>;
+  packageNames: string[];
 }> {
-  try {
-    const pkgRaw = await readFile(path.join(rootDir, "package.json"), "utf8");
-    const pkg = JSON.parse(pkgRaw) as {
-      name?: string;
-      dependencies?: Record<string, string>;
-      peerDependencies?: Record<string, string>;
-      devDependencies?: Record<string, string>;
-    };
-    // Framework / type signals use production + peer deps only.
-    // DevDependencies often pull Express/Fastify/Next for tests and demos.
-    return {
-      name: pkg.name,
-      deps: {
-        ...pkg.dependencies,
-        ...pkg.peerDependencies,
-      },
-    };
-  } catch {
-    return { deps: {} };
+  const rootPkg = await readJsonPackage(path.join(rootDir, "package.json"));
+  if (!rootPkg) {
+    return { deps: {}, packageNames: [] };
   }
+
+  const deps: Record<string, string> = { ...prodAndPeerDeps(rootPkg) };
+  const packageNames = new Set<string>();
+  if (rootPkg.name) packageNames.add(rootPkg.name);
+
+  const workspaceDirs = await listWorkspacePackageDirs(rootDir);
+  for (const dir of workspaceDirs.slice(0, 40)) {
+    const pkg = await readJsonPackage(path.join(dir, "package.json"));
+    if (!pkg) continue;
+    if (pkg.name) packageNames.add(pkg.name);
+    Object.assign(deps, prodAndPeerDeps(pkg));
+  }
+
+  const names = [...packageNames];
+  return {
+    name: pickPrimaryPackageName(rootPkg.name, names) ?? rootPkg.name,
+    deps,
+    packageNames: names,
+  };
 }
 
 async function readPackageDeps(rootDir: string): Promise<Record<string, string>> {
@@ -811,6 +922,8 @@ export async function detectFrameworks(
   if (name === "socket.io" || deps["socket.io"]) frameworks.add("Socket.IO");
   if (name === "msw" || deps.msw) frameworks.add("MSW");
   if (name === "preact" || deps.preact) frameworks.add("Preact");
+  if (name === "formik" || deps.formik) frameworks.add("Formik");
+  if (name === "vite" || deps.vite) frameworks.add("Vite");
 
   const primaryPaths = files.filter((f) => isPrimary(f.path)).map((f) => f.path);
   const joined = primaryPaths.join("\n");

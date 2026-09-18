@@ -145,11 +145,13 @@ export function detectRepositoryType(input: {
   routes: DetectedRoute[];
   files: ParsedFile[];
   packageDeps?: Record<string, string>;
+  packageName?: string;
   filePaths?: string[];
   infraSignals?: InfraSignal[];
 }): { type: RepositoryType; label: string } {
   const frameworks = input.frameworks.map((f) => f.toLowerCase());
   const deps = input.packageDeps ?? {};
+  const packageName = input.packageName?.replace(/^@[^/]+\//, "");
   const paths = (
     input.filePaths ??
     input.files.map((f) => f.path)
@@ -237,11 +239,23 @@ export function detectRepositoryType(input: {
     !hasApiRoutes &&
     paths.some((p) => /(^|\/)(src|source|lib)\//i.test(p))
   ) {
-    const looksLib = paths.some(
-      (p) =>
-        /^(src|source|lib)\/index\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(p) ||
-        /\/(src|source|lib)\/index\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(p),
-    );
+    const escapeRegExp = (value: string) =>
+      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const looksLib =
+      paths.some(
+        (p) =>
+          /^(src|source|lib)\/index\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(p) ||
+          /\/(src|source|lib)\/index\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(p),
+      ) ||
+      Boolean(
+        packageName &&
+          paths.some((p) =>
+            new RegExp(
+              `^(src|source|lib)/${escapeRegExp(packageName)}\\.(ts|tsx|js|jsx|mjs|cjs)$`,
+              "i",
+            ).test(p),
+          ),
+      );
     if (looksLib && !hasFrontend && !hasBackend) {
       return { type: "LIBRARY", label: "Library" };
     }

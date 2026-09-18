@@ -348,6 +348,8 @@ export function detectFrameworkNames(
   if (packageName === "socket.io" || packageDeps["socket.io"]) names.push("Socket.IO");
   if (packageName === "msw" || packageDeps.msw) names.push("MSW");
   if (packageName === "preact" || packageDeps.preact) names.push("Preact");
+  if (packageName === "formik" || packageDeps.formik) names.push("Formik");
+  if (packageName === "vite" || packageDeps.vite) names.push("Vite");
   return [...new Set(names)];
 }
 

@@ -43,6 +43,7 @@ export async function buildRepositoryIntelligence(input: {
   frameworks: string[];
   languages: Array<{ language: string; percentage: number }>;
   packageDeps?: Record<string, string>;
+  packageName?: string;
   analysisHealth: AnalysisHealth;
   allRelativeFiles?: string[];
   token?: string;
@@ -62,6 +63,7 @@ export async function buildRepositoryIntelligence(input: {
     routes: input.routes,
     files: input.files,
     packageDeps: input.packageDeps,
+    packageName: input.packageName,
     filePaths,
     infraSignals,
   });
