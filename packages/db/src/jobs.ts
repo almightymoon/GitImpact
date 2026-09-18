@@ -22,6 +22,7 @@ function rowToRecord(row: typeof analysisJobs.$inferSelect): AnalysisJobRecord {
     pullRequestNumber: row.pullRequestNumber ?? undefined,
     commitSha: row.commitSha ?? undefined,
     requestId: row.requestId ?? undefined,
+    result: (row.result as AnalysisJobRecord["result"]) ?? undefined,
     createdAt: row.createdAt.toISOString(),
     startedAt: row.startedAt?.toISOString(),
     finishedAt: row.finishedAt?.toISOString(),
@@ -95,6 +96,8 @@ export async function updateAnalysisJob(
     phase: string | null;
     startedAt: Date | null;
     finishedAt: Date | null;
+    result: AnalysisJobRecord["result"] | null;
+    commitSha: string | null;
   }>,
 ): Promise<AnalysisJobRecord | undefined> {
   const db = getDb();
@@ -121,6 +124,14 @@ export async function updateAnalysisJob(
       finishedAt: patch.finishedAt === null
         ? undefined
         : (patch.finishedAt?.toISOString() ?? existing.finishedAt),
+      result:
+        patch.result === null
+          ? undefined
+          : (patch.result ?? existing.result),
+      commitSha:
+        patch.commitSha === null
+          ? undefined
+          : (patch.commitSha ?? existing.commitSha),
       updatedAt: now.toISOString(),
     };
     memoryJobs.set(id, next);
@@ -136,6 +147,8 @@ export async function updateAnalysisJob(
       ...(patch.phase !== undefined ? { phase: patch.phase } : {}),
       ...(patch.startedAt !== undefined ? { startedAt: patch.startedAt } : {}),
       ...(patch.finishedAt !== undefined ? { finishedAt: patch.finishedAt } : {}),
+      ...(patch.result !== undefined ? { result: patch.result } : {}),
+      ...(patch.commitSha !== undefined ? { commitSha: patch.commitSha } : {}),
       updatedAt: now,
     })
     .where(eq(analysisJobs.id, id));

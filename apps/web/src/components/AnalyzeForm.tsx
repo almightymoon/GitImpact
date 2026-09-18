@@ -4,16 +4,60 @@ import { FormEvent, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ConnectGitHubButton } from "@/components/ConnectGitHubButton";
 
-const PROGRESS_STEPS = [
-  "Fetching repository",
-  "Discovering files",
-  "Parsing code",
-  "Building graph",
-  "Detecting APIs",
-  "Running checks",
-  "Building architecture",
-  "Finalizing",
-] as const;
+type JobPoll = {
+  id: string;
+  status: string;
+  phase?: string;
+  phaseLabel?: string;
+  routePath?: string;
+  lastError?: string;
+  result?: { analysisId?: string; routePath?: string; fromCache?: boolean };
+};
+
+async function pollJobUntilDone(
+  jobId: string,
+  onPhase: (label: string) => void,
+  signal: AbortSignal,
+): Promise<JobPoll> {
+  const started = Date.now();
+  const timeoutMs = 10 * 60 * 1000;
+
+  while (!signal.aborted) {
+    if (Date.now() - started > timeoutMs) {
+      throw new Error("Analysis is taking longer than expected. Check job status later.");
+    }
+
+    const response = await fetch(`/api/jobs/${jobId}`, {
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    const data = (await response.json()) as JobPoll & {
+      message?: string;
+      code?: string;
+    };
+    if (!response.ok) {
+      throw Object.assign(new Error(data.message ?? "Job not found"), {
+        code: data.code,
+      });
+    }
+
+    onPhase(data.phaseLabel ?? data.phase ?? "Working");
+
+    if (data.status === "SUCCEEDED") {
+      return data;
+    }
+    if (data.status === "DEAD_LETTER" || data.status === "FAILED") {
+      throw Object.assign(new Error(data.lastError ?? "Analysis failed"), {
+        code: "ANALYSIS_FAILED",
+        detail: data.lastError,
+      });
+    }
+
+    await new Promise((r) => setTimeout(r, 900));
+  }
+
+  throw new Error("Analysis cancelled");
+}
 
 export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   const router = useRouter();
@@ -23,7 +67,7 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [installUrl, setInstallUrl] = useState<string | null>(null);
-  const [progressIndex, setProgressIndex] = useState(0);
+  const [phaseLabel, setPhaseLabel] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const isPrivate =
@@ -32,33 +76,22 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
     errorCode === "GITHUB_RATE_LIMITED" ||
     errorCode === "ANALYSIS_TIMEOUT" ||
     errorCode === "ANALYSIS_FAILED" ||
-    errorCode === "RATE_LIMITED";
+    errorCode === "RATE_LIMITED" ||
+    errorCode === "QUEUE_UNAVAILABLE";
 
   useEffect(() => {
-    if (isPrivate) {
-      let cancelled = false;
-      void fetch("/api/github/app")
-        .then((r) => r.json())
-        .then((data: { installUrl?: string | null }) => {
-          if (!cancelled) setInstallUrl(data.installUrl ?? null);
-        })
-        .catch(() => undefined);
-      return () => {
-        cancelled = true;
-      };
-    }
+    if (!isPrivate) return;
+    let cancelled = false;
+    void fetch("/api/github/app")
+      .then((r) => r.json())
+      .then((data: { installUrl?: string | null }) => {
+        if (!cancelled) setInstallUrl(data.installUrl ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, [isPrivate]);
-
-  useEffect(() => {
-    if (!pending) {
-      setProgressIndex(0);
-      return;
-    }
-    const timer = setInterval(() => {
-      setProgressIndex((i) => Math.min(i + 1, PROGRESS_STEPS.length - 1));
-    }, 1800);
-    return () => clearInterval(timer);
-  }, [pending]);
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -66,6 +99,7 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
     setErrorDetail(null);
     setErrorCode(null);
     setRequestId(null);
+    setPhaseLabel(null);
     const value = url
       .trim()
       .replace(/\.git$/i, "")
@@ -75,7 +109,6 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
       return;
     }
 
-    // Remember recent analyses locally (no account required).
     try {
       const key = "gitimpact:recent";
       const prev = JSON.parse(localStorage.getItem(key) ?? "[]") as string[];
@@ -86,11 +119,14 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
     }
 
     startTransition(async () => {
+      const controller = new AbortController();
       try {
+        setPhaseLabel("Queuing analysis");
         const response = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ repository: value }),
+          signal: controller.signal,
         });
         const data = (await response.json()) as {
           error?: string;
@@ -99,20 +135,58 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
           code?: string;
           routePath?: string;
           id?: string;
+          jobId?: string;
+          status?: string;
+          fromCache?: boolean;
           requestId?: string;
+          phaseLabel?: string;
         };
-        if (!response.ok) {
+
+        setRequestId(data.requestId ?? response.headers.get("x-request-id"));
+
+        if (!response.ok && response.status !== 202) {
           setError(data.message ?? data.error ?? "Analysis failed");
           setErrorDetail(data.detail ?? null);
           setErrorCode(data.code ?? null);
-          setRequestId(data.requestId ?? response.headers.get("x-request-id"));
+          setPhaseLabel(null);
           return;
         }
-        if (data.routePath) {
+
+        // Cache hit — ready immediately
+        if (data.routePath && (response.status === 200 || data.fromCache)) {
           router.push(data.routePath);
+          return;
         }
-      } catch {
-        setError("Could not reach the analysis service.");
+
+        if (!data.jobId) {
+          setError("Analysis did not return a job id.");
+          setPhaseLabel(null);
+          return;
+        }
+
+        setPhaseLabel("Queued");
+        const done = await pollJobUntilDone(data.jobId, setPhaseLabel, controller.signal);
+        const routePath = done.routePath ?? done.result?.routePath;
+        if (routePath) {
+          router.push(routePath);
+          return;
+        }
+        setError("Analysis finished but no repository path was returned.");
+        setPhaseLabel(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Could not reach the analysis service.";
+        const code =
+          err && typeof err === "object" && "code" in err
+            ? String((err as { code?: string }).code)
+            : "ANALYSIS_FAILED";
+        const detail =
+          err && typeof err === "object" && "detail" in err
+            ? String((err as { detail?: string }).detail)
+            : null;
+        setError(message);
+        setErrorDetail(detail);
+        setErrorCode(code);
+        setPhaseLabel(null);
       }
     });
   }
@@ -137,10 +211,8 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
           {pending ? "Analyzing…" : "Analyze Impact"}
         </button>
       </div>
-      {pending ? (
-        <p className="mt-3 font-mono text-xs text-[var(--teal)]">
-          {PROGRESS_STEPS[progressIndex]}…
-        </p>
+      {pending && phaseLabel ? (
+        <p className="mt-3 font-mono text-xs text-[var(--teal)]">{phaseLabel}…</p>
       ) : null}
       {error ? (
         <div className="mt-3 rounded-xl border border-[var(--critical)]/25 bg-[#fff5f5] px-3 py-2">

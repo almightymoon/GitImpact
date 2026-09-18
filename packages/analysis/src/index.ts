@@ -27,6 +27,7 @@ import {
   loadAnalysis as loadAnalysisFromDb,
   saveAnalysis as saveAnalysisToDb,
   findCachedAnalysis,
+  putAnalysisCache,
 } from "@gitimpact/db";
 import {
   getResourceQuotas,
@@ -123,6 +124,26 @@ function defaultCacheDir(): string {
 
 async function persist(analysis: StoredAnalysis): Promise<StoredAnalysis> {
   getMemoryStore().set(analysis.id, analysis);
+  putAnalysisCache({
+    id: analysis.id,
+    createdAt: analysis.createdAt,
+    repository: analysis.repository,
+    summary: analysis.summary,
+    graph: analysis.graph,
+    routePath: analysis.routePath,
+    pullRequest: analysis.pullRequest,
+    changes: analysis.changes,
+    impact: analysis.impact,
+    prOverview: analysis.prOverview,
+    routes: analysis.routes,
+    intelligence: analysis.intelligence,
+    checks: analysis.checks,
+    commitSha: analysis.commitSha,
+    baseSha: analysis.baseSha,
+    headSha: analysis.headSha,
+    schemaVersion: analysis.schemaVersion ?? schemaVersion(),
+    expiresAt: analysis.expiresAt,
+  });
   if (!isDatabaseConfigured()) {
     return { ...analysis, persisted: false };
   }
@@ -296,7 +317,7 @@ export async function analyzeRepositoryUrl(
 
   const commitSha = await resolveCommitSha(repository.clonePath);
 
-  if (!options?.skipCache && isDatabaseConfigured()) {
+  if (!options?.skipCache) {
     const cached = await findCachedAnalysis({
       owner: parsedUrl.owner,
       repo: parsedUrl.repo,
@@ -478,7 +499,7 @@ export async function analyzePullRequest(
 
   enforcePrChangedFileQuota(prFiles.length, quotas);
 
-  if (!options?.skipCache && isDatabaseConfigured() && pullRequest.headSha) {
+  if (!options?.skipCache && pullRequest.headSha) {
     const cached = await findCachedAnalysis({
       owner,
       repo,
@@ -1139,5 +1160,5 @@ export {
 
 export { buildChecksReport, buildInfrastructureNodes } from "./checks/index.js";
 
-export { enqueuePrAnalysis, type PrAnalysisJob } from "./queue.js";
+export { enqueuePrAnalysis, enqueueRepositoryAnalysis, ensureInlineAnalysisHandlers, type PrAnalysisJob, type RepoAnalysisJob } from "./queue.js";
 export { processPrAnalysisJob } from "./pr-workflow.js";

@@ -34,12 +34,23 @@ async function processPayload(payload: JobPayload): Promise<void> {
 
   if (payload.type === "ANALYZE_REPOSITORY") {
     await updateAnalysisJob(payload.jobId, { phase: "CLONE" });
-    await analyzeRepositoryUrl(`https://github.com/${payload.owner}/${payload.repo}`, {
-      depth: payload.depth ?? Number(process.env.GITIMPACT_DEPTH ?? 3),
-      maxFiles: payload.maxFiles ?? Number(process.env.GITIMPACT_MAX_FILES ?? 800),
-      onPhase: async (phase) => {
-        await updateAnalysisJob(payload.jobId, { phase });
+    const analysis = await analyzeRepositoryUrl(
+      `https://github.com/${payload.owner}/${payload.repo}`,
+      {
+        depth: payload.depth ?? Number(process.env.GITIMPACT_DEPTH ?? 3),
+        maxFiles: payload.maxFiles ?? Number(process.env.GITIMPACT_MAX_FILES ?? 800),
+        onPhase: async (phase) => {
+          await updateAnalysisJob(payload.jobId, { phase });
+        },
       },
+    );
+    await updateAnalysisJob(payload.jobId, {
+      result: {
+        analysisId: analysis.id,
+        routePath: analysis.routePath,
+        fromCache: analysis.fromCache,
+      },
+      commitSha: analysis.commitSha ?? payload.commitSha ?? null,
     });
     observeMetric("analysis.phase.duration", Date.now() - started, { phase: "repository" });
     return;
@@ -151,6 +162,14 @@ async function processPayload(payload: JobPayload): Promise<void> {
       if (payload.deliveryId) {
         await updateWebhookDelivery(payload.deliveryId, { status: "completed" });
       }
+      await updateAnalysisJob(payload.jobId, {
+        result: {
+          analysisId: analysis.id,
+          routePath: analysis.routePath,
+          fromCache: analysis.fromCache,
+        },
+        commitSha: analysis.commitSha ?? payload.headSha ?? null,
+      });
       incMetric("analyses_succeeded_total", 1, { type: "ANALYZE_PULL_REQUEST" });
     } catch (error) {
       if (payload.deliveryId) {

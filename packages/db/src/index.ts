@@ -173,6 +173,8 @@ export {
 } from "./jobs.js";
 export {
   findCachedAnalysis,
+  putAnalysisCache,
+  clearAnalysisCacheForTests,
   listRecentRepositories,
   purgeExpiredAnalyses,
   deleteAnalysesForRepository,

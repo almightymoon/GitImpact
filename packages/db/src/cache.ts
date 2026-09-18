@@ -46,6 +46,21 @@ export interface CacheLookup {
   schemaVersion?: string;
 }
 
+const memoryCache = new Map<string, CachedAnalysisRecord>();
+
+export function cacheKeyParts(lookup: CacheLookup): string {
+  const version = lookup.schemaVersion ?? ANALYSIS_SCHEMA_VERSION;
+  if (lookup.prNumber != null) {
+    return `pr:${lookup.owner}/${lookup.repo}#${lookup.prNumber}:${lookup.headSha ?? "?"}:${lookup.baseSha ?? "?"}:v${version}`;
+  }
+  return `repo:${lookup.owner}/${lookup.repo}:${lookup.commitSha ?? "?"}:v${version}`;
+}
+
+function isExpired(entry: CachedAnalysisRecord, now = new Date()): boolean {
+  if (!entry.expiresAt) return false;
+  return new Date(entry.expiresAt).getTime() <= now.getTime();
+}
+
 function hydrate(
   row: typeof analyses.$inferSelect,
   repo: typeof repositories.$inferSelect,
@@ -77,13 +92,39 @@ function hydrate(
   };
 }
 
+/** Store analysis in the versioned SHA cache (memory + caller persists to DB). */
+export function putAnalysisCache(entry: CachedAnalysisRecord): void {
+  const key = cacheKeyParts({
+    owner: entry.repository.owner,
+    repo: entry.repository.name,
+    commitSha: entry.commitSha,
+    headSha: entry.headSha,
+    baseSha: entry.baseSha,
+    prNumber: entry.pullRequest?.number,
+    schemaVersion: entry.schemaVersion ?? ANALYSIS_SCHEMA_VERSION,
+  });
+  memoryCache.set(key, entry);
+}
+
+export function clearAnalysisCacheForTests(): void {
+  memoryCache.clear();
+}
+
 /**
  * Load a non-expired analysis matching commit identity + schema version.
- * Returns null on cache miss or when Postgres is unreachable / mis-migrated.
  */
 export async function findCachedAnalysis(
   lookup: CacheLookup,
 ): Promise<CachedAnalysisRecord | null> {
+  const key = cacheKeyParts(lookup);
+  const mem = memoryCache.get(key);
+  if (mem && !isExpired(mem)) {
+    return mem;
+  }
+  if (mem && isExpired(mem)) {
+    memoryCache.delete(key);
+  }
+
   const db = getDb();
   if (!db) return null;
 
@@ -126,7 +167,9 @@ export async function findCachedAnalysis(
     const repo = repoRows[0];
     if (!repo) return null;
 
-    return hydrate(row, repo);
+    const hydrated = hydrate(row, repo);
+    putAnalysisCache(hydrated);
+    return hydrated;
   } catch (error) {
     console.error("[gitimpact] cache lookup failed", error);
     return null;
@@ -168,18 +211,38 @@ export async function listRecentRepositories(limit = 8): Promise<RecentRepositor
 }
 
 export async function purgeExpiredAnalyses(now = new Date()): Promise<number> {
+  let n = 0;
+  for (const [key, entry] of memoryCache) {
+    if (isExpired(entry, now)) {
+      memoryCache.delete(key);
+      n += 1;
+    }
+  }
+
   const db = getDb();
-  if (!db) return 0;
-  const result = await db.delete(analyses).where(lt(analyses.expiresAt, now));
-  return Number((result as { rowCount?: number }).rowCount ?? 0);
+  if (!db) return n;
+  try {
+    const result = await db.delete(analyses).where(lt(analyses.expiresAt, now));
+    return n + Number((result as { rowCount?: number }).rowCount ?? 0);
+  } catch {
+    return n;
+  }
 }
 
 export async function deleteAnalysesForRepository(owner: string, repo: string): Promise<number> {
+  let n = 0;
+  for (const [key, entry] of memoryCache) {
+    if (entry.repository.owner === owner && entry.repository.name === repo) {
+      memoryCache.delete(key);
+      n += 1;
+    }
+  }
+
   const db = getDb();
-  if (!db) return 0;
+  if (!db) return n;
   const repositoryId = `${owner}/${repo}`;
   const result = await db.delete(analyses).where(eq(analyses.repositoryId, repositoryId));
-  return Number((result as { rowCount?: number }).rowCount ?? 0);
+  return n + Number((result as { rowCount?: number }).rowCount ?? 0);
 }
 
 export async function purgeOldWebhookDeliveries(olderThan: Date): Promise<number> {
@@ -189,12 +252,4 @@ export async function purgeOldWebhookDeliveries(olderThan: Date): Promise<number
     .delete(webhookDeliveries)
     .where(lt(webhookDeliveries.receivedAt, olderThan));
   return Number((result as { rowCount?: number }).rowCount ?? 0);
-}
-
-export function cacheKeyParts(lookup: CacheLookup): string {
-  const version = lookup.schemaVersion ?? ANALYSIS_SCHEMA_VERSION;
-  if (lookup.prNumber != null) {
-    return `pr:${lookup.owner}/${lookup.repo}#${lookup.prNumber}:${lookup.headSha ?? "?"}:${lookup.baseSha ?? "?"}:v${version}`;
-  }
-  return `repo:${lookup.owner}/${lookup.repo}:${lookup.commitSha ?? "?"}:v${version}`;
 }

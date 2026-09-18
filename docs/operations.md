@@ -1,8 +1,17 @@
 # Operations
 
-## Jobs
+## Analysis jobs
 
-Failed/exhausted jobs are stored as `DEAD_LETTER` in `analysis_jobs`.
+`POST /api/analyze` is asynchronous:
+
+1. Resolve repository + commit SHA (GitHub API)
+2. Cache lookup: `owner/repo + commitSha + ANALYSIS_SCHEMA_VERSION`
+3. On hit → `200` with `routePath`
+4. On miss → enqueue `ANALYZE_REPOSITORY` (or PR job) → `202 { jobId, status: "QUEUED" }`
+5. Client polls `GET /api/jobs/:id` for `phase` / `phaseLabel` until `SUCCEEDED`
+6. Redirect to `routePath`
+
+Heavy work runs in `apps/worker` (or inline queue when `REDIS_URL` is unset in development).
 
 CLI:
 

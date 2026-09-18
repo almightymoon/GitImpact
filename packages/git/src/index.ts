@@ -363,6 +363,68 @@ export async function getPullRequestFiles(
 
   return files;
 }
+
+/**
+ * Resolve the current HEAD commit SHA for a branch/ref without cloning.
+ * Uses GitHub Commits API (authenticated when a token is available).
+ */
+export async function resolveRepositoryHeadSha(options: {
+  owner: string;
+  repo: string;
+  ref?: string;
+  token?: string;
+}): Promise<{ sha: string; ref: string }> {
+  const { owner, repo, token } = options;
+  const { githubFetch } = await import("./github-api.js");
+  const { resolveGitHubToken } = await import("./github-app.js");
+  const auth = token ?? (await resolveGitHubToken());
+
+  let ref = options.ref?.trim();
+  if (!ref) {
+    const repoRes = await githubFetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      token: auth,
+    });
+    if (repoRes.status === 404) {
+      const err = new Error("Repository not found on GitHub.");
+      (err as Error & { code?: string }).code = "REPOSITORY_NOT_FOUND";
+      throw err;
+    }
+    if (repoRes.status === 401 || repoRes.status === 403) {
+      const err = new Error("GitImpact cannot access this repository.");
+      (err as Error & { code?: string }).code = "PRIVATE_REPOSITORY";
+      throw err;
+    }
+    if (!repoRes.ok) {
+      throw new Error(`Failed to resolve repository metadata: ${repoRes.status}`);
+    }
+    const meta = (await repoRes.json()) as { default_branch?: string };
+    ref = meta.default_branch || "main";
+  }
+
+  const commitsRes = await githubFetch(
+    `https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}`,
+    { token: auth },
+  );
+  if (commitsRes.status === 404) {
+    const err = new Error("Repository not found on GitHub.");
+    (err as Error & { code?: string }).code = "REPOSITORY_NOT_FOUND";
+    throw err;
+  }
+  if (commitsRes.status === 401 || commitsRes.status === 403) {
+    const err = new Error("GitImpact cannot access this repository.");
+    (err as Error & { code?: string }).code = "PRIVATE_REPOSITORY";
+    throw err;
+  }
+  if (!commitsRes.ok) {
+    throw new Error(`Failed to resolve commit SHA: ${commitsRes.status}`);
+  }
+  const data = (await commitsRes.json()) as { sha?: string };
+  if (!data.sha) {
+    throw new Error("GitHub did not return a commit SHA.");
+  }
+  return { sha: data.sha, ref };
+}
+
 export async function getChangedFilesBetween(
   repoPath: string,
   baseRef: string,

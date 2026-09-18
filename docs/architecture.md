@@ -23,7 +23,9 @@ Payloads are lightweight (owner/repo/SHAs/installationId). Graphs and tokens are
 
 ## Cache
 
-Analyses persist in Postgres. Schema version: `ANALYSIS_SCHEMA_VERSION` (`1.0`).
+Analyses persist in Postgres (and an in-process cache for local/dev). Schema version: `ANALYSIS_SCHEMA_VERSION` (`1.0`).
+
+Cache key: `owner/repo` + commit SHA (or PR head SHA) + schema version. Entries include `expires_at` (repo TTL 24h, PR TTL 6h by default). Expired rows are removed by `gitimpact admin retention run` / `purgeExpiredAnalyses`.
 Cache identity should include owner, repo, commit SHA (and base/head for PRs).
 
 ## Security principles

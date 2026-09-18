@@ -118,6 +118,11 @@ export const analysisJobs = pgTable(
     commitSha: text("commit_sha"),
     requestId: text("request_id"),
     schemaVersion: text("schema_version").notNull().default("1.0"),
+    result: jsonb("result").$type<{
+      analysisId?: string;
+      routePath?: string;
+      fromCache?: boolean;
+    }>(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),

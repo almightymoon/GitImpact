@@ -18,7 +18,7 @@ import {
   repoAnalysisDedupeKey,
   prAnalysisDedupeKey,
 } from "@gitimpact/queue";
-import { clearMemoryJobsForTests, getAnalysisJob, cacheKeyParts } from "@gitimpact/db";
+import { clearMemoryJobsForTests, getAnalysisJob, cacheKeyParts, putAnalysisCache, findCachedAnalysis, clearAnalysisCacheForTests, purgeExpiredAnalyses } from "@gitimpact/db";
 import {
   parseGitHubUrl,
   redactGitCredentials,
@@ -214,5 +214,129 @@ describe("queue dead-letter and dedupe", () => {
     });
     expect(b.deduped).toBe(true);
     expect(b.jobId).toBe(a.jobId);
+  });
+});
+
+describe("analysis cache by SHA + schema version", () => {
+  beforeEach(() => {
+    clearAnalysisCacheForTests();
+    delete process.env.DATABASE_URL;
+  });
+
+  it("reuses cached analysis for same owner/repo/sha/version", async () => {
+    putAnalysisCache({
+      id: "acme/app",
+      createdAt: new Date().toISOString(),
+      repository: {
+        owner: "acme",
+        name: "app",
+        url: "https://github.com/acme/app",
+        defaultBranch: "main",
+      },
+      summary: {
+        files: 1,
+        functions: 0,
+        classes: 0,
+        dependencies: 0,
+        apiRoutes: 0,
+        tests: 0,
+        languages: [],
+        frameworks: [],
+      },
+      graph: { nodes: [], edges: [] },
+      routePath: "/acme/app",
+      commitSha: "abc123",
+      schemaVersion: ANALYSIS_SCHEMA_VERSION,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+
+    const hit = await findCachedAnalysis({
+      owner: "acme",
+      repo: "app",
+      commitSha: "abc123",
+      schemaVersion: ANALYSIS_SCHEMA_VERSION,
+    });
+    expect(hit?.id).toBe("acme/app");
+    expect(hit?.routePath).toBe("/acme/app");
+
+    const missSha = await findCachedAnalysis({
+      owner: "acme",
+      repo: "app",
+      commitSha: "different",
+      schemaVersion: ANALYSIS_SCHEMA_VERSION,
+    });
+    expect(missSha).toBeNull();
+
+    const missVersion = await findCachedAnalysis({
+      owner: "acme",
+      repo: "app",
+      commitSha: "abc123",
+      schemaVersion: "9.9",
+    });
+    expect(missVersion).toBeNull();
+  });
+
+  it("purges expired cache entries", async () => {
+    putAnalysisCache({
+      id: "acme/old",
+      createdAt: new Date().toISOString(),
+      repository: {
+        owner: "acme",
+        name: "old",
+        url: "https://github.com/acme/old",
+        defaultBranch: "main",
+      },
+      summary: {
+        files: 1,
+        functions: 0,
+        classes: 0,
+        dependencies: 0,
+        apiRoutes: 0,
+        tests: 0,
+        languages: [],
+        frameworks: [],
+      },
+      graph: { nodes: [], edges: [] },
+      routePath: "/acme/old",
+      commitSha: "oldsha",
+      schemaVersion: ANALYSIS_SCHEMA_VERSION,
+      expiresAt: new Date(Date.now() - 1000).toISOString(),
+    });
+
+    const before = await findCachedAnalysis({
+      owner: "acme",
+      repo: "old",
+      commitSha: "oldsha",
+    });
+    expect(before).toBeNull();
+
+    putAnalysisCache({
+      id: "acme/old",
+      createdAt: new Date().toISOString(),
+      repository: {
+        owner: "acme",
+        name: "old",
+        url: "https://github.com/acme/old",
+        defaultBranch: "main",
+      },
+      summary: {
+        files: 1,
+        functions: 0,
+        classes: 0,
+        dependencies: 0,
+        apiRoutes: 0,
+        tests: 0,
+        languages: [],
+        frameworks: [],
+      },
+      graph: { nodes: [], edges: [] },
+      routePath: "/acme/old",
+      commitSha: "oldsha",
+      schemaVersion: ANALYSIS_SCHEMA_VERSION,
+      expiresAt: new Date(Date.now() - 1000).toISOString(),
+    });
+
+    const purged = await purgeExpiredAnalyses(new Date());
+    expect(purged).toBeGreaterThanOrEqual(1);
   });
 });

@@ -106,6 +106,12 @@ export interface AnalysisJobRecord {
   pullRequestNumber?: number;
   commitSha?: string;
   requestId?: string;
+  /** Lightweight completion metadata — never graphs/tokens. */
+  result?: {
+    analysisId?: string;
+    routePath?: string;
+    fromCache?: boolean;
+  };
   createdAt: string;
   startedAt?: string;
   finishedAt?: string;
