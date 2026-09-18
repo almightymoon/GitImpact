@@ -21,14 +21,21 @@ function buildApiChain(
   }
 
   const handlerNode =
+    nodes.find((n) => n.id === route.id) ??
     nodes.find(
       (n) =>
         (n.type === "METHOD" || n.type === "FUNCTION" || n.type === "CONTROLLER") &&
+        n.file === route.file &&
         (n.name === route.handlerName ||
           n.name === `${route.handlerClass}.${route.handlerName}` ||
           n.name.endsWith(`.${route.handlerName}`)),
     ) ??
-    nodes.find((n) => n.type === "API_ROUTE" && n.file === route.file);
+    nodes.find(
+      (n) =>
+        n.type === "API_ROUTE" &&
+        n.file === route.file &&
+        (n.metadata?.path === route.path || n.name === `${route.method} ${route.path}`),
+    );
 
   if (!handlerNode) return chain;
 
@@ -65,7 +72,9 @@ export function ApisPanel({
   edges,
   repositoryType,
   infraLabels,
+  repository,
   onSelectRoute,
+  onSelectFile,
   onOpenGraph,
   onOpenTests,
 }: {
@@ -74,7 +83,9 @@ export function ApisPanel({
   edges: GraphEdge[];
   repositoryType?: RepositoryType;
   infraLabels?: string[];
+  repository?: { owner: string; name: string; defaultBranch?: string };
   onSelectRoute?: (route: DetectedRoute) => void;
+  onSelectFile?: (filePath: string, startLine?: number) => void;
   onOpenGraph?: () => void;
   onOpenTests?: () => void;
 }) {
@@ -82,6 +93,14 @@ export function ApisPanel({
     repositoryType === "INFRASTRUCTURE" ||
     repositoryType === "GITOPS" ||
     repositoryType === "DEVOPS";
+
+  const sourceUrl = (route: DetectedRoute) => {
+    if (!repository?.owner || !repository?.name) return null;
+    const branch = repository.defaultBranch || "main";
+    const file = route.file.replace(/^\/+/, "");
+    const base = `https://github.com/${repository.owner}/${repository.name}/blob/${branch}/${file}`;
+    return route.startLine ? `${base}#L${route.startLine}` : base;
+  };
 
   if (routes.length === 0) {
     return (
@@ -121,6 +140,7 @@ export function ApisPanel({
       <ul className="space-y-3">
         {routes.map((route) => {
           const chain = buildApiChain(route, nodes, edges);
+          const githubSource = sourceUrl(route);
           return (
             <li
               key={route.id}
@@ -135,7 +155,14 @@ export function ApisPanel({
                   {route.framework}
                 </span>
               </div>
-              <p className="mt-2 font-mono text-[11px] text-[var(--ink-soft)]">{route.file}</p>
+              <button
+                type="button"
+                onClick={() => onSelectFile?.(route.file, route.startLine)}
+                className="mt-2 font-mono text-[11px] text-[var(--teal)] hover:underline"
+              >
+                {route.file}
+                {route.startLine ? `:${route.startLine}` : ""}
+              </button>
               {route.handlerName ? (
                 <p className="mt-1 text-sm">
                   Handler:{" "}
@@ -167,14 +194,27 @@ export function ApisPanel({
                 >
                   Related tests
                 </button>
-                <a
-                  href={`https://github.com/search?q=${encodeURIComponent(route.file)}`}
-                  className="rounded-full border border-[var(--line)] px-3 py-1 text-xs hover:border-[var(--teal)]"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Source file
-                </a>
+                {githubSource ? (
+                  <a
+                    href={githubSource}
+                    className="rounded-full border border-[var(--line)] px-3 py-1 text-xs hover:border-[var(--teal)]"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Source file
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectFile?.(route.file, route.startLine);
+                      onOpenGraph?.();
+                    }}
+                    className="rounded-full border border-[var(--line)] px-3 py-1 text-xs hover:border-[var(--teal)]"
+                  >
+                    Source file
+                  </button>
+                )}
               </div>
             </li>
           );

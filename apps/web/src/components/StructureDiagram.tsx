@@ -652,9 +652,15 @@ function buildArchitectureLayout(
   narrative: string[];
   bandStats: Array<{ id: BandId; count: number; impacted: number }>;
 } {
-  const byBand = new Map<ArchBandId, typeof architecture.components>();
+  // Full GitDiagram-style cards: SYSTEM-level only (hide CODE drill-down nodes)
+  const topComponents = architecture.components.filter(
+    (c) => !c.level || c.level === "SYSTEM",
+  );
+  const idSet = new Set(topComponents.map((c) => c.id));
+
+  const byBand = new Map<ArchBandId, typeof topComponents>();
   for (const band of ARCH_BANDS) byBand.set(band.id, []);
-  for (const component of architecture.components) {
+  for (const component of topComponents) {
     const list = byBand.get(component.band as ArchBandId) ?? [];
     list.push(component);
     byBand.set(component.band as ArchBandId, list);
@@ -668,7 +674,7 @@ function buildArchitectureLayout(
   const cardW = 252;
 
   // Synthetic SystemModule list for sidebar file counts
-  const systems: SystemModule[] = architecture.components.map((c) => ({
+  const systems: SystemModule[] = topComponents.map((c) => ({
     id: c.id,
     root: c.pathHint ?? c.title,
     title: c.title,
@@ -701,7 +707,7 @@ function buildArchitectureLayout(
     );
     const contentW = memberWidths.reduce((a, w, i) => a + w + (i > 0 ? innerGap : 0), 0);
     const groupW = Math.max(280, contentW + padX * 2);
-    const rowH = band.id === "actors" ? 150 : 200;
+    const rowH = band.id === "actors" ? 150 : 220;
     const groupH = padTop + rowH + padBottom;
 
     rfNodes.push({
@@ -763,37 +769,40 @@ function buildArchitectureLayout(
     y += groupH + 48;
   }
 
-  const rfEdges: Edge[] = architecture.edges.map((edge) => ({
-    id: `arch:${edge.from}->${edge.to}:${edge.label}`,
-    source: `sys:${edge.from}`,
-    target: `sys:${edge.to}`,
-    sourceHandle: "b",
-    targetHandle: "t",
-    type: "smoothstep",
-    label: edge.label,
-    animated: true,
-    style: {
-      stroke: "#64748b",
-      strokeWidth: 1.8,
-      strokeDasharray: "6 4",
-      opacity: 0.85,
-    },
-    labelStyle: {
-      fontSize: 10,
-      fill: "#475569",
-      fontFamily: "IBM Plex Mono, ui-monospace, monospace",
-    },
-    labelBgStyle: { fill: "#f7fafc", fillOpacity: 0.92 },
-    labelBgPadding: [4, 6] as [number, number],
-    labelBgBorderRadius: 6,
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      color: "#64748b",
-      width: 18,
-      height: 18,
-    },
-    zIndex: 1,
-  }));
+  const rfEdges: Edge[] = architecture.edges
+    .filter((edge) => idSet.has(edge.from) && idSet.has(edge.to))
+    .map((edge) => ({
+      id: `arch:${edge.from}->${edge.to}:${edge.label}`,
+      source: `sys:${edge.from}`,
+      target: `sys:${edge.to}`,
+      sourceHandle: "b",
+      targetHandle: "t",
+      type: "smoothstep",
+      label: edge.label,
+      animated: true,
+      style: {
+        stroke: "#64748b",
+        strokeWidth: 1.8,
+        strokeDasharray: "6 4",
+        opacity: 0.85,
+      },
+      labelStyle: {
+        fontSize: 11,
+        fill: "#334155",
+        fontWeight: 600,
+        fontFamily: "IBM Plex Sans, system-ui, sans-serif",
+      },
+      labelBgStyle: { fill: "#f7fafc", fillOpacity: 0.94 },
+      labelBgPadding: [5, 7] as [number, number],
+      labelBgBorderRadius: 6,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: "#64748b",
+        width: 18,
+        height: 18,
+      },
+      zIndex: 1,
+    }));
 
   // Map arch band stats for sidebar using ARCH_BANDS labels via custom path
   const archBandStats = activeBands.map((b) => ({

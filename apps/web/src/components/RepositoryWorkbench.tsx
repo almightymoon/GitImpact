@@ -493,17 +493,35 @@ export function RepositoryWorkbench({
             infraLabels={data.intelligence?.infraSignals.map(
               (s) => `${s.label} (${s.path})`,
             )}
+            repository={{
+              owner: data.repository.owner,
+              name: data.repository.name,
+              defaultBranch: data.repository.defaultBranch,
+            }}
             onSelectRoute={(route) => {
               const match =
+                data.graph.nodes.find((n) => n.id === route.id) ??
                 data.graph.nodes.find(
-                  (n) => n.type === "API_ROUTE" && n.file === route.file,
+                  (n) =>
+                    n.type === "API_ROUTE" &&
+                    n.file === route.file &&
+                    (n.metadata?.path === route.path ||
+                      n.name === `${route.method} ${route.path}`),
                 ) ??
                 data.graph.nodes.find(
                   (n) =>
-                    n.name === route.handlerName ||
-                    n.name === `${route.handlerClass}.${route.handlerName}`,
-                );
+                    n.file === route.file &&
+                    (n.name === route.handlerName ||
+                      n.name === `${route.handlerClass}.${route.handlerName}` ||
+                      n.name.endsWith(`.${route.handlerName}`)),
+                ) ??
+                data.graph.nodes.find((n) => n.id === `FILE:${route.file}`);
               if (match) fetchImpact(match.id);
+              else selectFile(route.file);
+            }}
+            onSelectFile={(filePath) => {
+              selectFile(filePath);
+              setTab("graph");
             }}
             onOpenGraph={() => setTab("graph")}
             onOpenTests={() => setTab("tests")}

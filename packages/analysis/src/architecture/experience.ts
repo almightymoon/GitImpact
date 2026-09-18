@@ -518,10 +518,11 @@ export function buildArchitectureExperience(input: {
     };
   });
 
-  components = clusterDeployment(components);
+  // Keep deployment systems as separate cards (GitDiagram-style) — do not collapse into one parent.
   const codeChildren = buildCodeChildren(components, graphNodes);
+  // CODE children stay in the map for expand/drill-down; Structure default shows SYSTEM only.
+  // Do not cap/collapse SYSTEM cards — that erased the GitDiagram-style layout.
   components = [...components, ...codeChildren];
-  components = capSystems(components);
 
   // Drop edges that reference removed system nodes
   const ids = new Set(components.map((c) => c.id));

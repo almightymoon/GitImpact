@@ -418,8 +418,20 @@ export async function analyzePullRequest(
 function enrichArchitectureIfMissing(analysis: StoredAnalysis): StoredAnalysis {
   if (!analysis.intelligence) return analysis;
   const existing = analysis.intelligence.architecture;
-  // Re-build when missing or when older maps lack the experience fields
-  if (existing?.components?.length && existing.summary && existing.walkthrough?.length) {
+  const hasCollapsedOther = existing?.components?.some(
+    (c) => c.id === "shared:Other modules" || c.title === "Other modules",
+  );
+  const hasClusteredDeploy = existing?.components?.some(
+    (c) => c.id === "deployment:Deployment" && c.childIds && c.childIds.length > 0,
+  );
+  // Re-build when missing, incomplete, clustered, or collapsed into "Other modules"
+  if (
+    existing?.components?.length &&
+    existing.summary &&
+    existing.walkthrough?.length &&
+    !hasClusteredDeploy &&
+    !hasCollapsedOther
+  ) {
     return analysis;
   }
 
