@@ -174,6 +174,7 @@ export function detectRepositoryType(input: {
   const hasNext = frameworks.some((f) => f.includes("next"));
   const codeFileCount = input.files.length;
   const pythonFiles = input.files.filter((f) => f.language === "python");
+  const goFiles = input.files.filter((f) => f.language === "go");
   const py = input.pythonProject;
   const looksPythonLibrary =
     pythonFiles.length > 0 &&
@@ -184,6 +185,16 @@ export function detectRepositoryType(input: {
       py?.layout === "src" ||
       paths.some((p) => /^src\/[a-zA-Z_][\w-]*\/__init__\.py$/.test(p)) ||
       paths.some((p) => /^[a-zA-Z_][\w-]*\/__init__\.py$/.test(p)));
+  const hasGoMod = paths.some(
+    (p) => p === "go.mod" || /(^|\/)go\.mod$/.test(p),
+  );
+  // Go modules without HTTP surface (GORM, testify, …) are libraries — not applications.
+  const looksGoLibrary =
+    goFiles.length > 0 &&
+    hasGoMod &&
+    !hasApiRoutes &&
+    !hasBackend &&
+    !hasFrontend;
   const yamlCount = paths.filter((p) => isYamlPath(p)).length;
   const hasDeployPackaging = paths.some(
     (p) =>
@@ -253,6 +264,13 @@ export function detectRepositoryType(input: {
   }
   if (looksPythonLibrary) {
     return { type: "LIBRARY", label: "Python Library" };
+  }
+  if (looksGoLibrary) {
+    const ormOrData = input.frameworks.find((f) => /gorm/i.test(f));
+    return {
+      type: "LIBRARY",
+      label: ormOrData ? `${ormOrData} Library` : "Go Library",
+    };
   }
   if (deps.react || deps.vue || deps.svelte) {
     return { type: "LIBRARY", label: "Frontend Library" };

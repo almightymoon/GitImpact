@@ -1251,7 +1251,7 @@ async function detectGoFrameworks(
   const isPrimaryGo = (filePath: string) => {
     const normalized = filePath.replace(/\\/g, "/");
     return (
-      !/(^|\/)(tests?|spec|docs?(?:_src)?|documentation|examples?|demos?|samples?|benchmarks?|fixtures?)\//i.test(
+      !/(^|\/)(_?examples?|tests?|spec|docs?(?:_src)?|documentation|demos?|samples?|benchmarks?|fixtures?)\//i.test(
         normalized,
       ) && !/_test\.go$/i.test(normalized)
     );

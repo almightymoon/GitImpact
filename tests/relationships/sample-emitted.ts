@@ -6,7 +6,7 @@
  * — a stronger precision signal.
  *
  *   pnpm relationships:sample
- *   pnpm relationships:sample -- --id express-small --n 40
+ *   pnpm relationships:sample -- --seed v1.1.4-go --prefix go-
  *   pnpm relationships:sample -- --score samples/reviewed.json
  */
 import { createHash } from "node:crypto";
@@ -135,6 +135,7 @@ async function main(): Promise<void> {
     cases: MatrixCase[];
   };
   const idFilter = argValue("--id");
+  const prefixFilter = argValue("--prefix");
   const seed = argValue("--seed") ?? "v1.1.3";
   const nScale = Number(argValue("--n") ?? 100);
   const scale = nScale / 100;
@@ -144,7 +145,11 @@ async function main(): Promise<void> {
 
   const selected = idFilter
     ? matrix.cases.filter((c) => c.id === idFilter)
-    : matrix.cases.filter((c) => c.source === "local");
+    : prefixFilter
+      ? matrix.cases.filter(
+          (c) => c.source === "local" && c.id.startsWith(prefixFilter),
+        )
+      : matrix.cases.filter((c) => c.source === "local");
 
   await mkdir(samplesDir, { recursive: true });
   const all: SampleRow[] = [];

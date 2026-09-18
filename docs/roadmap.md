@@ -15,7 +15,7 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 | **v1.1.1** | Trust, coverage & explainability | Done |
 | **v1.1.2** | Relationship accuracy + Python baseline | Done |
 | **v1.1.3** | Python accuracy & framework intelligence | Done |
-| **v1.1.4** | Go parsing, framework intel & relationship accuracy | **Next** |
+| **v1.1.4** | Go parsing, framework intel & relationship accuracy | **In progress** (wave-6 dogfood green) |
 | **v1.2** | History, change intelligence & team workflows | After language freeze |
 | **v1.3** | Optional AI layer / BYOK | Later |
 

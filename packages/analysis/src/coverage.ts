@@ -213,6 +213,9 @@ export function buildBlindSpots(input: {
     spots.push(
       "Go analysis is heuristic — interfaces/method sets, constructor DI, build tags, reflection, generated code, and dynamic registration may be missed or low-confidence",
     );
+    spots.push(
+      "Anonymous Go route handlers (func literals) are not attributed to HANDLED_BY",
+    );
   }
 
   const lowEdges = (input.graphEdges ?? []).filter((e) => e.confidence === "LOW").length;

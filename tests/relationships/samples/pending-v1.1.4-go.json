@@ -1,0 +1,199 @@
+{
+  "generatedAt": "2026-09-18T20:51:31.885Z",
+  "seed": "v1.1.4-go",
+  "instruction": "Set label to TRUE | FALSE | AMBIGUOUS for each sample, then run: pnpm relationships:sample -- --score <file>",
+  "quota": {
+    "CALLS": 24,
+    "IMPORTS": 20,
+    "USES": 12,
+    "FETCHES": 8,
+    "HANDLED_BY": 8,
+    "QUERIES": 8
+  },
+  "samples": [
+    {
+      "id": "go-echo-small:FUNCTION:handlers/users.go:Login->FUNCTION:handlers/users.go:IssueToken:CALLS",
+      "caseId": "go-echo-small",
+      "type": "CALLS",
+      "from": "FUNCTION:handlers/users.go:Login",
+      "to": "FUNCTION:handlers/users.go:IssueToken",
+      "confidence": "HIGH",
+      "evidenceSnippet": "IssueToken(…)"
+    },
+    {
+      "id": "go-echo-small:FILE:main.go->FILE:handlers/users.go:IMPORTS",
+      "caseId": "go-echo-small",
+      "type": "IMPORTS",
+      "from": "FILE:main.go",
+      "to": "FILE:handlers/users.go",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { handlers } from \"example.com/echo-small/handlers\""
+    },
+    {
+      "id": "go-echo-small:API_ROUTE:echo:POST:/login:main.go->FUNCTION:handlers/users.go:Login:USES",
+      "caseId": "go-echo-small",
+      "type": "USES",
+      "from": "API_ROUTE:echo:POST:/login:main.go",
+      "to": "FUNCTION:handlers/users.go:Login",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-echo-small:API_ROUTE:echo:GET:/users:main.go->FUNCTION:handlers/users.go:ListUsers:USES",
+      "caseId": "go-echo-small",
+      "type": "USES",
+      "from": "API_ROUTE:echo:GET:/users:main.go",
+      "to": "FUNCTION:handlers/users.go:ListUsers",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-echo-small:API_ROUTE:echo:GET:/users:main.go->FUNCTION:handlers/users.go:ListUsers:HANDLED_BY",
+      "caseId": "go-echo-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:echo:GET:/users:main.go",
+      "to": "FUNCTION:handlers/users.go:ListUsers",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-echo-small:API_ROUTE:echo:POST:/login:main.go->FUNCTION:handlers/users.go:Login:HANDLED_BY",
+      "caseId": "go-echo-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:echo:POST:/login:main.go",
+      "to": "FUNCTION:handlers/users.go:Login",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-cobra-small:FUNCTION:main.go:main->FUNCTION:cmd/root.go:Execute:CALLS",
+      "caseId": "go-cobra-small",
+      "type": "CALLS",
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:cmd/root.go:Execute",
+      "confidence": "HIGH",
+      "evidenceSnippet": "Execute(…)"
+    },
+    {
+      "id": "go-cobra-small:FILE:main.go->FILE:cmd/root.go:IMPORTS",
+      "caseId": "go-cobra-small",
+      "type": "IMPORTS",
+      "from": "FILE:main.go",
+      "to": "FILE:cmd/root.go",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { cmd } from \"example.com/cobra-small/cmd\""
+    },
+    {
+      "id": "go-gin-small:API_ROUTE:gin:GET:/orders/:id:main.go->FUNCTION:main.go:getOrder:USES",
+      "caseId": "go-gin-small",
+      "type": "USES",
+      "from": "API_ROUTE:gin:GET:/orders/:id:main.go",
+      "to": "FUNCTION:main.go:getOrder",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-gin-small:API_ROUTE:gin:POST:/orders:main.go->FUNCTION:main.go:createOrder:USES",
+      "caseId": "go-gin-small",
+      "type": "USES",
+      "from": "API_ROUTE:gin:POST:/orders:main.go",
+      "to": "FUNCTION:main.go:createOrder",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-gin-small:API_ROUTE:gin:GET:/orders/:id:main.go->FUNCTION:main.go:getOrder:HANDLED_BY",
+      "caseId": "go-gin-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:gin:GET:/orders/:id:main.go",
+      "to": "FUNCTION:main.go:getOrder",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-gin-small:API_ROUTE:gin:POST:/orders:main.go->FUNCTION:main.go:createOrder:HANDLED_BY",
+      "caseId": "go-gin-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:gin:POST:/orders:main.go",
+      "to": "FUNCTION:main.go:createOrder",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-chi-small:API_ROUTE:chi:GET:/health:main.go->FUNCTION:main.go:health:USES",
+      "caseId": "go-chi-small",
+      "type": "USES",
+      "from": "API_ROUTE:chi:GET:/health:main.go",
+      "to": "FUNCTION:main.go:health",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-chi-small:API_ROUTE:chi:POST:/items:main.go->FUNCTION:main.go:createItem:USES",
+      "caseId": "go-chi-small",
+      "type": "USES",
+      "from": "API_ROUTE:chi:POST:/items:main.go",
+      "to": "FUNCTION:main.go:createItem",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-chi-small:API_ROUTE:chi:GET:/health:main.go->FUNCTION:main.go:health:HANDLED_BY",
+      "caseId": "go-chi-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:chi:GET:/health:main.go",
+      "to": "FUNCTION:main.go:health",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-chi-small:API_ROUTE:chi:POST:/items:main.go->FUNCTION:main.go:createItem:HANDLED_BY",
+      "caseId": "go-chi-small",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:chi:POST:/items:main.go",
+      "to": "FUNCTION:main.go:createItem",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "go-gorm-small:FILE:service.go->FILE:models/user.go:IMPORTS",
+      "caseId": "go-gorm-small",
+      "type": "IMPORTS",
+      "from": "FILE:service.go",
+      "to": "FILE:models/user.go",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { models } from \"example.com/gorm-small/models\""
+    },
+    {
+      "id": "go-gorm-small:FUNCTION:service.go:FindUser->DATABASE_MODEL:service.go:User:QUERIES",
+      "caseId": "go-gorm-small",
+      "type": "QUERIES",
+      "from": "FUNCTION:service.go:FindUser",
+      "to": "DATABASE_MODEL:service.go:User",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "go-gorm-small:FUNCTION:service.go:CreateUser->DATABASE_MODEL:service.go:User:QUERIES",
+      "caseId": "go-gorm-small",
+      "type": "QUERIES",
+      "from": "FUNCTION:service.go:CreateUser",
+      "to": "DATABASE_MODEL:service.go:User",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "go-library-small:FUNCTION:main.go:main->FUNCTION:pkg/tokens/tokens.go:Issue:CALLS",
+      "caseId": "go-library-small",
+      "type": "CALLS",
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:pkg/tokens/tokens.go:Issue",
+      "confidence": "HIGH",
+      "evidenceSnippet": "Issue(…)"
+    },
+    {
+      "id": "go-library-small:FUNCTION:main.go:main->FUNCTION:pkg/tokens/tokens.go:Verify:CALLS",
+      "caseId": "go-library-small",
+      "type": "CALLS",
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:pkg/tokens/tokens.go:Verify",
+      "confidence": "HIGH",
+      "evidenceSnippet": "Verify(…)"
+    },
+    {
+      "id": "go-library-small:FILE:main.go->FILE:pkg/tokens/tokens.go:IMPORTS",
+      "caseId": "go-library-small",
+      "type": "IMPORTS",
+      "from": "FILE:main.go",
+      "to": "FILE:pkg/tokens/tokens.go",
+      "confidence": "HIGH",
+      "evidenceSnippet": "import { tokens } from \"example.com/tokens/pkg/tokens\""
+    }
+  ]
+}

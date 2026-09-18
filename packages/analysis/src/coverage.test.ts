@@ -165,6 +165,9 @@ describe("buildAnalysisCoverage", () => {
     expect(
       report.blindSpots.some((s) => /Go analysis is heuristic/i.test(s)),
     ).toBe(true);
+    expect(
+      report.blindSpots.some((s) => /Anonymous Go route handlers/i.test(s)),
+    ).toBe(true);
   });
 });
 

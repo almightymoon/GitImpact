@@ -91,6 +91,28 @@ describe("detectRepositoryType", () => {
     expect(result.type).toBe("LIBRARY");
     expect(result.label).toMatch(/Python Library/i);
   });
+
+  it("labels Go modules without HTTP surface as LIBRARY", () => {
+    const result = detectRepositoryType({
+      frameworks: ["GORM"],
+      routes: [],
+      files: [
+        {
+          path: "gorm.go",
+          language: "go",
+          imports: [],
+          exports: [],
+          functions: [],
+          classes: [],
+          isTest: false,
+          envVariables: [],
+        },
+      ],
+      filePaths: ["gorm.go", "go.mod"],
+    });
+    expect(result.type).toBe("LIBRARY");
+    expect(result.label).toMatch(/GORM Library|Go Library/i);
+  });
 });
 
 describe("detectImportantModules", () => {

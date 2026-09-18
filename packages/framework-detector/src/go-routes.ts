@@ -33,7 +33,7 @@ function normalizePath(raw: string): string {
 function isPrimaryGo(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, "/");
   return (
-    !/(^|\/)(tests?|spec|docs?(?:_src)?|documentation|examples?|demos?|samples?|benchmarks?|fixtures?|_test)\//i.test(
+    !/(^|\/)(_?examples?|tests?|spec|docs?(?:_src)?|documentation|demos?|samples?|benchmarks?|fixtures?|_test)\//i.test(
       normalized,
     ) && !/_test\.go$/i.test(normalized)
   );

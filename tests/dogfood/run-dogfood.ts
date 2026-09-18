@@ -114,6 +114,7 @@ async function main(): Promise<void> {
                 analysis.intelligence.coverage.highConfidenceEdgePercent,
               infraPrimary: analysis.intelligence.coverage.infraPrimary,
               reasons: analysis.intelligence.coverage.reasons,
+              blindSpots: analysis.intelligence.coverage.blindSpots?.slice(0, 8),
             }
           : null,
         truncationNotice: analysis.truncationNotice ?? null,
