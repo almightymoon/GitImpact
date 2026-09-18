@@ -30,6 +30,8 @@
 
 - Roadmap + dogfood matrix/harness (`docs/roadmap.md`, `pnpm dogfood`)
 - Fix Express false positives: no longer match `*Expression*` exports; ignore test-only `express` deps; detect Express package by name; label Fastify/Hono/Koa correctly
+- GitOps/YAML-only overview: classify as GITOPS, surface manifest languages/modules/infra signals
+- Wave-2: ignore `devDependencies` and `examples/` for framework labels; label Socket.IO/MSW/Preact by package name; stop classifying CI-only libs as DEVOPS
 
 ### Security
 

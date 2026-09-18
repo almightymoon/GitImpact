@@ -32,6 +32,16 @@ function isTestPath(filePath: string): boolean {
   );
 }
 
+/** Examples/demos are not the product stack — ignore for framework attribution. */
+export function isExampleOrDemoPath(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, "/");
+  return /(^|\/)(examples?|demos?|samples?|playgrounds?)\//i.test(normalized);
+}
+
+export function isPrimarySourcePath(filePath: string): boolean {
+  return !isTestPath(filePath) && !isExampleOrDemoPath(filePath);
+}
+
 /** Exact Express package import — not substrings like "expression". */
 export function isExpressModuleSpecifier(specifier: string): boolean {
   return specifier === "express" || specifier.startsWith("express/");
@@ -40,7 +50,7 @@ export function isExpressModuleSpecifier(specifier: string): boolean {
 export function hasProductionExpressImport(files: ParsedFile[]): boolean {
   return files.some(
     (file) =>
-      !isTestPath(file.path) &&
+      isPrimarySourcePath(file.path) &&
       file.imports.some((imp) => isExpressModuleSpecifier(imp.moduleSpecifier)),
   );
 }
@@ -104,8 +114,9 @@ export class NextJSAnalyzer implements FrameworkAnalyzer {
     if (packageDeps.next) return true;
     return files.some(
       (file) =>
-        Boolean(nextAppRoutePathFromFile(file.path)) ||
-        Boolean(nextPagesApiPathFromFile(file.path)),
+        isPrimarySourcePath(file.path) &&
+        (Boolean(nextAppRoutePathFromFile(file.path)) ||
+          Boolean(nextPagesApiPathFromFile(file.path))),
     );
   }
 
@@ -264,16 +275,18 @@ export class NestJSAnalyzer implements FrameworkAnalyzer {
     _packageName?: string,
   ): boolean {
     if (packageDeps["@nestjs/core"] || packageDeps["@nestjs/common"]) return true;
-    return files.some((file) =>
-      file.classes.some(
-        (cls) =>
-          cls.decorators?.some((d) => d.name === "Controller" || d.name === "Injectable") ||
-          cls.methods.some((m) =>
-            m.decorators?.some((d) =>
-              ["Get", "Post", "Put", "Patch", "Delete", "Options", "Head", "All"].includes(d.name),
+    return files.some(
+      (file) =>
+        isPrimarySourcePath(file.path) &&
+        file.classes.some(
+          (cls) =>
+            cls.decorators?.some((d) => d.name === "Controller" || d.name === "Injectable") ||
+            cls.methods.some((m) =>
+              m.decorators?.some((d) =>
+                ["Get", "Post", "Put", "Patch", "Delete", "Options", "Head", "All"].includes(d.name),
+              ),
             ),
-          ),
-      ),
+        ),
     );
   }
 
@@ -332,6 +345,9 @@ export function detectFrameworkNames(
   if (packageDeps.koa || packageName === "koa") names.push("Koa");
   if (packageDeps.prisma || packageDeps["@prisma/client"]) names.push("Prisma");
   if (packageDeps["drizzle-orm"]) names.push("Drizzle");
+  if (packageName === "socket.io" || packageDeps["socket.io"]) names.push("Socket.IO");
+  if (packageName === "msw" || packageDeps.msw) names.push("MSW");
+  if (packageName === "preact" || packageDeps.preact) names.push("Preact");
   return [...new Set(names)];
 }
 

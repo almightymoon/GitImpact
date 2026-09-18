@@ -188,10 +188,17 @@ export function detectRepositoryType(input: {
       yamlCount >= 5 &&
       hasDeployPackaging &&
       infra.some((s) => s.kind === "helm" || s.kind === "kubernetes"));
+  const hasLibrarySource = paths.some(
+    (p) =>
+      /^(src|source|lib)\//i.test(p) ||
+      /(^|\/)(src|source|lib)\//i.test(p),
+  );
+  // Almost every published package has GitHub Actions — that alone is not DevOps.
   const devops =
-    infra.some((s) => s.kind === "github_actions" || s.kind === "docker") &&
+    infra.some((s) => s.kind === "docker") &&
     codeFileCount < 20 &&
-    !hasApiRoutes;
+    !hasApiRoutes &&
+    !hasLibrarySource;
 
   if (gitops) {
     return { type: "GITOPS", label: "GitOps / Infrastructure" };
@@ -225,13 +232,15 @@ export function detectRepositoryType(input: {
   if (deps.react || deps.vue || deps.svelte) {
     return { type: "LIBRARY", label: "Frontend Library" };
   }
-  if (codeFileCount > 0 && !hasApiRoutes && paths.some((p) => /(^|\/)src\//.test(p))) {
+  if (
+    codeFileCount > 0 &&
+    !hasApiRoutes &&
+    paths.some((p) => /(^|\/)(src|source|lib)\//i.test(p))
+  ) {
     const looksLib = paths.some(
       (p) =>
-        p === "src/index.ts" ||
-        p === "src/index.js" ||
-        p === "src/index.tsx" ||
-        p.endsWith("/src/index.ts"),
+        /^(src|source|lib)\/index\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(p) ||
+        /\/(src|source|lib)\/index\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(p),
     );
     if (looksLib && !hasFrontend && !hasBackend) {
       return { type: "LIBRARY", label: "Library" };

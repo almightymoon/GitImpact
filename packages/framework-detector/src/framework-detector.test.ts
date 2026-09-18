@@ -72,6 +72,20 @@ describe("Express detection", () => {
     expect(routes.every((r) => r.framework !== "express")).toBe(true);
   });
 
+  it("ignores express imports that only appear in examples", () => {
+    const files = [
+      file("lib/server.js", { exports: ["Server"] }),
+      file("examples/chat/index.js", { imports: ["express"] }),
+    ];
+    expect(new ExpressAnalyzer().detect(files, { express: "^4.0.0" }, "socket.io")).toBe(
+      false,
+    );
+  });
+
+  it("labels msw by package name without Fastify when Fastify is not a prod dep", () => {
+    expect(detectFrameworkNames([], {}, "msw")).toEqual(["MSW"]);
+  });
+
   it("isExpressModuleSpecifier is exact", () => {
     expect(isExpressModuleSpecifier("express")).toBe(true);
     expect(isExpressModuleSpecifier("express/lib/router")).toBe(true);

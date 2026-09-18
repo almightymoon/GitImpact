@@ -724,13 +724,16 @@ async function readPackageManifest(rootDir: string): Promise<{
     const pkg = JSON.parse(pkgRaw) as {
       name?: string;
       dependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
     };
+    // Framework / type signals use production + peer deps only.
+    // DevDependencies often pull Express/Fastify/Next for tests and demos.
     return {
       name: pkg.name,
       deps: {
         ...pkg.dependencies,
-        ...pkg.devDependencies,
+        ...pkg.peerDependencies,
       },
     };
   } catch {
@@ -771,6 +774,15 @@ export async function detectFrameworks(
   const name = packageName ?? (await readPackageManifest(rootDir)).name;
   const frameworks = new Set<string>();
 
+  const isPrimary = (filePath: string) => {
+    const normalized = filePath.replace(/\\/g, "/");
+    return (
+      !/(^|\/)(__(tests|mocks)__|tests?|spec|fixtures?|examples?|demos?|samples?|playgrounds?)\//i.test(
+        normalized,
+      ) && !/\.(test|spec)\.[cm]?[jt]sx?$/i.test(normalized)
+    );
+  };
+
   if (deps.next) frameworks.add("Next.js");
   if (deps.react) frameworks.add("React");
   if (deps["@nestjs/core"]) frameworks.add("NestJS");
@@ -779,8 +791,7 @@ export async function detectFrameworks(
   } else if (
     files.some(
       (file) =>
-        !/(^|\/)(__(tests|mocks)__|tests?|spec|fixtures?)\//i.test(file.path) &&
-        !/\.(test|spec)\.[cm]?[jt]sx?$/i.test(file.path) &&
+        isPrimary(file.path) &&
         file.imports.some(
           (imp) =>
             imp.moduleSpecifier === "express" ||
@@ -797,8 +808,12 @@ export async function detectFrameworks(
   if (deps["@angular/core"]) frameworks.add("Angular");
   if (deps.prisma || deps["@prisma/client"]) frameworks.add("Prisma");
   if (deps["drizzle-orm"]) frameworks.add("Drizzle");
+  if (name === "socket.io" || deps["socket.io"]) frameworks.add("Socket.IO");
+  if (name === "msw" || deps.msw) frameworks.add("MSW");
+  if (name === "preact" || deps.preact) frameworks.add("Preact");
 
-  const joined = files.map((f) => f.path).join("\n");
+  const primaryPaths = files.filter((f) => isPrimary(f.path)).map((f) => f.path);
+  const joined = primaryPaths.join("\n");
   if (joined.includes("app/api/") || joined.includes("pages/api/")) {
     frameworks.add("Next.js");
   }
