@@ -204,6 +204,49 @@ async function processPayload(payload: JobPayload): Promise<void> {
 async function main(): Promise<void> {
   log("info", "gitimpact_worker_boot", {});
   await startAnalysisWorker(processPayload);
+
+  // Lightweight ops loop: heartbeat + retention (cache / jobs / webhooks)
+  const retentionHours = Number(process.env.GITIMPACT_RETENTION_INTERVAL_HOURS ?? 6);
+  const intervalMs = Math.max(1, retentionHours) * 60 * 60 * 1000;
+  const runOps = async () => {
+    try {
+      const { getQueueDepth } = await import("@gitimpact/queue");
+      const {
+        purgeExpiredAnalyses,
+        purgeExpiredJobs,
+        purgeOldWebhookDeliveries,
+      } = await import("@gitimpact/db");
+      const depth = await getQueueDepth();
+      incMetric("queue_depth", depth.waiting + depth.active, { mode: depth.mode });
+      log("info", "worker_heartbeat", {
+        status: "ok",
+        waiting: depth.waiting,
+        active: depth.active,
+      });
+      const now = new Date();
+      const jobCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const webhookCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const analyses = await purgeExpiredAnalyses(now);
+      const jobs = await purgeExpiredJobs(jobCutoff);
+      const webhooks = await purgeOldWebhookDeliveries(webhookCutoff);
+      if (analyses || jobs || webhooks) {
+        log("info", "retention_cleanup", {
+          analyses,
+          jobs,
+          webhooks,
+        });
+      }
+    } catch (error) {
+      log("warn", "worker_ops_tick_failed", {
+        detail: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+  void runOps();
+  setInterval(() => {
+    void runOps();
+  }, intervalMs);
+
   // Keep process alive for inline mode
   if (!process.env.REDIS_URL) {
     setInterval(() => undefined, 60_000);

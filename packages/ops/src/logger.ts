@@ -18,12 +18,19 @@ export interface LogFields {
 
 const SENSITIVE = /(token|secret|password|authorization|private[_-]?key|api[_-]?key)/i;
 
+function scrubString(value: string): string {
+  let out = value
+    .replace(/x-access-token:[^@\s]+@/gi, "x-access-token:[redacted]@")
+    .replace(/\/\/[^:@\s]+:[^@\s]+@/g, "//[redacted]@")
+    .replace(/\b(ghs_|gho_|ghu_|ghr_|github_pat_)[A-Za-z0-9_]+\b/g, "[redacted]")
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [redacted]");
+  if (SENSITIVE.test(out) && out.length > 12) return "[redacted]";
+  return out;
+}
+
 function scrub(value: unknown): unknown {
   if (value == null) return value;
-  if (typeof value === "string") {
-    if (SENSITIVE.test(value) && value.length > 12) return "[redacted]";
-    return value;
-  }
+  if (typeof value === "string") return scrubString(value);
   if (Array.isArray(value)) return value.map(scrub);
   if (typeof value === "object") {
     const out: Record<string, unknown> = {};

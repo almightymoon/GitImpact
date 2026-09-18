@@ -196,6 +196,7 @@ v1.0  Public Beta & Production Hardening            ← current
 **v1.0 focus:** durable workers (Redis/BullMQ), rate limits, quotas/timeouts, persistent jobs, structured logs, health/ready, Docker web+worker, docs — not more analyzers.
 
 See `docs/` for architecture, deployment, configuration, operations, security, and troubleshooting.
+Public beta launch checklist: `docs/beta-checklist.md`. Security policy: `SECURITY.md`.
 
 ### v1.0 — Public Beta & Production Hardening
 

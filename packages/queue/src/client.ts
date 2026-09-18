@@ -43,6 +43,39 @@ export function registerInlineJobHandler(handler: JobHandler): void {
   inlineHandler = handler;
 }
 
+export function getInlineQueueDepth(): number {
+  return inlinePending.length;
+}
+
+/**
+ * Approximate queue depth for ops/metrics.
+ * Redis mode uses BullMQ counts when available; otherwise inline pending length.
+ */
+export async function getQueueDepth(): Promise<{
+  mode: EnqueueMode | "unknown";
+  waiting: number;
+  active: number;
+}> {
+  if (!process.env.REDIS_URL) {
+    return { mode: "inline", waiting: inlinePending.length, active: pumping ? 1 : 0 };
+  }
+  try {
+    const { getBullQueue } = await import("./bull.js");
+    const queue = await getBullQueue();
+    if (!queue) {
+      return { mode: "redis", waiting: 0, active: 0 };
+    }
+    const counts = await queue.getJobCounts("waiting", "active", "delayed");
+    return {
+      mode: "redis",
+      waiting: (counts.waiting ?? 0) + (counts.delayed ?? 0),
+      active: counts.active ?? 0,
+    };
+  } catch {
+    return { mode: "unknown", waiting: 0, active: 0 };
+  }
+}
+
 function newJobId(): string {
   return `job_${randomUUID().replace(/-/g, "").slice(0, 20)}`;
 }
@@ -64,7 +97,13 @@ function backoffMs(attempt: number): number {
   return Math.min(60_000, 2000 * 4 ** Math.max(0, attempt - 1));
 }
 
-async function enqueueDurable(payload: JobPayload, dedupeKey?: string): Promise<EnqueueResult> {
+/** Prevents concurrent enqueue races for the same dedupe key. */
+const inflightDedupe = new Map<string, Promise<EnqueueResult>>();
+
+async function enqueueDurableOnce(
+  payload: JobPayload,
+  dedupeKey?: string,
+): Promise<EnqueueResult> {
   if (dedupeKey) {
     const existing = await findActiveJobByDedupeKey(dedupeKey);
     if (existing) {
@@ -122,6 +161,43 @@ async function enqueueDurable(payload: JobPayload, dedupeKey?: string): Promise<
   void pumpInline();
   incMetric("analyses_started_total", 1, { type: payload.type, mode: "inline" });
   return { jobId: payload.jobId, mode: "inline" };
+}
+
+async function enqueueDurable(payload: JobPayload, dedupeKey?: string): Promise<EnqueueResult> {
+  if (!dedupeKey) {
+    return enqueueDurableOnce(payload, dedupeKey);
+  }
+
+  const existing = await findActiveJobByDedupeKey(dedupeKey);
+  if (existing) {
+    incMetric("cache_hit_total", 1, { kind: "job_dedupe" });
+    return {
+      jobId: existing.id,
+      mode: process.env.REDIS_URL ? "redis" : "inline",
+      deduped: true,
+      existingJobId: existing.id,
+    };
+  }
+
+  const inflight = inflightDedupe.get(dedupeKey);
+  if (inflight) {
+    const lead = await inflight;
+    incMetric("cache_hit_total", 1, { kind: "job_dedupe" });
+    return {
+      jobId: lead.jobId,
+      mode: lead.mode,
+      deduped: true,
+      existingJobId: lead.jobId,
+    };
+  }
+
+  const work = enqueueDurableOnce(payload, dedupeKey);
+  inflightDedupe.set(dedupeKey, work);
+  try {
+    return await work;
+  } finally {
+    inflightDedupe.delete(dedupeKey);
+  }
 }
 
 async function pumpInline(): Promise<void> {

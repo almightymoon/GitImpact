@@ -11,8 +11,22 @@ type JobPoll = {
   phaseLabel?: string;
   routePath?: string;
   lastError?: string;
+  retryable?: boolean;
+  queuedBehind?: number;
   result?: { analysisId?: string; routePath?: string; fromCache?: boolean };
 };
+
+function formatRateLimitMessage(
+  message: string,
+  retryAfterSeconds?: number,
+): string {
+  if (!retryAfterSeconds || retryAfterSeconds <= 0) return message;
+  const mins = Math.ceil(retryAfterSeconds / 60);
+  if (retryAfterSeconds < 90) {
+    return `${message} Retry in about ${retryAfterSeconds}s.`;
+  }
+  return `${message} Retry in about ${mins} minute${mins === 1 ? "" : "s"}.`;
+}
 
 async function pollJobUntilDone(
   jobId: string,
@@ -24,7 +38,10 @@ async function pollJobUntilDone(
 
   while (!signal.aborted) {
     if (Date.now() - started > timeoutMs) {
-      throw new Error("Analysis is taking longer than expected. Check job status later.");
+      throw Object.assign(
+        new Error("Analysis is taking longer than expected. You can retry with the same URL."),
+        { code: "ANALYSIS_TIMEOUT" },
+      );
     }
 
     const response = await fetch(`/api/jobs/${jobId}`, {
@@ -50,6 +67,8 @@ async function pollJobUntilDone(
       throw Object.assign(new Error(data.lastError ?? "Analysis failed"), {
         code: "ANALYSIS_FAILED",
         detail: data.lastError,
+        jobId,
+        retryable: true,
       });
     }
 
@@ -66,8 +85,10 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [failedJobId, setFailedJobId] = useState<string | null>(null);
   const [installUrl, setInstallUrl] = useState<string | null>(null);
   const [phaseLabel, setPhaseLabel] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const isPrivate =
@@ -93,13 +114,26 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
     };
   }, [isPrivate]);
 
+  function rememberRecent(value: string) {
+    try {
+      const key = "gitimpact:recent";
+      const prev = JSON.parse(localStorage.getItem(key) ?? "[]") as string[];
+      const next = [value, ...prev.filter((u) => u !== value)].slice(0, 8);
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }
+
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setErrorDetail(null);
     setErrorCode(null);
     setRequestId(null);
+    setFailedJobId(null);
     setPhaseLabel(null);
+    setActiveJobId(null);
     const value = url
       .trim()
       .replace(/\.git$/i, "")
@@ -109,14 +143,7 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
       return;
     }
 
-    try {
-      const key = "gitimpact:recent";
-      const prev = JSON.parse(localStorage.getItem(key) ?? "[]") as string[];
-      const next = [value, ...prev.filter((u) => u !== value)].slice(0, 8);
-      localStorage.setItem(key, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
+    rememberRecent(value);
 
     startTransition(async () => {
       const controller = new AbortController();
@@ -139,20 +166,25 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
           status?: string;
           fromCache?: boolean;
           requestId?: string;
-          phaseLabel?: string;
+          retryAfterSeconds?: number;
         };
 
-        setRequestId(data.requestId ?? response.headers.get("x-request-id"));
+        const ref = data.requestId ?? response.headers.get("x-request-id");
+        setRequestId(ref);
 
         if (!response.ok && response.status !== 202) {
-          setError(data.message ?? data.error ?? "Analysis failed");
+          const base = data.message ?? data.error ?? "Analysis failed";
+          setError(
+            data.code === "RATE_LIMITED" || data.code === "GITHUB_RATE_LIMITED"
+              ? formatRateLimitMessage(base, data.retryAfterSeconds)
+              : base,
+          );
           setErrorDetail(data.detail ?? null);
           setErrorCode(data.code ?? null);
           setPhaseLabel(null);
           return;
         }
 
-        // Cache hit — ready immediately
         if (data.routePath && (response.status === 200 || data.fromCache)) {
           router.push(data.routePath);
           return;
@@ -164,6 +196,7 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
           return;
         }
 
+        setActiveJobId(data.jobId);
         setPhaseLabel("Queued");
         const done = await pollJobUntilDone(data.jobId, setPhaseLabel, controller.signal);
         const routePath = done.routePath ?? done.result?.routePath;
@@ -183,9 +216,64 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
           err && typeof err === "object" && "detail" in err
             ? String((err as { detail?: string }).detail)
             : null;
+        const jobId =
+          err && typeof err === "object" && "jobId" in err
+            ? String((err as { jobId?: string }).jobId)
+            : null;
         setError(message);
         setErrorDetail(detail);
         setErrorCode(code);
+        setFailedJobId(jobId);
+        setPhaseLabel(null);
+      }
+    });
+  }
+
+  function onRetryFailedJob() {
+    if (!failedJobId) return;
+    setError(null);
+    setErrorDetail(null);
+    setErrorCode(null);
+    startTransition(async () => {
+      try {
+        setPhaseLabel("Re-queuing failed job");
+        const response = await fetch(`/api/jobs/${failedJobId}/retry`, {
+          method: "POST",
+        });
+        const data = (await response.json()) as {
+          jobId?: string;
+          message?: string;
+          code?: string;
+          detail?: string;
+          requestId?: string;
+          retryAfterSeconds?: number;
+        };
+        setRequestId(data.requestId ?? response.headers.get("x-request-id"));
+        if (!response.ok) {
+          setError(
+            data.code === "RATE_LIMITED"
+              ? formatRateLimitMessage(data.message ?? "Too many retries.", data.retryAfterSeconds)
+              : (data.message ?? "Retry failed"),
+          );
+          setErrorDetail(data.detail ?? null);
+          setErrorCode(data.code ?? null);
+          setPhaseLabel(null);
+          return;
+        }
+        if (!data.jobId) {
+          setError("Retry did not return a job id.");
+          setPhaseLabel(null);
+          return;
+        }
+        setFailedJobId(null);
+        setActiveJobId(data.jobId);
+        const controller = new AbortController();
+        const done = await pollJobUntilDone(data.jobId, setPhaseLabel, controller.signal);
+        const routePath = done.routePath ?? done.result?.routePath;
+        if (routePath) router.push(routePath);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Retry failed");
+        setErrorCode("ANALYSIS_FAILED");
         setPhaseLabel(null);
       }
     });
@@ -212,7 +300,17 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
         </button>
       </div>
       {pending && phaseLabel ? (
-        <p className="mt-3 font-mono text-xs text-[var(--teal)]">{phaseLabel}…</p>
+        <div className="mt-3 space-y-1">
+          <p className="font-mono text-xs text-[var(--teal)]">{phaseLabel}…</p>
+          {activeJobId ? (
+            <p className="font-mono text-[10px] text-[var(--ink-soft)]">Job: {activeJobId}</p>
+          ) : null}
+          {requestId ? (
+            <p className="font-mono text-[10px] text-[var(--ink-soft)]">
+              Reference ID: {requestId}
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {error ? (
         <div className="mt-3 rounded-xl border border-[var(--critical)]/25 bg-[#fff5f5] px-3 py-2">
@@ -238,14 +336,25 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
               <ConnectGitHubButton installUrl={installUrl} appConfigured />
             </div>
           ) : null}
-          {canRetry ? (
-            <button
-              type="submit"
-              className="mt-3 text-xs font-medium text-[var(--teal)] underline"
-            >
-              Retry analysis
-            </button>
-          ) : null}
+          <div className="mt-3 flex flex-wrap gap-3">
+            {failedJobId ? (
+              <button
+                type="button"
+                onClick={onRetryFailedJob}
+                className="text-xs font-medium text-[var(--teal)] underline"
+              >
+                Retry failed job
+              </button>
+            ) : null}
+            {canRetry ? (
+              <button
+                type="submit"
+                className="text-xs font-medium text-[var(--teal)] underline"
+              >
+                Retry analysis
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : !pending ? (
         <p className="mt-3 font-mono text-xs text-[var(--ink-soft)]/60">

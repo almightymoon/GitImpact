@@ -12,6 +12,8 @@ export {
   closeQueue,
   repoAnalysisDedupeKey,
   prAnalysisDedupeKey,
+  getInlineQueueDepth,
+  getQueueDepth,
   type EnqueueMode,
   type EnqueueResult,
 } from "./client.js";

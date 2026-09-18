@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAnalysisJob } from "@gitimpact/db";
+import { getQueueDepth } from "@gitimpact/queue";
 import { apiError, createRequestId } from "@gitimpact/ops";
 import type { AnalysisPhase } from "@gitimpact/shared";
 
@@ -51,6 +52,9 @@ export async function GET(
 
   const phase = (job.phase ?? "QUEUED") as AnalysisPhase | string;
   const routePath = routePathForJob(job);
+  const depth = await getQueueDepth();
+  const queuedBehind =
+    job.status === "QUEUED" ? Math.max(0, depth.waiting - 1) : 0;
 
   return NextResponse.json(
     {
@@ -58,7 +62,10 @@ export async function GET(
       type: job.type,
       status: job.status,
       phase,
-      phaseLabel: PHASE_LABELS[phase] ?? phase,
+      phaseLabel:
+        job.status === "QUEUED" && queuedBehind > 0
+          ? `Queued behind ${queuedBehind} job${queuedBehind === 1 ? "" : "s"}`
+          : (PHASE_LABELS[phase] ?? phase),
       attemptCount: job.attemptCount,
       lastError: job.lastError,
       owner: job.owner,
@@ -68,6 +75,9 @@ export async function GET(
       requestId: job.requestId,
       result: job.result,
       routePath: job.status === "SUCCEEDED" ? routePath : undefined,
+      queue: depth,
+      queuedBehind,
+      retryable: job.status === "DEAD_LETTER" || job.status === "FAILED",
       createdAt: job.createdAt,
       startedAt: job.startedAt,
       finishedAt: job.finishedAt,
