@@ -58,12 +58,16 @@ function resolvePythonImport(
     return undefined;
   }
 
-  // Absolute-within-repo style: package.module → package/module.py
+  // Absolute-within-repo style: package.module → package/module.py (and src-layout)
   const asPath = moduleSpecifier.replace(/\./g, "/");
   const candidates = [
     `${asPath}.py`,
     path.posix.join(asPath, "__init__.py"),
     importedName ? path.posix.join(asPath, `${importedName}.py`) : undefined,
+    // src-layout: authkit.tokens → src/authkit/tokens.py
+    path.posix.join("src", `${asPath}.py`),
+    path.posix.join("src", asPath, "__init__.py"),
+    importedName ? path.posix.join("src", asPath, `${importedName}.py`) : undefined,
     // same-directory fallback for flat layouts
     path.posix.join(fromDir, `${asPath}.py`),
     path.posix.join(fromDir, asPath, "__init__.py"),
@@ -165,6 +169,7 @@ function collectCallsInRange(
   start: number,
   end: number,
   knownNames: Set<string>,
+  opts?: { className?: string; filePath?: string; methodNames?: Set<string> },
 ): ResolvedCall[] {
   const slice = content.slice(start, end);
   const calls: ResolvedCall[] = [];
@@ -190,6 +195,7 @@ function collectCallsInRange(
       calleeName: name,
       resolvedKind: resolved ? "FUNCTION" : "UNRESOLVED",
       resolvedSymbol: resolved ? name : undefined,
+      resolvedFile: resolved ? opts?.filePath : undefined,
       confidence: resolved ? "MEDIUM" : "LOW",
       startLine: lineOf(content, absIndex),
     });
@@ -202,11 +208,14 @@ function collectCallsInRange(
     const key = `self.${name}@${absIndex}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    const knownMethod = opts?.methodNames?.has(name) ?? false;
     calls.push({
       calleeName: name,
       resolvedKind: "METHOD",
       resolvedSymbol: name,
-      confidence: "MEDIUM",
+      resolvedClassName: opts?.className,
+      resolvedFile: opts?.filePath,
+      confidence: knownMethod && opts?.className ? "HIGH" : "MEDIUM",
       startLine: lineOf(content, absIndex),
     });
   }
@@ -216,6 +225,7 @@ function collectCallsInRange(
 function extractFunctionsAndClasses(
   content: string,
   scrubbed: string,
+  filePath: string,
 ): { functions: ParsedFunction[]; classes: ParsedClass[]; exports: string[] } {
   const functions: ParsedFunction[] = [];
   const classes: ParsedClass[] = [];
@@ -263,11 +273,20 @@ function extractFunctionsAndClasses(
       const methods: ParsedMethod[] = [];
       const body = scrubbed.slice(start, end);
       const methodRe = /^( +)(?:async\s+)?def\s+([A-Za-z_][\w]*)\s*\(([^)]*)\)/gm;
+      const methodNames = new Set<string>();
       let mm: RegExpExecArray | null;
+      const methodMatches: Array<{
+        name: string;
+        abs: number;
+        line: number;
+        end: number;
+        params: string[];
+      }> = [];
       while ((mm = methodRe.exec(body)) !== null) {
         const methodIndent = mm[1]!.length;
         if (methodIndent <= indent) continue;
         const methodName = mm[2]!;
+        methodNames.add(methodName);
         const methodAbs = start + mm.index;
         const methodLine = lineOf(content, methodAbs) - 1;
         const methodEnd = blockEnd(methodLine, methodIndent);
@@ -275,13 +294,26 @@ function extractFunctionsAndClasses(
           .split(",")
           .map((p) => p.trim().split(":")[0]!.split("=")[0]!.trim())
           .filter((p) => p && p !== "self" && p !== "cls");
-        methods.push({
+        methodMatches.push({
           name: methodName,
+          abs: methodAbs,
+          line: methodLine,
+          end: methodEnd,
+          params,
+        });
+      }
+      for (const m of methodMatches) {
+        methods.push({
+          name: m.name,
           className,
-          startLine: methodLine + 1,
-          endLine: lineOf(content, Math.max(methodAbs, methodEnd - 1)),
-          calls: collectCallsInRange(content, methodAbs, methodEnd, topLevelNames),
-          parameters: params,
+          startLine: m.line + 1,
+          endLine: lineOf(content, Math.max(m.abs, m.end - 1)),
+          calls: collectCallsInRange(content, m.abs, m.end, topLevelNames, {
+            className,
+            filePath,
+            methodNames,
+          }),
+          parameters: m.params,
         });
       }
       classes.push({
@@ -313,7 +345,9 @@ function extractFunctionsAndClasses(
         startLine: i + 1,
         endLine: lineOf(content, Math.max(start, end - 1)),
         exported: true,
-        calls: collectCallsInRange(content, start, end, topLevelNames),
+        calls: collectCallsInRange(content, start, end, topLevelNames, {
+          filePath,
+        }),
         parameters: params,
       });
     }
@@ -330,7 +364,11 @@ export function parsePythonFile(
   const normalized = filePath.replace(/\\/g, "/");
   const scrubbed = stripCommentsAndStrings(content);
   const imports = extractImports(content, normalized, knownFiles);
-  const { functions, classes, exports } = extractFunctionsAndClasses(content, scrubbed);
+  const { functions, classes, exports } = extractFunctionsAndClasses(
+    content,
+    scrubbed,
+    normalized,
+  );
 
   // Second pass: resolve call symbols to same-file functions with HIGH when exact
   const localFns = new Set(functions.map((f) => f.name));

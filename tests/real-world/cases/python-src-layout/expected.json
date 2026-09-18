@@ -1,0 +1,15 @@
+{
+  "description": "src-layout package-relative imports (authkit.tokens)",
+  "mustImport": [
+    {
+      "from": "FILE:src/authkit/session.py",
+      "to": "FILE:src/authkit/tokens.py"
+    }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:src/authkit/session.py:issue_session",
+      "to": "FUNCTION:src/authkit/tokens.py:hash_password"
+    }
+  ]
+}

@@ -53,6 +53,44 @@ describe("detectRepositoryType", () => {
     expect(result.type).toBe("GITOPS");
     expect(result.label).toMatch(/GitOps/i);
   });
+
+  it("labels Python src-layout packages as LIBRARY", () => {
+    const result = detectRepositoryType({
+      frameworks: [],
+      routes: [],
+      files: [
+        {
+          path: "src/requests/__init__.py",
+          language: "python",
+          imports: [],
+          exports: [],
+          functions: [],
+          classes: [],
+          isTest: false,
+          envVariables: [],
+        },
+        {
+          path: "src/requests/api.py",
+          language: "python",
+          imports: [],
+          exports: [],
+          functions: [],
+          classes: [],
+          isTest: false,
+          envVariables: [],
+        },
+      ],
+      filePaths: ["src/requests/__init__.py", "src/requests/api.py", "pyproject.toml"],
+      pythonProject: {
+        packageManagers: ["pip"],
+        layout: "src",
+        manifests: ["pyproject.toml"],
+        srcLayout: true,
+      },
+    });
+    expect(result.type).toBe("LIBRARY");
+    expect(result.label).toMatch(/Python Library/i);
+  });
 });
 
 describe("detectImportantModules", () => {

@@ -1,0 +1,63 @@
+{
+  "id": "python-src-layout",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:src/authkit/session.py:issue_session→FUNCTION:src/authkit/tokens.py:hash_password:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/authkit/session.py:issue_session",
+      "to": "FUNCTION:src/authkit/tokens.py:hash_password",
+      "matchedEdgeId": "FUNCTION:src/authkit/session.py:issue_session->FUNCTION:src/authkit/tokens.py:hash_password:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:src/authkit/session.py→FILE:src/authkit/tokens.py:1",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:src/authkit/session.py",
+      "to": "FILE:src/authkit/tokens.py",
+      "matchedEdgeId": "FILE:src/authkit/session.py->FILE:src/authkit/tokens.py:IMPORTS",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 2,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 2,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

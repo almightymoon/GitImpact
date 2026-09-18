@@ -1,0 +1,12 @@
+{
+  "description": "Python class/method CALLS including self.method",
+  "mustImport": [
+    { "from": "FILE:app.py", "to": "FILE:services/users.py" }
+  ],
+  "mustCall": [
+    {
+      "from": "METHOD:services/users.py:UserService.register",
+      "to": "METHOD:services/users.py:UserService.get_user"
+    }
+  ]
+}

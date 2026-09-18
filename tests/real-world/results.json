@@ -1,39 +1,54 @@
 {
-  "generatedAt": "2026-09-18T19:00:14.897Z",
-  "fixtures": 8,
-  "assertions": 60,
+  "generatedAt": "2026-09-18T19:59:00.624Z",
+  "fixtures": 11,
+  "assertions": 69,
   "softMisses": 0,
   "unsupportedPatternCount": 5,
   "coverage": {
-    "totalCalls": 45,
-    "resolvedCalls": 44,
-    "unresolvedCalls": 1,
-    "resolutionCoverage": 0.9777777777777777,
-    "resolutionCoveragePct": "97.8%",
+    "totalCalls": 63,
+    "resolvedCalls": 59,
+    "unresolvedCalls": 4,
+    "resolutionCoverage": 0.9365079365079365,
+    "resolutionCoveragePct": "93.7%",
     "unresolvedSamples": [
       {
         "file": "express-small:src/routes/auth.ts",
         "calleeName": "express",
         "container": "createApp"
+      },
+      {
+        "file": "python-class-method:services/users.py",
+        "calleeName": "UserService",
+        "container": "bootstrap"
+      },
+      {
+        "file": "python-class-method:services/users.py",
+        "calleeName": "get_user",
+        "container": "UserService.get_user"
+      },
+      {
+        "file": "python-class-method:services/users.py",
+        "calleeName": "register",
+        "container": "UserService.register"
       }
     ]
   },
   "metrics": {
     "callGraph": {
-      "truePositives": 34,
+      "truePositives": 40,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 34,
+      "assertions": 40,
       "precision": 1,
       "recall": 1,
       "precisionPct": "100.0%",
       "recallPct": "100.0%"
     },
     "importGraph": {
-      "truePositives": 16,
+      "truePositives": 19,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "assertions": 16,
+      "assertions": 19,
       "precision": 1,
       "recall": 1,
       "precisionPct": "100.0%",
@@ -53,10 +68,10 @@
   "summary": {
     "precision": "100.0%",
     "recall": "100.0%",
-    "resolutionCoverage": "97.8%",
+    "resolutionCoverage": "93.7%",
     "unsupportedPatternCount": 5
   },
-  "headline": "Resolved calls: 44 / 45 (97.8%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 5.",
+  "headline": "Resolved calls: 59 / 63 (93.7%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 5.",
   "cases": [
     {
       "name": "express-small",
@@ -134,6 +149,34 @@
       "softMisses": 0
     },
     {
+      "name": "python-class-method",
+      "totalCalls": 8,
+      "resolvedCalls": 5,
+      "unresolvedCalls": 3,
+      "resolutionCoverage": 0.625,
+      "resolutionCoveragePct": "62.5%",
+      "unresolvedSamples": [
+        {
+          "file": "services/users.py",
+          "calleeName": "UserService",
+          "container": "bootstrap"
+        },
+        {
+          "file": "services/users.py",
+          "calleeName": "get_user",
+          "container": "UserService.get_user"
+        },
+        {
+          "file": "services/users.py",
+          "calleeName": "register",
+          "container": "UserService.register"
+        }
+      ],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
       "name": "python-django-small",
       "totalCalls": 6,
       "resolvedCalls": 6,
@@ -161,6 +204,30 @@
       "name": "python-flask-small",
       "totalCalls": 8,
       "resolvedCalls": 8,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "python-service-repo",
+      "totalCalls": 7,
+      "resolvedCalls": 7,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "python-src-layout",
+      "totalCalls": 3,
+      "resolvedCalls": 3,
       "unresolvedCalls": 0,
       "resolutionCoverage": 1,
       "resolutionCoveragePct": "100.0%",

@@ -6,6 +6,7 @@
   "scripts": {
     "relationships": "tsx run-relationships.ts",
     "sample": "tsx sample-emitted.ts",
+    "review-sample": "tsx review-sample.ts",
     "test": "vitest run"
   },
   "dependencies": {

@@ -69,6 +69,7 @@ export async function buildRepositoryIntelligence(input: {
     packageName: input.packageName,
     filePaths,
     infraSignals,
+    pythonProject: input.analysisHealth.pythonProject,
   });
 
   const languages =

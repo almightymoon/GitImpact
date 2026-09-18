@@ -4,6 +4,7 @@ import type {
   InfraSignal,
   ImportantModule,
   ParsedFile,
+  PythonProjectInfo,
   RepositoryType,
 } from "@gitimpact/shared";
 
@@ -148,6 +149,7 @@ export function detectRepositoryType(input: {
   packageName?: string;
   filePaths?: string[];
   infraSignals?: InfraSignal[];
+  pythonProject?: PythonProjectInfo | null;
 }): { type: RepositoryType; label: string } {
   const frameworks = input.frameworks.map((f) => f.toLowerCase());
   const deps = input.packageDeps ?? {};
@@ -171,6 +173,17 @@ export function detectRepositoryType(input: {
   const hasCli = frameworks.some((f) => /click|cobra|commander/.test(f));
   const hasNext = frameworks.some((f) => f.includes("next"));
   const codeFileCount = input.files.length;
+  const pythonFiles = input.files.filter((f) => f.language === "python");
+  const py = input.pythonProject;
+  const looksPythonLibrary =
+    pythonFiles.length > 0 &&
+    !hasApiRoutes &&
+    !hasBackend &&
+    !hasFrontend &&
+    (Boolean(py?.srcLayout) ||
+      py?.layout === "src" ||
+      paths.some((p) => /^src\/[a-zA-Z_][\w-]*\/__init__\.py$/.test(p)) ||
+      paths.some((p) => /^[a-zA-Z_][\w-]*\/__init__\.py$/.test(p)));
   const yamlCount = paths.filter((p) => isYamlPath(p)).length;
   const hasDeployPackaging = paths.some(
     (p) =>
@@ -237,6 +250,9 @@ export function detectRepositoryType(input: {
       type: "LIBRARY",
       label: `${input.frameworks.find((f) => /click|cobra|commander/i.test(f)) ?? "CLI"} Library`,
     };
+  }
+  if (looksPythonLibrary) {
+    return { type: "LIBRARY", label: "Python Library" };
   }
   if (deps.react || deps.vue || deps.svelte) {
     return { type: "LIBRARY", label: "Frontend Library" };

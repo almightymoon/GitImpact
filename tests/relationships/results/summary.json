@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-18T19:16:11.025Z",
-  "caseCount": 15,
-  "scoredCases": 15,
+  "generatedAt": "2026-09-18T19:54:50.886Z",
+  "caseCount": 18,
+  "scoredCases": 18,
   "counts": {
-    "TRUE_POSITIVE": 82,
+    "TRUE_POSITIVE": 91,
     "FALSE_POSITIVE": 0,
     "MISSING_EDGE": 0,
     "WRONG_TARGET": 0,
@@ -12,7 +12,7 @@
   },
   "overall": {
     "type": "overall",
-    "truePositives": 82,
+    "truePositives": 91,
     "falsePositives": 0,
     "falseNegatives": 0,
     "lowConfidence": 0,
@@ -23,7 +23,7 @@
   "byType": [
     {
       "type": "CALLS",
-      "truePositives": 34,
+      "truePositives": 39,
       "falsePositives": 0,
       "falseNegatives": 0,
       "lowConfidence": 0,
@@ -33,7 +33,7 @@
     },
     {
       "type": "IMPORTS",
-      "truePositives": 28,
+      "truePositives": 31,
       "falsePositives": 0,
       "falseNegatives": 0,
       "lowConfidence": 0,
@@ -63,7 +63,7 @@
     },
     {
       "type": "USES",
-      "truePositives": 4,
+      "truePositives": 5,
       "falsePositives": 0,
       "falseNegatives": 0,
       "lowConfidence": 0,
@@ -157,7 +157,7 @@
       "id": "nestjs-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 720,
+      "durationMs": 827,
       "shape": "controller-service",
       "edgeCount": 48,
       "checked": 9,
@@ -310,7 +310,7 @@
       "id": "express-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 445,
+      "durationMs": 409,
       "shape": "middleware-service",
       "edgeCount": 28,
       "checked": 8,
@@ -444,7 +444,7 @@
       "id": "nextjs-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 304,
+      "durationMs": 367,
       "shape": "api-handler",
       "edgeCount": 26,
       "checked": 7,
@@ -559,7 +559,7 @@
       "id": "monorepo-project",
       "ok": true,
       "skipped": false,
-      "durationMs": 287,
+      "durationMs": 356,
       "shape": "package-graph",
       "edgeCount": 16,
       "checked": 5,
@@ -656,7 +656,7 @@
       "id": "prisma-project",
       "ok": true,
       "skipped": false,
-      "durationMs": 272,
+      "durationMs": 306,
       "shape": "service-repo-queries",
       "edgeCount": 28,
       "checked": 7,
@@ -781,7 +781,7 @@
       "id": "tiny-fixture",
       "ok": true,
       "skipped": false,
-      "durationMs": 334,
+      "durationMs": 335,
       "shape": "controller-service",
       "edgeCount": 96,
       "checked": 9,
@@ -913,7 +913,7 @@
       "id": "class-method",
       "ok": true,
       "skipped": false,
-      "durationMs": 229,
+      "durationMs": 284,
       "shape": "method-calls",
       "edgeCount": 12,
       "checked": 3,
@@ -992,7 +992,7 @@
       "id": "function-import",
       "ok": true,
       "skipped": false,
-      "durationMs": 278,
+      "durationMs": 261,
       "shape": "function-calls",
       "edgeCount": 7,
       "checked": 3,
@@ -1081,7 +1081,7 @@
       "id": "cjs-require",
       "ok": true,
       "skipped": false,
-      "durationMs": 242,
+      "durationMs": 311,
       "shape": "commonjs-require",
       "edgeCount": 8,
       "checked": 2,
@@ -1151,7 +1151,7 @@
       "id": "fetch-external",
       "ok": true,
       "skipped": false,
-      "durationMs": 267,
+      "durationMs": 265,
       "shape": "http-fetch",
       "edgeCount": 6,
       "checked": 2,
@@ -1211,7 +1211,7 @@
       "id": "python-flask-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 15,
+      "durationMs": 16,
       "shape": "python-web",
       "edgeCount": 24,
       "checked": 7,
@@ -1346,7 +1346,7 @@
       "id": "python-fastapi-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 6,
+      "durationMs": 9,
       "shape": "python-web",
       "edgeCount": 21,
       "checked": 5,
@@ -1453,7 +1453,7 @@
       "id": "python-django-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 6,
+      "durationMs": 8,
       "shape": "python-web",
       "edgeCount": 21,
       "checked": 5,
@@ -1557,10 +1557,257 @@
       ]
     },
     {
+      "id": "python-class-method",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 9,
+      "shape": "python-methods",
+      "edgeCount": 15,
+      "checked": 2,
+      "counts": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:METHOD:services/users.py:UserService.register→METHOD:services/users.py:UserService.get_user:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "METHOD:services/users.py:UserService.register",
+          "to": "METHOD:services/users.py:UserService.get_user",
+          "matchedEdgeId": "METHOD:services/users.py:UserService.register->METHOD:services/users.py:UserService.get_user:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:app.py→FILE:services/users.py:1",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:app.py",
+          "to": "FILE:services/users.py",
+          "matchedEdgeId": "FILE:app.py->FILE:services/users.py:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python-src-layout",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 7,
+      "shape": "python-package",
+      "edgeCount": 7,
+      "checked": 2,
+      "counts": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:src/authkit/session.py:issue_session→FUNCTION:src/authkit/tokens.py:hash_password:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:src/authkit/session.py:issue_session",
+          "to": "FUNCTION:src/authkit/tokens.py:hash_password",
+          "matchedEdgeId": "FUNCTION:src/authkit/session.py:issue_session->FUNCTION:src/authkit/tokens.py:hash_password:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:src/authkit/session.py→FILE:src/authkit/tokens.py:1",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:src/authkit/session.py",
+          "to": "FILE:src/authkit/tokens.py",
+          "matchedEdgeId": "FILE:src/authkit/session.py->FILE:src/authkit/tokens.py:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python-service-repo",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 9,
+      "shape": "python-service-repo",
+      "edgeCount": 14,
+      "checked": 5,
+      "counts": {
+        "TRUE_POSITIVE": 5,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 5,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 3,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "USES",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:service.py:get_profile→FUNCTION:repository.py:find_user:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:service.py:get_profile",
+          "to": "FUNCTION:repository.py:find_user",
+          "matchedEdgeId": "FUNCTION:service.py:get_profile->FUNCTION:repository.py:find_user:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:service.py:create_profile→FUNCTION:service.py:get_profile:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:service.py:create_profile",
+          "to": "FUNCTION:service.py:get_profile",
+          "matchedEdgeId": "FUNCTION:service.py:create_profile->FUNCTION:service.py:get_profile:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:service.py:create_profile→FUNCTION:repository.py:insert_user:2",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:service.py:create_profile",
+          "to": "FUNCTION:repository.py:insert_user",
+          "matchedEdgeId": "FUNCTION:service.py:create_profile->FUNCTION:repository.py:insert_user:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:service.py→FILE:repository.py:3",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:service.py",
+          "to": "FILE:repository.py",
+          "matchedEdgeId": "FILE:service.py->FILE:repository.py:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "USES:FILE:service.py→FUNCTION:repository.py:find_user:4",
+          "class": "TRUE_POSITIVE",
+          "type": "USES",
+          "from": "FILE:service.py",
+          "to": "FUNCTION:repository.py:find_user",
+          "matchedEdgeId": "FILE:service.py->FUNCTION:repository.py:find_user:USES",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
       "id": "nestjs-starter",
       "ok": true,
       "skipped": false,
-      "durationMs": 302,
+      "durationMs": 351,
       "shape": "controller-service",
       "edgeCount": 37,
       "checked": 6,
@@ -1686,7 +1933,7 @@
       "id": "express",
       "ok": true,
       "skipped": false,
-      "durationMs": 841,
+      "durationMs": 1021,
       "shape": "framework-core",
       "edgeCount": 546,
       "checked": 4,

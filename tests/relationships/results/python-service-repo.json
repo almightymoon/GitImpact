@@ -1,0 +1,100 @@
+{
+  "id": "python-service-repo",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:service.py:get_profile→FUNCTION:repository.py:find_user:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:service.py:get_profile",
+      "to": "FUNCTION:repository.py:find_user",
+      "matchedEdgeId": "FUNCTION:service.py:get_profile->FUNCTION:repository.py:find_user:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:service.py:create_profile→FUNCTION:service.py:get_profile:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:service.py:create_profile",
+      "to": "FUNCTION:service.py:get_profile",
+      "matchedEdgeId": "FUNCTION:service.py:create_profile->FUNCTION:service.py:get_profile:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:service.py:create_profile→FUNCTION:repository.py:insert_user:2",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:service.py:create_profile",
+      "to": "FUNCTION:repository.py:insert_user",
+      "matchedEdgeId": "FUNCTION:service.py:create_profile->FUNCTION:repository.py:insert_user:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:service.py→FILE:repository.py:3",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:service.py",
+      "to": "FILE:repository.py",
+      "matchedEdgeId": "FILE:service.py->FILE:repository.py:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "USES:FILE:service.py→FUNCTION:repository.py:find_user:4",
+      "class": "TRUE_POSITIVE",
+      "type": "USES",
+      "from": "FILE:service.py",
+      "to": "FUNCTION:repository.py:find_user",
+      "matchedEdgeId": "FILE:service.py->FUNCTION:repository.py:find_user:USES",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 5,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 3,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "USES",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 5,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

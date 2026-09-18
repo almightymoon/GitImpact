@@ -103,6 +103,27 @@
       "why": "Python Django urls.py → views HANDLED_BY"
     },
     {
+      "id": "python-class-method",
+      "source": "local",
+      "fixture": "../real-world/cases/python-class-method",
+      "shape": "python-methods",
+      "why": "Python self.method CALLS within a class"
+    },
+    {
+      "id": "python-src-layout",
+      "source": "local",
+      "fixture": "../real-world/cases/python-src-layout",
+      "shape": "python-package",
+      "why": "src-layout package-relative imports"
+    },
+    {
+      "id": "python-service-repo",
+      "source": "local",
+      "fixture": "../real-world/cases/python-service-repo",
+      "shape": "python-service-repo",
+      "why": "Python service → repository CALLS"
+    },
+    {
       "id": "nestjs-starter",
       "source": "dogfood",
       "dogfoodId": "nestjs-starter",

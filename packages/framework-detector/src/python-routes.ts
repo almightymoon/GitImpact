@@ -153,6 +153,12 @@ export function extractDjangoUrlRoutes(
 ): DetectedRoute[] {
   const routes: DetectedRoute[] = [];
   const normalized = filePath.replace(/\\/g, "/");
+  // Skip tests/docs/examples — Django's own repo has hundreds of illustrative urlpatterns.
+  if (
+    /(^|\/)(tests?|docs?(?:_src)?|examples?|benchmarks?|fixtures?)\//i.test(normalized)
+  ) {
+    return routes;
+  }
   if (!/(^|\/)urls\.py$/.test(normalized) && !/urlpatterns\s*=/.test(content)) {
     return routes;
   }

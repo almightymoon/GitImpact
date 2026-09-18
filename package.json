@@ -23,6 +23,7 @@
     "dogfood:misses": "pnpm --filter @gitimpact/dogfood misses",
     "relationships": "pnpm --filter @gitimpact/relationships relationships",
     "relationships:sample": "pnpm --filter @gitimpact/relationships sample",
+    "relationships:review-sample": "pnpm --filter @gitimpact/relationships review-sample",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

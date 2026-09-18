@@ -1,0 +1,27 @@
+{
+  "description": "Python service → repository CALLS + IMPORTS",
+  "mustImport": [
+    { "from": "FILE:service.py", "to": "FILE:repository.py" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:service.py:get_profile",
+      "to": "FUNCTION:repository.py:find_user"
+    },
+    {
+      "from": "FUNCTION:service.py:create_profile",
+      "to": "FUNCTION:service.py:get_profile"
+    },
+    {
+      "from": "FUNCTION:service.py:create_profile",
+      "to": "FUNCTION:repository.py:insert_user"
+    }
+  ],
+  "mustEdge": [
+    {
+      "from": "FILE:service.py",
+      "to": "FUNCTION:repository.py:find_user",
+      "type": "USES"
+    }
+  ]
+}

@@ -14,8 +14,8 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 | **v1.1** | Real-world accuracy + adoption | Steps 1–6 done |
 | **v1.1.1** | Trust, coverage & explainability | Done |
 | **v1.1.2** | Relationship accuracy + Python baseline | Done |
-| **v1.1.3** | Python accuracy & framework intelligence | **Next** |
-| **v1.1.4** | Go support | After v1.1.3 |
+| **v1.1.3** | Python accuracy & framework intelligence | **Done** (held-out review + wave-5 green) |
+| **v1.1.4** | Go support | **Next** |
 | **v1.2** | Team collaboration + history + reports | Later |
 | **v1.3** | Optional AI layer / BYOK | Later |
 
@@ -39,7 +39,7 @@ Production stack, durable queue, private GitHub App path, quotas, ops. Tag `1.0.
 4. ~~Coverage / confidence~~ ✅
 5. ~~Adoption polish~~ ✅
 6. ~~**Python baseline**~~ ✅ (v1.1.2)
-7. ~~**Python accuracy**~~ ← **v1.1.3** (in progress)
+7. ~~**Python accuracy**~~ ✅ **v1.1.3**
 8. **Then** Go ← **v1.1.4**
 
 Do **not** start Go until Python wave 5 stays clean and Python relationship / held-out edge review targets hold.
@@ -63,11 +63,11 @@ Do **not** start Go until Python wave 5 stays clean and Python relationship / he
 1. ~~**Dogfood wave 5** — Flask, FastAPI, Django, CLI, library, monorepo-ish~~ ✅ (6/6 ok)
 2. ~~**Record every miss**~~ ✅ (FastAPI Flask FP, route double-count, Click missing — fixed)
 3. ~~**Framework route intelligence**~~ ✅ (Flask/FastAPI decorators + Django urls → HANDLED_BY)
-4. **Python relationship benchmark** — expand curated cases from dogfood misses
+4. ~~**Python relationship benchmark**~~ ✅ (class/method, src-layout, service→repo; curated P=1/R=1)
 5. ~~**Python project detection**~~ ✅ (Poetry/uv/Pipenv/setuptools/src-layout)
-6. **Held-out emitted-edge review** — manually label `pnpm relationships:sample` output (≥85% precision)
+6. ~~**Held-out emitted-edge review**~~ ✅ (65-sample: 57 TRUE / 0 FALSE / 8 AMBIGUOUS → 100% non-AMBIGUOUS)
 7. ~~**Confidence / blind spots**~~ ✅ (heuristic Python limits + inventory wording)
-8. **Regression fixtures** — continue for each new wave-5 miss
+8. ~~**Regression fixtures**~~ ✅ (wave-5 misses + Python LIBRARY typing + Django route noise)
 
 ### Targets
 
@@ -113,6 +113,7 @@ After v1.1.3 is green: Echo + Cobra (already planned in dogfood matrix), then ex
 pnpm dogfood -- --wave 5           # Python accuracy dogfood
 pnpm relationships                 # curated edge precision/recall
 pnpm relationships:sample          # held-out emitted-edge sample
+pnpm relationships:review-sample   # auto-assist labels from curated expectations
 pnpm test:accuracy
 pnpm test:real-world
 ```
