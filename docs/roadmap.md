@@ -13,7 +13,7 @@ No language expansion or AI until that bar is met for today’s TypeScript/JavaS
 | Version | Theme | Status |
 |---------|--------|--------|
 | **v1.0** | Public beta / production hardening | RC in progress — see `docs/release-candidate.md` |
-| **v1.1** | Real-world accuracy + adoption | **Next** (dogfood-first) |
+| **v1.1** | Real-world accuracy + adoption | **In progress** — steps 1–5 done; languages deferred |
 | **v1.2** | Team collaboration + history + reports | Later |
 | **v1.3** | Optional AI layer / BYOK | Later |
 
