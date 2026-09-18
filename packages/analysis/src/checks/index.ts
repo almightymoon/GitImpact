@@ -244,24 +244,23 @@ export function buildInfrastructureNodes(input: {
 }): { nodes: import("@gitimpact/shared").GraphNode[]; edges: import("@gitimpact/shared").GraphEdge[] } {
   const nodes: import("@gitimpact/shared").GraphNode[] = [];
   const edges: import("@gitimpact/shared").GraphEdge[] = [];
-  const seen = new Set<string>();
+  const seenKind = new Set<string>();
 
-  const add = (kind: string, path: string, label: string) => {
-    const id = `INFRASTRUCTURE:${kind}:${path}`;
-    if (seen.has(id)) return id;
-    seen.add(id);
+  const addKind = (kind: string, path: string, label: string) => {
+    if (seenKind.has(kind)) return;
+    seenKind.add(kind);
     nodes.push({
-      id,
+      id: `INFRASTRUCTURE:${kind}`,
       type: "INFRASTRUCTURE",
       name: label,
       file: path,
       metadata: { kind },
     });
-    return id;
   };
 
+  // One node per infra kind so Structure can chain Docker → K8s → Helm → Argo CD.
   for (const signal of input.infraSignals) {
-    add(signal.kind, signal.path, signal.label);
+    addKind(signal.kind, signal.path, signal.label);
   }
 
   // Layer edges for narrative Structure (Frontend→…→ArgoCD style is UX; here link related kinds)
@@ -271,18 +270,17 @@ export function buildInfrastructureNodes(input: {
     if (!byKind.has(kind)) byKind.set(kind, node.id);
   }
   const chain = ["docker", "kubernetes", "helm", "argocd", "terraform", "github_actions"];
-  for (let i = 0; i < chain.length - 1; i++) {
-    const a = byKind.get(chain[i]!);
-    const b = byKind.get(chain[i + 1]!);
-    if (a && b) {
-      edges.push({
-        id: `DEPLOYS:${a}:${b}`,
-        from: a,
-        to: b,
-        type: "DEPLOYS",
-        confidence: "LOW",
-      });
-    }
+  const present = chain.filter((kind) => byKind.has(kind));
+  for (let i = 0; i < present.length - 1; i++) {
+    const a = byKind.get(present[i]!)!;
+    const b = byKind.get(present[i + 1]!)!;
+    edges.push({
+      id: `DEPLOYS:${a}:${b}`,
+      from: a,
+      to: b,
+      type: "DEPLOYS",
+      confidence: "LOW",
+    });
   }
 
   return { nodes, edges };

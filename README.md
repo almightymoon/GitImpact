@@ -190,13 +190,23 @@ Apply DB migration: `packages/db/drizzle/0002_intelligence.sql`
 ```text
 v0.9  Code Quality + Security + CI/CD Intelligence
         ↓
-v1.0  Public Beta & Production Hardening            ← current
+v1.0  Public Beta & Production Hardening            ← current RC
+        ↓
+v1.1  Real-World Accuracy & Adoption                ← next (dogfood-first)
 ```
 
 **v1.0 focus:** durable workers (Redis/BullMQ), rate limits, quotas/timeouts, persistent jobs, structured logs, health/ready, Docker web+worker, docs — not more analyzers.
 
+**v1.1 focus:** dogfood 20–30 real repos → miss log → fix relationship accuracy → then Python → then Go. See `docs/roadmap.md`.
+
+```bash
+pnpm dogfood              # priority-1 matrix
+pnpm dogfood:misses       # open miss summary
+```
+
 See `docs/` for architecture, deployment, configuration, operations, security, and troubleshooting.
 Public beta launch checklist: `docs/beta-checklist.md`. Security policy: `SECURITY.md`.
+Dogfood guide: `docs/dogfood.md`.
 
 ### v1.0 — Public Beta & Production Hardening
 

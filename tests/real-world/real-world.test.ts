@@ -73,6 +73,7 @@ describe("GitImpact real-world benchmark", async () => {
         parsed.files,
         parsed.contentsByPath,
         parsed.packageDeps,
+        parsed.packageName,
       );
       const graph = buildGraph(parsed.files, routes);
 

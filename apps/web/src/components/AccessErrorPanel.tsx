@@ -64,7 +64,10 @@ export function AccessErrorPanel({
                 short-lived installation tokens.
               </li>
             </ul>
-            <ConnectGitHubButton installUrl={installUrl} appConfigured={appConfigured} />
+            <ConnectGitHubButton
+              installUrl={installUrl}
+              appConfigured={appConfigured}
+            />
           </div>
         ) : null}
       </div>

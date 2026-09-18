@@ -55,6 +55,7 @@ import {
   selectWhyPath,
 } from "./pr-comment.js";
 import { buildRepositoryIntelligence } from "./intelligence.js";
+import { detectInventoryLanguages } from "./repository-type.js";
 import {
   buildArchitectureExperience,
   collectArchitectureArtifacts,
@@ -159,6 +160,15 @@ async function persist(analysis: StoredAnalysis): Promise<StoredAnalysis> {
   }
 }
 
+function resolveLanguages(
+  languages: AnalysisSummary["languages"],
+  allRelativeFiles?: string[],
+): AnalysisSummary["languages"] {
+  if (languages.length > 0) return languages;
+  if (!allRelativeFiles?.length) return languages;
+  return detectInventoryLanguages(allRelativeFiles);
+}
+
 function buildSummary(
   files: ParsedFile[],
   graph: DependencyGraph,
@@ -166,6 +176,7 @@ function buildSummary(
   languages: AnalysisSummary["languages"],
   frameworks: string[],
   routeCount: number,
+  allRelativeFiles?: string[],
 ): AnalysisSummary {
   return {
     files: files.length,
@@ -177,7 +188,7 @@ function buildSummary(
       routeCount,
       store.getNodes().filter((n) => n.type === "API_ROUTE").length,
     ),
-    languages,
+    languages: resolveLanguages(languages, allRelativeFiles),
     frameworks,
   };
 }
@@ -188,12 +199,17 @@ function buildGraphFromParse(parsed: Awaited<ReturnType<typeof parseRepository>>
   routes: DetectedRoute[];
   frameworks: string[];
 } {
-  const detectedFrameworks = detectFrameworkNames(parsed.files, parsed.packageDeps);
+  const detectedFrameworks = detectFrameworkNames(
+    parsed.files,
+    parsed.packageDeps,
+    parsed.packageName,
+  );
   const frameworks = [...new Set([...parsed.frameworks, ...detectedFrameworks])];
   const routes = extractAllRoutes(
     parsed.files,
     parsed.contentsByPath,
     parsed.packageDeps,
+    parsed.packageName,
   );
   const graph = buildGraph(parsed.files, routes);
   const store = new GraphStore(graph);
@@ -444,6 +460,7 @@ export async function analyzeRepositoryUrl(
       parsed.languages,
       frameworks,
       routes.length,
+      parsed.allRelativeFiles,
     ),
     graph: finalized.graph,
     routePath: toGitImpactPath(parsedUrl),
@@ -629,6 +646,7 @@ export async function analyzePullRequest(
       parsed.languages,
       frameworks,
       routes.length,
+      parsed.allRelativeFiles,
     ),
     graph: finalized.graph,
     routePath: `/${owner}/${repo}/pull/${number}`,
@@ -833,6 +851,7 @@ export async function analyzeLocalFixture(
       parsed.languages,
       frameworks,
       routes.length,
+      parsed.allRelativeFiles,
     ),
     graph: finalized.graph,
     routePath: "/demo/tiny-fixture",
@@ -935,6 +954,7 @@ export async function analyzeDemoPullRequest(
       parsed.languages,
       frameworks,
       routes.length,
+      parsed.allRelativeFiles,
     ),
     graph: finalized.graph,
     routePath: "/demo/tiny-fixture/pull/1",

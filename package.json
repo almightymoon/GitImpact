@@ -18,6 +18,9 @@
     "test:accuracy": "pnpm --filter @gitimpact/accuracy-tests test",
     "test:real-world": "pnpm --filter @gitimpact/real-world-tests test",
     "test:benchmarks": "pnpm test:accuracy && pnpm test:real-world",
+    "dogfood": "pnpm --filter @gitimpact/dogfood dogfood",
+    "dogfood:miss": "pnpm --filter @gitimpact/dogfood miss",
+    "dogfood:misses": "pnpm --filter @gitimpact/dogfood misses",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

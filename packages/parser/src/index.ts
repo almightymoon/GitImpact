@@ -543,6 +543,7 @@ export async function parseRepository(
   frameworks: string[];
   contentsByPath: Map<string, string>;
   packageDeps: Record<string, string>;
+  packageName?: string;
   analysisHealth: {
     filesDiscovered: number;
     filesParsed: number;
@@ -632,8 +633,9 @@ export async function parseRepository(
     }
   }
 
-  const packageDeps = await readPackageDeps(rootDir);
-  const frameworks = await detectFrameworks(rootDir, files, packageDeps);
+  const packageManifest = await readPackageManifest(rootDir);
+  const packageDeps = packageManifest.deps;
+  const frameworks = await detectFrameworks(rootDir, files, packageDeps, packageManifest.name);
 
   return {
     files,
@@ -641,6 +643,7 @@ export async function parseRepository(
     frameworks,
     contentsByPath,
     packageDeps,
+    packageName: packageManifest.name,
     allRelativeFiles: inventory.allRelativeFiles,
     analysisHealth: {
       filesDiscovered: relativePaths.length,
@@ -712,20 +715,31 @@ function tryKnown(candidate: string, knownFiles: Set<string>): string | undefine
   return undefined;
 }
 
-async function readPackageDeps(rootDir: string): Promise<Record<string, string>> {
+async function readPackageManifest(rootDir: string): Promise<{
+  name?: string;
+  deps: Record<string, string>;
+}> {
   try {
     const pkgRaw = await readFile(path.join(rootDir, "package.json"), "utf8");
     const pkg = JSON.parse(pkgRaw) as {
+      name?: string;
       dependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
     };
     return {
-      ...pkg.dependencies,
-      ...pkg.devDependencies,
+      name: pkg.name,
+      deps: {
+        ...pkg.dependencies,
+        ...pkg.devDependencies,
+      },
     };
   } catch {
-    return {};
+    return { deps: {} };
   }
+}
+
+async function readPackageDeps(rootDir: string): Promise<Record<string, string>> {
+  return (await readPackageManifest(rootDir)).deps;
 }
 
 export function detectLanguages(files: ParsedFile[]): LanguageStats[] {
@@ -751,15 +765,34 @@ export async function detectFrameworks(
   rootDir: string,
   files: ParsedFile[],
   packageDeps?: Record<string, string>,
+  packageName?: string,
 ): Promise<string[]> {
   const deps = packageDeps ?? (await readPackageDeps(rootDir));
+  const name = packageName ?? (await readPackageManifest(rootDir)).name;
   const frameworks = new Set<string>();
 
   if (deps.next) frameworks.add("Next.js");
   if (deps.react) frameworks.add("React");
   if (deps["@nestjs/core"]) frameworks.add("NestJS");
-  if (deps.express) frameworks.add("Express");
-  if (deps.fastify) frameworks.add("Fastify");
+  if (name === "express") {
+    frameworks.add("Express");
+  } else if (
+    files.some(
+      (file) =>
+        !/(^|\/)(__(tests|mocks)__|tests?|spec|fixtures?)\//i.test(file.path) &&
+        !/\.(test|spec)\.[cm]?[jt]sx?$/i.test(file.path) &&
+        file.imports.some(
+          (imp) =>
+            imp.moduleSpecifier === "express" ||
+            imp.moduleSpecifier.startsWith("express/"),
+        ),
+    )
+  ) {
+    frameworks.add("Express");
+  }
+  if (deps.fastify || name === "fastify") frameworks.add("Fastify");
+  if (deps.hono || name === "hono") frameworks.add("Hono");
+  if (deps.koa || name === "koa") frameworks.add("Koa");
   if (deps.vue) frameworks.add("Vue");
   if (deps["@angular/core"]) frameworks.add("Angular");
   if (deps.prisma || deps["@prisma/client"]) frameworks.add("Prisma");

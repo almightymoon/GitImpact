@@ -2,7 +2,11 @@ import type { DetectedRoute, HttpMethod, ParsedFile } from "@gitimpact/shared";
 
 export interface FrameworkAnalyzer {
   name: string;
-  detect(files: ParsedFile[], packageDeps?: Record<string, string>): boolean;
+  detect(
+    files: ParsedFile[],
+    packageDeps?: Record<string, string>,
+    packageName?: string,
+  ): boolean;
   extractRoutes(files: ParsedFile[], contents?: Map<string, string>): DetectedRoute[];
 }
 
@@ -18,6 +22,27 @@ const NEXT_METHODS = new Set([
 
 function routeId(framework: string, method: string, path: string, file: string): string {
   return `API_ROUTE:${framework}:${method}:${path}:${file}`;
+}
+
+function isTestPath(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, "/");
+  return (
+    /(^|\/)(__(tests|mocks)__|tests?|spec|fixtures?)\//i.test(normalized) ||
+    /\.(test|spec)\.[cm]?[jt]sx?$/i.test(normalized)
+  );
+}
+
+/** Exact Express package import — not substrings like "expression". */
+export function isExpressModuleSpecifier(specifier: string): boolean {
+  return specifier === "express" || specifier.startsWith("express/");
+}
+
+export function hasProductionExpressImport(files: ParsedFile[]): boolean {
+  return files.some(
+    (file) =>
+      !isTestPath(file.path) &&
+      file.imports.some((imp) => isExpressModuleSpecifier(imp.moduleSpecifier)),
+  );
 }
 
 /** app/api/users/[id]/route.ts → /api/users/:id */
@@ -71,7 +96,11 @@ function methodsFromExports(file: ParsedFile): HttpMethod[] {
 export class NextJSAnalyzer implements FrameworkAnalyzer {
   name = "Next.js";
 
-  detect(files: ParsedFile[], packageDeps: Record<string, string> = {}): boolean {
+  detect(
+    files: ParsedFile[],
+    packageDeps: Record<string, string> = {},
+    _packageName?: string,
+  ): boolean {
     if (packageDeps.next) return true;
     return files.some(
       (file) =>
@@ -190,13 +219,21 @@ export function extractExpressRoutesFromContent(
 export class ExpressAnalyzer implements FrameworkAnalyzer {
   name = "Express";
 
-  detect(files: ParsedFile[], packageDeps: Record<string, string> = {}): boolean {
-    if (packageDeps.express) return true;
-    return files.some((file) =>
-      /express|Router\(|app\.(get|post|use)\(/i.test(
-        [...file.imports.map((i) => i.moduleSpecifier), ...file.exports].join(" "),
-      ),
-    );
+  /**
+   * Strong signals only:
+   * - package name is `express`, or
+   * - a non-test file imports `express` / `express/...`
+   *
+   * Do NOT treat `packageDeps.express` alone as enough (libs list it for tests),
+   * and never match export names like `RawRequestDefaultExpression`.
+   */
+  detect(
+    files: ParsedFile[],
+    _packageDeps: Record<string, string> = {},
+    packageName?: string,
+  ): boolean {
+    if (packageName === "express") return true;
+    return hasProductionExpressImport(files);
   }
 
   extractRoutes(
@@ -221,7 +258,11 @@ export class ExpressAnalyzer implements FrameworkAnalyzer {
 export class NestJSAnalyzer implements FrameworkAnalyzer {
   name = "NestJS";
 
-  detect(files: ParsedFile[], packageDeps: Record<string, string> = {}): boolean {
+  detect(
+    files: ParsedFile[],
+    packageDeps: Record<string, string> = {},
+    _packageName?: string,
+  ): boolean {
     if (packageDeps["@nestjs/core"] || packageDeps["@nestjs/common"]) return true;
     return files.some((file) =>
       file.classes.some(
@@ -276,16 +317,19 @@ export class NestJSAnalyzer implements FrameworkAnalyzer {
 export function detectFrameworkNames(
   files: ParsedFile[],
   packageDeps: Record<string, string> = {},
+  packageName?: string,
 ): string[] {
   const names: string[] = [];
   const next = new NextJSAnalyzer();
   const express = new ExpressAnalyzer();
   const nest = new NestJSAnalyzer();
-  if (next.detect(files, packageDeps)) names.push("Next.js");
-  if (express.detect(files, packageDeps)) names.push("Express");
-  if (nest.detect(files, packageDeps)) names.push("NestJS");
+  if (next.detect(files, packageDeps, packageName)) names.push("Next.js");
+  if (express.detect(files, packageDeps, packageName)) names.push("Express");
+  if (nest.detect(files, packageDeps, packageName)) names.push("NestJS");
   if (packageDeps.react && !names.includes("Next.js")) names.push("React");
-  if (packageDeps.fastify) names.push("Fastify");
+  if (packageDeps.fastify || packageName === "fastify") names.push("Fastify");
+  if (packageDeps.hono || packageName === "hono") names.push("Hono");
+  if (packageDeps.koa || packageName === "koa") names.push("Koa");
   if (packageDeps.prisma || packageDeps["@prisma/client"]) names.push("Prisma");
   if (packageDeps["drizzle-orm"]) names.push("Drizzle");
   return [...new Set(names)];
@@ -295,22 +339,21 @@ export function extractAllRoutes(
   files: ParsedFile[],
   contents: Map<string, string> = new Map(),
   packageDeps: Record<string, string> = {},
+  packageName?: string,
 ): DetectedRoute[] {
   const routes: DetectedRoute[] = [];
   const next = new NextJSAnalyzer();
   const express = new ExpressAnalyzer();
   const nest = new NestJSAnalyzer();
 
-  if (next.detect(files, packageDeps)) {
+  if (next.detect(files, packageDeps, packageName)) {
     routes.push(...next.extractRoutes(files));
   }
-  if (express.detect(files, packageDeps) || contents.size > 0) {
-    const expressRoutes = express.extractRoutes(files, contents);
-    if (expressRoutes.length > 0 || express.detect(files, packageDeps)) {
-      routes.push(...expressRoutes);
-    }
+  // Only attribute Express-style .get('/x') routes when Express is actually present.
+  if (express.detect(files, packageDeps, packageName)) {
+    routes.push(...express.extractRoutes(files, contents));
   }
-  if (nest.detect(files, packageDeps)) {
+  if (nest.detect(files, packageDeps, packageName)) {
     routes.push(...nest.extractRoutes(files));
   }
 

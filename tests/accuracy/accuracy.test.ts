@@ -183,6 +183,7 @@ describe("GitImpact accuracy benchmark (v0.4)", async () => {
         parsed.files,
         parsed.contentsByPath,
         parsed.packageDeps,
+        parsed.packageName,
       );
       const graph = buildGraph(parsed.files, routes);
       const store = new GraphStore(graph);

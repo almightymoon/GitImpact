@@ -81,7 +81,11 @@ function classifyArtifact(path: string): Omit<ArchitectureComponent, "id" | "fil
       shape: "box",
     };
   }
-  if (/k8s|kubernetes|deployment\.ya?ml|service\.ya?ml/i.test(p)) {
+  if (
+    /k8s|kubernetes|deployment\.ya?ml|service\.ya?ml|kustomization\.ya?ml|-(?:dep|svc)\.ya?ml/i.test(
+      p,
+    )
+  ) {
     return {
       band: "deployment",
       title: "Deployment configuration",
@@ -90,7 +94,7 @@ function classifyArtifact(path: string): Omit<ArchitectureComponent, "id" | "fil
       shape: "box",
     };
   }
-  if (/argocd/i.test(p)) {
+  if (/argocd|applicationset|applications?\.ya?ml/i.test(p)) {
     return {
       band: "deployment",
       title: "GitOps application",

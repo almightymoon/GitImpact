@@ -13,6 +13,7 @@ import {
   buildArchitectureSummary,
   detectImportantModules,
   detectInfraSignals,
+  detectInventoryLanguages,
   detectRepositoryType,
 } from "./repository-type.js";
 import {
@@ -51,7 +52,11 @@ export async function buildRepositoryIntelligence(input: {
     input.allRelativeFiles ??
     input.files.map((f) => f.path);
   const infraSignals = detectInfraSignals(filePaths, input.packageDeps);
-  const importantModules = detectImportantModules(input.files, input.graphNodes);
+  const importantModules = detectImportantModules(
+    input.files,
+    input.graphNodes,
+    filePaths,
+  );
   const { type, label } = detectRepositoryType({
     frameworks: input.frameworks,
     routes: input.routes,
@@ -60,6 +65,11 @@ export async function buildRepositoryIntelligence(input: {
     filePaths,
     infraSignals,
   });
+
+  const languages =
+    input.languages.length > 0
+      ? input.languages
+      : detectInventoryLanguages(filePaths);
 
   const readmeRaw = input.clonePath
     ? await findReadmeRaw(input.clonePath)
@@ -85,7 +95,9 @@ export async function buildRepositoryIntelligence(input: {
     modules: importantModules,
     routeCount: input.routes.length,
     testCount,
-    languages: input.languages,
+    languages,
+    infraSignals,
+    codeFileCount: input.files.length,
   });
 
   const architectureArtifacts = collectArchitectureArtifacts(filePaths);

@@ -26,6 +26,11 @@
 - Dead-letter retry re-adds BullMQ jobs instead of deduping against the reset QUEUED row
 - Failed Redis enqueue marks the Postgres job `FAILED` (no orphaned active QUEUED rows)
 
+### v1.1 dogfood start
+
+- Roadmap + dogfood matrix/harness (`docs/roadmap.md`, `pnpm dogfood`)
+- Fix Express false positives: no longer match `*Expression*` exports; ignore test-only `express` deps; detect Express package by name; label Fastify/Hono/Koa correctly
+
 ### Security
 
 - HTTPS GitHub-only clone URLs, credential redaction, structured log scrubbing
@@ -37,3 +42,5 @@
 - Architecture, deployment, GitHub App, security, operations, contributing
 - Public beta checklist, private-repo E2E, load-testing guide
 - Release candidate report: `docs/release-candidate.md`
+- Roadmap: `docs/roadmap.md` (v1.1 dogfood-first accuracy)
+- Dogfood matrix: `docs/dogfood.md` / `tests/dogfood/`

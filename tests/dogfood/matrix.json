@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "description": "v1.1 dogfood matrix — expand from recorded misses, not speculation",
+  "policy": "Fix JS/TS relationship accuracy before enabling planned Python/Go rows",
+  "repos": [
+    {
+      "id": "express",
+      "url": "https://github.com/expressjs/express",
+      "shape": "node-express",
+      "priority": 1,
+      "status": "active",
+      "why": "Classic middleware / router HOFs"
+    },
+    {
+      "id": "fastify",
+      "url": "https://github.com/fastify/fastify",
+      "shape": "node-http",
+      "priority": 1,
+      "status": "active",
+      "why": "Plugin encapsulation, decorated request"
+    },
+    {
+      "id": "hono",
+      "url": "https://github.com/honojs/hono",
+      "shape": "node-http",
+      "priority": 1,
+      "status": "active",
+      "why": "Modern lightweight router; multi-runtime"
+    },
+    {
+      "id": "platforms",
+      "url": "https://github.com/vercel/platforms",
+      "shape": "nextjs-app",
+      "priority": 1,
+      "status": "active",
+      "why": "Next.js App Router multi-tenant sample"
+    },
+    {
+      "id": "nestjs-starter",
+      "url": "https://github.com/nestjs/typescript-starter",
+      "shape": "nestjs",
+      "priority": 1,
+      "status": "active",
+      "why": "Decorator DI baseline"
+    },
+    {
+      "id": "commander",
+      "url": "https://github.com/tj/commander.js",
+      "shape": "node-cli",
+      "priority": 1,
+      "status": "active",
+      "why": "CLI option parsing / command tree"
+    },
+    {
+      "id": "preact",
+      "url": "https://github.com/preactjs/preact",
+      "shape": "react-lib",
+      "priority": 1,
+      "status": "active",
+      "why": "Compact React-compatible library"
+    },
+    {
+      "id": "axios",
+      "url": "https://github.com/axios/axios",
+      "shape": "node-lib",
+      "priority": 1,
+      "status": "active",
+      "why": "Interceptor chains, adapters"
+    },
+    {
+      "id": "gitops-examples",
+      "url": "https://github.com/argoproj/argocd-example-apps",
+      "shape": "gitops",
+      "priority": 1,
+      "status": "active",
+      "why": "Infra-only / YAML heavy"
+    },
+    {
+      "id": "koa",
+      "url": "https://github.com/koajs/koa",
+      "shape": "node-http",
+      "priority": 2,
+      "status": "active",
+      "why": "Async middleware composition"
+    },
+    {
+      "id": "multer",
+      "url": "https://github.com/expressjs/multer",
+      "shape": "express-middleware",
+      "priority": 2,
+      "status": "active",
+      "why": "Express middleware package"
+    },
+    {
+      "id": "passport",
+      "url": "https://github.com/jaredhanson/passport",
+      "shape": "express-middleware",
+      "priority": 2,
+      "status": "active",
+      "why": "Strategy pattern auth"
+    },
+    {
+      "id": "socketio",
+      "url": "https://github.com/socketio/socket.io",
+      "shape": "realtime",
+      "priority": 2,
+      "status": "active",
+      "why": "Event emitter / namespace graph"
+    },
+    {
+      "id": "msw",
+      "url": "https://github.com/mswjs/msw",
+      "shape": "test-lib",
+      "priority": 2,
+      "status": "active",
+      "why": "Request handlers / worker entrypoints"
+    },
+    {
+      "id": "react-hook-form",
+      "url": "https://github.com/react-hook-form/react-hook-form",
+      "shape": "react-lib",
+      "priority": 2,
+      "status": "active",
+      "why": "Hook-heavy React API"
+    },
+    {
+      "id": "redux",
+      "url": "https://github.com/reduxjs/redux",
+      "shape": "react-lib",
+      "priority": 2,
+      "status": "active",
+      "why": "Reducer composition"
+    },
+    {
+      "id": "date-fns",
+      "url": "https://github.com/date-fns/date-fns",
+      "shape": "util-lib",
+      "priority": 2,
+      "status": "active",
+      "why": "Large pure function surface"
+    },
+    {
+      "id": "chalk",
+      "url": "https://github.com/chalk/chalk",
+      "shape": "node-lib",
+      "priority": 2,
+      "status": "active",
+      "why": "Small ESM library smoke"
+    },
+    {
+      "id": "ai-chatbot",
+      "url": "https://github.com/vercel/ai-chatbot",
+      "shape": "nextjs-app",
+      "priority": 2,
+      "status": "active",
+      "why": "Next.js + AI SDK app shape (analyze structure only)"
+    },
+    {
+      "id": "k8s-examples",
+      "url": "https://github.com/kubernetes/examples",
+      "shape": "k8s",
+      "priority": 2,
+      "status": "active",
+      "why": "Manifest-heavy; few JS files"
+    },
+    {
+      "id": "formik",
+      "url": "https://github.com/jaredpalmer/formik",
+      "shape": "react-lib",
+      "priority": 3,
+      "status": "active",
+      "why": "Classic form state library"
+    },
+    {
+      "id": "uuid",
+      "url": "https://github.com/uuidjs/uuid",
+      "shape": "util-lib",
+      "priority": 3,
+      "status": "active",
+      "why": "Tiny multi-entry package"
+    },
+    {
+      "id": "nodemailer",
+      "url": "https://github.com/nodemailer/nodemailer",
+      "shape": "node-lib",
+      "priority": 3,
+      "status": "active",
+      "why": "Callback/transport plugins"
+    },
+    {
+      "id": "terraform-vpc",
+      "url": "https://github.com/terraform-aws-modules/terraform-aws-vpc",
+      "shape": "terraform",
+      "priority": 3,
+      "status": "active",
+      "why": "Pure Terraform module"
+    },
+    {
+      "id": "vite",
+      "url": "https://github.com/vitejs/vite",
+      "shape": "monorepo-tooling",
+      "priority": 3,
+      "status": "active",
+      "maxFiles": 5000,
+      "why": "pnpm monorepo; expect truncation unless maxFiles raised"
+    },
+    {
+      "id": "python-flask",
+      "url": "https://github.com/pallets/flask",
+      "shape": "python-web",
+      "priority": 9,
+      "status": "planned",
+      "why": "v1.1 language track — after JS/TS miss rate stabilizes"
+    },
+    {
+      "id": "python-fastapi",
+      "url": "https://github.com/tiangolo/fastapi",
+      "shape": "python-web",
+      "priority": 9,
+      "status": "planned",
+      "why": "v1.1 language track — after Flask baseline"
+    },
+    {
+      "id": "go-echo",
+      "url": "https://github.com/labstack/echo",
+      "shape": "go-http",
+      "priority": 9,
+      "status": "planned",
+      "why": "v1.1 Go track — after Python"
+    },
+    {
+      "id": "go-cobra",
+      "url": "https://github.com/spf13/cobra",
+      "shape": "go-cli",
+      "priority": 9,
+      "status": "planned",
+      "why": "v1.1 Go track — CLI graph"
+    }
+  ]
+}

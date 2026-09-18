@@ -165,6 +165,9 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.1
+        version: 3.2.7(@types/node@22.20.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.1)
 
   packages/db:
     dependencies:
@@ -200,6 +203,9 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.1
+        version: 3.2.7(@types/node@22.20.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.1)
 
   packages/git:
     dependencies:
@@ -342,6 +348,28 @@ importers:
       vitest:
         specifier: ^3.2.1
         version: 3.2.7(@types/node@22.20.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.1)
+
+  tests/dogfood:
+    dependencies:
+      '@gitimpact/analysis':
+        specifier: workspace:*
+        version: link:../../packages/analysis
+      '@gitimpact/framework-detector':
+        specifier: workspace:*
+        version: link:../../packages/framework-detector
+      '@gitimpact/parser':
+        specifier: workspace:*
+        version: link:../../packages/parser
+      '@gitimpact/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      tsx:
+        specifier: ^4.19.4
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
 
   tests/real-world:
     dependencies:

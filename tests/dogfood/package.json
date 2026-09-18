@@ -1,0 +1,21 @@
+{
+  "name": "@gitimpact/dogfood",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dogfood": "tsx run-dogfood.ts",
+    "miss": "tsx record-miss.ts",
+    "misses": "tsx summarize-misses.ts"
+  },
+  "dependencies": {
+    "@gitimpact/analysis": "workspace:*",
+    "@gitimpact/parser": "workspace:*",
+    "@gitimpact/framework-detector": "workspace:*",
+    "@gitimpact/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
