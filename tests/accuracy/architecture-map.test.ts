@@ -112,11 +112,12 @@ describe("architecture experience (v0.9.5)", () => {
 
     const systems = experience.components.filter((c) => (c.level ?? "SYSTEM") === "SYSTEM");
     expect(systems.length).toBeGreaterThanOrEqual(4);
-    expect(systems.length).toBeLessThanOrEqual(15);
+    // Full SYSTEM cards are kept (no silent "Other modules" collapse) for Structure UX.
+    expect(systems.length).toBeLessThanOrEqual(40);
 
-    // Deployment should be bundled
-    expect(systems.some((c) => c.title === "Deployment")).toBe(true);
-    expect(systems.filter((c) => c.band === "deployment").length).toBeLessThanOrEqual(2);
+    // Deployment systems stay as separate cards (GitDiagram-style), not one collapsed parent.
+    expect(systems.filter((c) => c.band === "deployment").length).toBeGreaterThanOrEqual(1);
+    expect(systems.filter((c) => c.band === "deployment").length).toBeLessThanOrEqual(12);
 
     expect(experience.primaryFlow?.length).toBeGreaterThanOrEqual(2);
     expect(experience.walkthrough?.length).toBeGreaterThanOrEqual(2);

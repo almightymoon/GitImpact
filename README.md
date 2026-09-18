@@ -188,12 +188,14 @@ Apply DB migration: `packages/db/drizzle/0002_intelligence.sql`
 ### Roadmap
 
 ```text
-v0.9  Code Quality + Security + CI/CD Intelligence   ← shipped
+v0.9  Code Quality + Security + CI/CD Intelligence
         ↓
 v1.0  Public Beta & Production Hardening            ← current
 ```
 
-**v1.0 focus:** trust + operability for real teams — not another analyzer expansion.
+**v1.0 focus:** durable workers (Redis/BullMQ), rate limits, quotas/timeouts, persistent jobs, structured logs, health/ready, Docker web+worker, docs — not more analyzers.
+
+See `docs/` for architecture, deployment, configuration, operations, security, and troubleshooting.
 
 ### v1.0 — Public Beta & Production Hardening
 

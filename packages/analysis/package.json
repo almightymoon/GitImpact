@@ -23,7 +23,9 @@
     "@gitimpact/git": "workspace:*",
     "@gitimpact/graph": "workspace:*",
     "@gitimpact/impact-engine": "workspace:*",
+    "@gitimpact/ops": "workspace:*",
     "@gitimpact/parser": "workspace:*",
+    "@gitimpact/queue": "workspace:*",
     "@gitimpact/shared": "workspace:*",
     "yaml": "^2.9.1"
   },

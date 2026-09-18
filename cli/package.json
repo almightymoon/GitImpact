@@ -13,7 +13,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@gitimpact/analysis": "workspace:*"
+    "@gitimpact/analysis": "workspace:*",
+    "@gitimpact/db": "workspace:*",
+    "@gitimpact/ops": "workspace:*",
+    "@gitimpact/queue": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

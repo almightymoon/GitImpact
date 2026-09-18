@@ -1,5 +1,7 @@
 import { AnalyzeForm } from "@/components/AnalyzeForm";
 import { DemoButton } from "@/components/DemoButton";
+import { RecentAnalyses } from "@/components/RecentAnalyses";
+import { ConnectGitHubButton } from "@/components/ConnectGitHubButton";
 
 export default function HomePage() {
   return (
@@ -14,12 +16,12 @@ export default function HomePage() {
           <a href="#how" className="hover:text-[var(--teal)] transition-colors">
             How it works
           </a>
-          <a
-            href="https://github.com"
-            className="rounded-full border border-[var(--line)] px-3 py-1.5 hover:border-[var(--teal)] transition-colors"
-          >
-            Docs soon
-          </a>
+            <a
+              href="https://github.com/almightymoon/GitImpact/tree/main/docs"
+              className="rounded-full border border-[var(--line)] px-3 py-1.5 hover:border-[var(--teal)] transition-colors"
+            >
+              Docs
+            </a>
         </nav>
       </header>
 
@@ -33,13 +35,17 @@ export default function HomePage() {
               Know What Breaks Before You Merge.
             </h1>
             <p className="animate-rise-delay-2 mt-5 max-w-lg text-base leading-relaxed text-[var(--ink-soft)]/80 sm:text-lg">
-              Maps the blast radius of code changes across your repository —
-              files, functions, APIs, and tests that depend on what you touch.
+              Paste a public repo or connect GitHub. GitImpact maps structure and
+              change impact — explore PRs, Checks, APIs, Tests, and Structure.
             </p>
 
             <div className="animate-rise-delay-2 mt-10 space-y-3">
               <AnalyzeForm />
-              <DemoButton />
+              <div className="flex flex-wrap items-center gap-3">
+                <DemoButton />
+                <ConnectGitHubButton />
+              </div>
+              <RecentAnalyses />
             </div>
           </div>
 
@@ -116,16 +122,16 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-3">
           {[
             {
-              title: "Static graph first",
-              body: "Imports, calls, and file relationships are discovered deterministically — AI only explains what the graph finds.",
+              title: "1. Paste or connect",
+              body: "Analyze a public GitHub URL immediately, or install the GitImpact App for private repositories.",
             },
             {
-              title: "Blast radius on demand",
-              body: "Select a file, function, or pull request and traverse dependents by depth with confidence levels.",
+              title: "2. Structure & impact",
+              body: "Deterministic parsing builds a dependency graph, architecture map, APIs, tests, and Checks — no AI required.",
             },
             {
-              title: "Tests in the path",
-              body: "See which suites cover the change and where dependent code may lack direct test coverage.",
+              title: "3. Explore before merge",
+              body: "Open PRs to see blast radius, missing tests, and check findings before you land the change.",
             },
           ].map((item) => (
             <div key={item.title}>

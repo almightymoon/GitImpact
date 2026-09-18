@@ -56,6 +56,7 @@ describe("webhook delivery idempotency", () => {
       accountType: "Organization",
     });
     expect(await findInstallationIdForOwner("acme")).toBe(12345);
+    expect(await findInstallationIdForOwner("Acme")).toBe(12345);
   });
 });
 

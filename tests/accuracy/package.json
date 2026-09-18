@@ -14,7 +14,9 @@
     "@gitimpact/impact-engine": "workspace:*",
     "@gitimpact/git": "workspace:*",
     "@gitimpact/shared": "workspace:*",
-    "@gitimpact/db": "workspace:*"
+    "@gitimpact/db": "workspace:*",
+    "@gitimpact/ops": "workspace:*",
+    "@gitimpact/queue": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

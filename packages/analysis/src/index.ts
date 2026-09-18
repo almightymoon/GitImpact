@@ -6,8 +6,9 @@ import {
   parseGitHubUrl,
   toGitImpactPath,
   cloneOrUpdateRepository,
+  resolveCommitSha,
 } from "@gitimpact/git";
-import { parseRepository } from "@gitimpact/parser";
+import { parseRepository, inventoryRepositoryFiles } from "@gitimpact/parser";
 import { GraphStore, buildGraph } from "@gitimpact/graph";
 import {
   buildImpactReport,
@@ -25,7 +26,14 @@ import {
   isDatabaseConfigured,
   loadAnalysis as loadAnalysisFromDb,
   saveAnalysis as saveAnalysisToDb,
+  findCachedAnalysis,
 } from "@gitimpact/db";
+import {
+  getResourceQuotas,
+  incMetric,
+  log,
+  QuotaExceededError,
+} from "@gitimpact/ops";
 import type {
   AnalysisSummary,
   ChangeRecord,
@@ -52,6 +60,16 @@ import {
 } from "./architecture/index.js";
 import { classifyAnalysisError } from "./access-errors.js";
 import { buildChecksReport, buildInfrastructureNodes } from "./checks/index.js";
+import {
+  analysisExpiresAt,
+  enforceDiscoveryQuotas,
+  enforceGraphQuotas,
+  enforcePrChangedFileQuota,
+  runPhase,
+  schemaVersion,
+  truncationNotice,
+  type PhaseReporter,
+} from "./pipeline-guards.js";
 
 export interface StoredAnalysis {
   id: string;
@@ -68,6 +86,13 @@ export interface StoredAnalysis {
   intelligence?: RepositoryIntelligence;
   checks?: ChecksReport;
   persisted?: boolean;
+  commitSha?: string;
+  baseSha?: string;
+  headSha?: string;
+  schemaVersion?: string;
+  expiresAt?: string;
+  fromCache?: boolean;
+  truncationNotice?: string;
 }
 
 const globalStore = globalThis as typeof globalThis & {
@@ -105,7 +130,10 @@ async function persist(analysis: StoredAnalysis): Promise<StoredAnalysis> {
     await saveAnalysisToDb(analysis);
     return { ...analysis, persisted: true };
   } catch (error) {
-    console.error("[gitimpact] failed to persist analysis", error);
+    log("error", "persist_analysis_failed", {
+      analysisId: analysis.id,
+      detail: error instanceof Error ? error.message : String(error),
+    });
     return { ...analysis, persisted: false };
   }
 }
@@ -220,52 +248,137 @@ function resolveChangedNodes(
 
 export async function analyzeRepositoryUrl(
   inputUrl: string,
-  options?: { depth?: number; cacheDir?: string; maxFiles?: number },
+  options?: {
+    depth?: number;
+    cacheDir?: string;
+    maxFiles?: number;
+    onPhase?: PhaseReporter;
+    installationId?: number;
+    token?: string;
+    skipCache?: boolean;
+  },
 ): Promise<StoredAnalysis> {
   const parsedUrl = parseGitHubUrl(inputUrl);
   const cacheDir = options?.cacheDir ?? defaultCacheDir();
   const depth = options?.depth ?? 3;
+  const quotas = getResourceQuotas();
+  const onPhase = options?.onPhase;
+  const wallStarted = Date.now();
 
   if (parsedUrl.kind === "pull_request" && parsedUrl.prNumber) {
     return analyzePullRequest(parsedUrl.owner, parsedUrl.repo, parsedUrl.prNumber, {
       depth,
       cacheDir,
       maxFiles: options?.maxFiles,
+      onPhase,
+      installationId: options?.installationId,
+      token: options?.token,
+      skipCache: options?.skipCache,
     });
   }
 
-  const repository = await cloneOrUpdateRepository({
-    owner: parsedUrl.owner,
-    repo: parsedUrl.repo,
-    cacheDir,
-    branch: parsedUrl.branch,
-  });
+  const repository = await runPhase(
+    "CLONE",
+    () =>
+      cloneOrUpdateRepository({
+        owner: parsedUrl.owner,
+        repo: parsedUrl.repo,
+        cacheDir,
+        branch: parsedUrl.branch,
+        token: options?.token,
+      }),
+    { onPhase, timeoutMs: Math.min(quotas.maxAnalysisDurationMs, 180_000), quotas },
+  );
 
   if (!repository.clonePath) {
     throw new Error("Repository clone path missing");
   }
 
-  const parsed = await parseRepository(repository.clonePath, {
-    maxFiles: options?.maxFiles ?? 1500,
-  });
-  const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
+  const commitSha = await resolveCommitSha(repository.clonePath);
 
-  const intelligence = await buildRepositoryIntelligence({
-    owner: parsedUrl.owner,
-    repo: parsedUrl.repo,
-    clonePath: repository.clonePath,
-    files: parsed.files,
-    graphNodes: graph.nodes,
-    graphEdges: graph.edges,
-    routes,
-    frameworks,
-    languages: parsed.languages,
-    packageDeps: parsed.packageDeps,
-    analysisHealth: parsed.analysisHealth,
-    allRelativeFiles: parsed.allRelativeFiles,
-  });
+  if (!options?.skipCache && isDatabaseConfigured()) {
+    const cached = await findCachedAnalysis({
+      owner: parsedUrl.owner,
+      repo: parsedUrl.repo,
+      commitSha,
+      schemaVersion: schemaVersion(),
+    });
+    if (cached) {
+      incMetric("cache_hit_total", 1, { kind: "repository" });
+      const hydrated: StoredAnalysis = {
+        ...cached,
+        persisted: true,
+        fromCache: true,
+        commitSha,
+        schemaVersion: schemaVersion(),
+      };
+      getMemoryStore().set(hydrated.id, hydrated);
+      return hydrated;
+    }
+    incMetric("cache_miss_total", 1, { kind: "repository" });
+  }
 
-  // Attach cached PR impact metrics when available
+  if (Date.now() - wallStarted > quotas.maxAnalysisDurationMs) {
+    throw new QuotaExceededError(
+      "ANALYSIS_TIMEOUT",
+      "Analysis exceeded the configured processing limit during clone.",
+      `phase=CLONE`,
+      "CLONE",
+    );
+  }
+
+  const inventory = await runPhase(
+    "DISCOVERY",
+    () => inventoryRepositoryFiles(repository.clonePath!),
+    { onPhase, quotas },
+  );
+  enforceDiscoveryQuotas(inventory.allRelativeFiles.length, quotas);
+
+  const parseCap = Math.min(
+    options?.maxFiles ?? Number(process.env.GITIMPACT_MAX_FILES ?? 800),
+    quotas.maxRepositoryFiles,
+  );
+
+  const parsed = await runPhase(
+    "PARSER",
+    () =>
+      parseRepository(repository.clonePath!, {
+        maxFiles: parseCap,
+      }),
+    { onPhase, timeoutMs: Math.min(quotas.maxAnalysisDurationMs, 180_000), quotas },
+  );
+
+  const { graph, store, routes, frameworks } = await runPhase(
+    "GRAPH",
+    async () => buildGraphFromParse(parsed),
+    { onPhase, quotas },
+  );
+  enforceGraphQuotas(graph, quotas);
+  incMetric("repo_files_processed", parsed.files.length);
+  incMetric("graph_nodes_created", graph.nodes.length);
+  incMetric("graph_edges_created", graph.edges.length);
+
+  const intelligence = await runPhase(
+    "ARCHITECTURE",
+    () =>
+      buildRepositoryIntelligence({
+        owner: parsedUrl.owner,
+        repo: parsedUrl.repo,
+        clonePath: repository.clonePath!,
+        files: parsed.files,
+        graphNodes: graph.nodes,
+        graphEdges: graph.edges,
+        routes,
+        frameworks,
+        languages: parsed.languages,
+        packageDeps: parsed.packageDeps,
+        analysisHealth: parsed.analysisHealth,
+        allRelativeFiles: parsed.allRelativeFiles,
+        token: options?.token,
+      }),
+    { onPhase, quotas },
+  );
+
   for (const pr of intelligence.openPullRequests) {
     const cached = getMemoryStore().get(analysisId(parsedUrl.owner, parsedUrl.repo, pr.number));
     if (cached?.prOverview) {
@@ -278,14 +391,26 @@ export async function analyzeRepositoryUrl(
     }
   }
 
-  const finalized = await finalizeChecks(graph, {
-    files: parsed.files,
-    contentsByPath: parsed.contentsByPath,
-    packageDeps: parsed.packageDeps,
-    clonePath: repository.clonePath,
-    allRelativeFiles: parsed.allRelativeFiles,
-    infraSignals: intelligence.infraSignals,
-  });
+  const finalized = await runPhase(
+    "CHECKS",
+    () =>
+      finalizeChecks(graph, {
+        files: parsed.files,
+        contentsByPath: parsed.contentsByPath,
+        packageDeps: parsed.packageDeps,
+        clonePath: repository.clonePath!,
+        allRelativeFiles: parsed.allRelativeFiles,
+        infraSignals: intelligence.infraSignals,
+      }),
+    { onPhase, quotas },
+  );
+
+  const notice = truncationNotice(
+    parsed.analysisHealth.filesDiscovered,
+    parsed.analysisHealth.filesParsed,
+    parsed.analysisHealth.truncated,
+  );
+  const expiresAt = analysisExpiresAt("repository", quotas).toISOString();
 
   const stored: StoredAnalysis = {
     id: analysisId(parsedUrl.owner, parsedUrl.repo),
@@ -304,8 +429,13 @@ export async function analyzeRepositoryUrl(
     routes,
     intelligence,
     checks: finalized.checks,
+    commitSha,
+    schemaVersion: schemaVersion(),
+    expiresAt,
+    truncationNotice: notice,
   };
 
+  await onPhase?.("PERSISTENCE");
   return persist(stored);
 }
 
@@ -319,10 +449,14 @@ export async function analyzePullRequest(
     maxFiles?: number;
     installationId?: number;
     token?: string;
+    onPhase?: PhaseReporter;
+    skipCache?: boolean;
   },
 ): Promise<StoredAnalysis> {
   const cacheDir = options?.cacheDir ?? defaultCacheDir();
   const depth = options?.depth ?? 3;
+  const quotas = getResourceQuotas();
+  const onPhase = options?.onPhase;
 
   const { resolveGitHubToken } = await import("@gitimpact/git");
   const { findInstallationIdForOwner } = await import("@gitimpact/db");
@@ -332,62 +466,136 @@ export async function analyzePullRequest(
   const token =
     options?.token ?? (await resolveGitHubToken({ installationId }));
 
-  const [pullRequest, prFiles] = await Promise.all([
-    getPullRequestMeta(owner, repo, number, token),
-    getPullRequestFiles(owner, repo, number, token),
-  ]);
+  const [pullRequest, prFiles] = await runPhase(
+    "DISCOVERY",
+    () =>
+      Promise.all([
+        getPullRequestMeta(owner, repo, number, token),
+        getPullRequestFiles(owner, repo, number, token),
+      ]),
+    { onPhase, quotas },
+  );
 
-  const repository = await fetchPullRequestHead({
-    owner,
-    repo,
-    number,
-    cacheDir,
-    headBranch: pullRequest.headBranch,
-    token,
-  });
+  enforcePrChangedFileQuota(prFiles.length, quotas);
+
+  if (!options?.skipCache && isDatabaseConfigured() && pullRequest.headSha) {
+    const cached = await findCachedAnalysis({
+      owner,
+      repo,
+      prNumber: number,
+      headSha: pullRequest.headSha,
+      schemaVersion: schemaVersion(),
+    });
+    if (cached) {
+      incMetric("cache_hit_total", 1, { kind: "pull_request" });
+      const hydrated: StoredAnalysis = {
+        ...cached,
+        persisted: true,
+        fromCache: true,
+        headSha: pullRequest.headSha,
+        schemaVersion: schemaVersion(),
+      };
+      getMemoryStore().set(hydrated.id, hydrated);
+      return hydrated;
+    }
+    incMetric("cache_miss_total", 1, { kind: "pull_request" });
+  }
+
+  const repository = await runPhase(
+    "CLONE",
+    () =>
+      fetchPullRequestHead({
+        owner,
+        repo,
+        number,
+        cacheDir,
+        headBranch: pullRequest.headBranch,
+        token,
+      }),
+    { onPhase, timeoutMs: Math.min(quotas.maxAnalysisDurationMs, 180_000), quotas },
+  );
 
   if (!repository.clonePath) {
     throw new Error("Repository clone path missing");
   }
 
-  const parsed = await parseRepository(repository.clonePath, {
-    maxFiles: options?.maxFiles ?? 1500,
-  });
-  const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
+  const commitSha = await resolveCommitSha(repository.clonePath);
+  const parseCap = Math.min(
+    options?.maxFiles ?? Number(process.env.GITIMPACT_MAX_FILES ?? 800),
+    quotas.maxRepositoryFiles,
+  );
+
+  const parsed = await runPhase(
+    "PARSER",
+    () =>
+      parseRepository(repository.clonePath!, {
+        maxFiles: parseCap,
+      }),
+    { onPhase, timeoutMs: Math.min(quotas.maxAnalysisDurationMs, 180_000), quotas },
+  );
+  enforceDiscoveryQuotas(parsed.allRelativeFiles.length, quotas);
+
+  const { graph, store, routes, frameworks } = await runPhase(
+    "GRAPH",
+    async () => buildGraphFromParse(parsed),
+    { onPhase, quotas },
+  );
+  enforceGraphQuotas(graph, quotas);
 
   const changes = buildChangeRecords(prFiles);
   const changedNodes = resolveChangedNodes(store, changes, parsed.contentsByPath);
-  const impact = buildImpactReport(store, changedNodes, depth);
+  const impact = await runPhase(
+    "IMPACT",
+    async () => buildImpactReport(store, changedNodes, depth),
+    { onPhase, quotas },
+  );
   const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
 
-  const intelligence = await buildRepositoryIntelligence({
-    owner,
-    repo,
-    clonePath: repository.clonePath,
-    files: parsed.files,
-    graphNodes: graph.nodes,
-    graphEdges: graph.edges,
-    routes,
-    frameworks,
-    languages: parsed.languages,
-    packageDeps: parsed.packageDeps,
-    analysisHealth: parsed.analysisHealth,
-    allRelativeFiles: parsed.allRelativeFiles,
-    token,
-    skipOpenPrs: true,
-  });
+  const intelligence = await runPhase(
+    "ARCHITECTURE",
+    () =>
+      buildRepositoryIntelligence({
+        owner,
+        repo,
+        clonePath: repository.clonePath!,
+        files: parsed.files,
+        graphNodes: graph.nodes,
+        graphEdges: graph.edges,
+        routes,
+        frameworks,
+        languages: parsed.languages,
+        packageDeps: parsed.packageDeps,
+        analysisHealth: parsed.analysisHealth,
+        allRelativeFiles: parsed.allRelativeFiles,
+        token,
+        skipOpenPrs: true,
+      }),
+    { onPhase, quotas },
+  );
 
-  const finalized = await finalizeChecks(graph, {
-    files: parsed.files,
-    contentsByPath: parsed.contentsByPath,
-    packageDeps: parsed.packageDeps,
-    clonePath: repository.clonePath,
-    allRelativeFiles: parsed.allRelativeFiles,
-    infraSignals: intelligence.infraSignals,
-    changes,
-    impact,
-    prOverview,
-  });
+  const finalized = await runPhase(
+    "CHECKS",
+    () =>
+      finalizeChecks(graph, {
+        files: parsed.files,
+        contentsByPath: parsed.contentsByPath,
+        packageDeps: parsed.packageDeps,
+        clonePath: repository.clonePath!,
+        allRelativeFiles: parsed.allRelativeFiles,
+        infraSignals: intelligence.infraSignals,
+        changes,
+        impact,
+        prOverview,
+      }),
+    { onPhase, quotas },
+  );
+
+  const notice = truncationNotice(
+    parsed.analysisHealth.filesDiscovered,
+    parsed.analysisHealth.filesParsed,
+    parsed.analysisHealth.truncated,
+  );
+  const expiresAt = analysisExpiresAt("pull_request", quotas).toISOString();
 
   const stored: StoredAnalysis = {
     id: analysisId(owner, repo, number),
@@ -410,8 +618,14 @@ export async function analyzePullRequest(
     routes,
     intelligence,
     checks: finalized.checks,
+    commitSha,
+    headSha: pullRequest.headSha,
+    schemaVersion: schemaVersion(),
+    expiresAt,
+    truncationNotice: notice,
   };
 
+  await onPhase?.("PERSISTENCE");
   return persist(stored);
 }
 

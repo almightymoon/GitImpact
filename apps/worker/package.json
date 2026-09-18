@@ -1,0 +1,28 @@
+{
+  "name": "@gitimpact/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@gitimpact/analysis": "workspace:*",
+    "@gitimpact/db": "workspace:*",
+    "@gitimpact/git": "workspace:*",
+    "@gitimpact/graph": "workspace:*",
+    "@gitimpact/impact-engine": "workspace:*",
+    "@gitimpact/ops": "workspace:*",
+    "@gitimpact/queue": "workspace:*",
+    "@gitimpact/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

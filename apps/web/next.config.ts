@@ -10,8 +10,9 @@ const nextConfig: NextConfig = {
     "@gitimpact/impact-engine",
     "@gitimpact/framework-detector",
     "@gitimpact/db",
+    "@gitimpact/ops",
   ],
-  serverExternalPackages: ["ts-morph", "postgres"],
+  serverExternalPackages: ["ts-morph", "postgres", "bullmq", "ioredis"],
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",

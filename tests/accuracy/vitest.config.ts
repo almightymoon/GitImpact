@@ -10,6 +10,7 @@ export default defineConfig({
       "ux-presentation.test.ts",
       "checks.test.ts",
       "architecture-map.test.ts",
+      "v1-ops.test.ts",
     ],
     exclude: ["cases/**", "node_modules/**"],
     testTimeout: 60_000,

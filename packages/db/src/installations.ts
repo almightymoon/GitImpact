@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "./client.js";
 import { githubInstallations, webhookDeliveries } from "./schema.js";
 
@@ -162,18 +162,25 @@ export async function deleteGitHubInstallation(installationId: number): Promise<
 export async function findInstallationIdForOwner(
   owner: string,
 ): Promise<number | undefined> {
+  const normalized = owner.toLowerCase();
   const db = getDb();
   if (!db) {
-    return memoryInstallations.get(owner.toLowerCase())?.installationId;
+    return memoryInstallations.get(normalized)?.installationId;
   }
-  const rows = await db
-    .select()
-    .from(githubInstallations)
-    .where(eq(githubInstallations.accountLogin, owner))
-    .limit(1);
-  const row = rows[0];
-  if (!row || row.suspendedAt) return undefined;
-  return row.installationId;
+  try {
+    const rows = await db
+      .select()
+      .from(githubInstallations)
+      .where(sql`lower(${githubInstallations.accountLogin}) = ${normalized}`)
+      .limit(1);
+    const row = rows[0];
+    if (!row || row.suspendedAt) return undefined;
+    return row.installationId;
+  } catch (error) {
+    // Missing migration / down Postgres must not block public PR analysis.
+    console.error("[gitimpact] installation lookup failed", error);
+    return memoryInstallations.get(normalized)?.installationId;
+  }
 }
 
 /** Test helper — clear in-memory stores */

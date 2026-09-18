@@ -109,42 +109,47 @@ export async function loadAnalysis(id: string): Promise<PersistedAnalysis | null
   const db = getDb();
   if (!db) return null;
 
-  const rows = await db.select().from(analyses).where(eq(analyses.id, id)).limit(1);
-  const row = rows[0];
-  if (!row) return null;
+  try {
+    const rows = await db.select().from(analyses).where(eq(analyses.id, id)).limit(1);
+    const row = rows[0];
+    if (!row) return null;
 
-  const repoRows = await db
-    .select()
-    .from(repositories)
-    .where(eq(repositories.id, row.repositoryId))
-    .limit(1);
-  const repo = repoRows[0];
-  if (!repo) return null;
+    const repoRows = await db
+      .select()
+      .from(repositories)
+      .where(eq(repositories.id, row.repositoryId))
+      .limit(1);
+    const repo = repoRows[0];
+    if (!repo) return null;
 
-  return {
-    id: row.id,
-    createdAt: row.createdAt.toISOString(),
-    repository: {
-      owner: repo.owner,
-      name: repo.name,
-      url: repo.url,
-      defaultBranch: repo.defaultBranch,
-    },
-    summary: row.summary as AnalysisSummary,
-    graph: row.graph as DependencyGraph,
-    routePath: row.routePath,
-    pullRequest: (row.pullRequest as PullRequestMeta | null) ?? undefined,
-    changes: (row.changes as ChangeRecord[] | null) ?? undefined,
-    impact: (row.impact as ImpactReport | null) ?? undefined,
-    prOverview: (row.prOverview as PullRequestImpactOverview | null) ?? undefined,
-    routes: (row.routes as DetectedRoute[] | null) ?? undefined,
-    intelligence: (row.intelligence as RepositoryIntelligence | null) ?? undefined,
-    checks: (row.checks as ChecksReport | null) ?? undefined,
-  };
+    return {
+      id: row.id,
+      createdAt: row.createdAt.toISOString(),
+      repository: {
+        owner: repo.owner,
+        name: repo.name,
+        url: repo.url,
+        defaultBranch: repo.defaultBranch,
+      },
+      summary: row.summary as AnalysisSummary,
+      graph: row.graph as DependencyGraph,
+      routePath: row.routePath,
+      pullRequest: (row.pullRequest as PullRequestMeta | null) ?? undefined,
+      changes: (row.changes as ChangeRecord[] | null) ?? undefined,
+      impact: (row.impact as ImpactReport | null) ?? undefined,
+      prOverview: (row.prOverview as PullRequestImpactOverview | null) ?? undefined,
+      routes: (row.routes as DetectedRoute[] | null) ?? undefined,
+      intelligence: (row.intelligence as RepositoryIntelligence | null) ?? undefined,
+      checks: (row.checks as ChecksReport | null) ?? undefined,
+    };
+  } catch (error) {
+    console.error("[gitimpact] loadAnalysis failed", error);
+    return null;
+  }
 }
 
 export { isDatabaseConfigured };
-export { analyses, repositories, githubInstallations, webhookDeliveries } from "./schema.js";
+export { analyses, repositories, githubInstallations, webhookDeliveries, analysisJobs } from "./schema.js";
 export { getDb, createDb, closeDb } from "./client.js";
 export {
   claimWebhookDelivery,
@@ -156,3 +161,24 @@ export {
   type DeliveryStatus,
   type DeliveryRecord,
 } from "./installations.js";
+export {
+  createAnalysisJob,
+  updateAnalysisJob,
+  getAnalysisJob,
+  findActiveJobByDedupeKey,
+  listFailedJobs,
+  listDeadLetterJobs,
+  purgeExpiredJobs,
+  clearMemoryJobsForTests,
+} from "./jobs.js";
+export {
+  findCachedAnalysis,
+  listRecentRepositories,
+  purgeExpiredAnalyses,
+  deleteAnalysesForRepository,
+  purgeOldWebhookDeliveries,
+  cacheKeyParts,
+  type CachedAnalysisRecord,
+  type CacheLookup,
+  type RecentRepository,
+} from "./cache.js";

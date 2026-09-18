@@ -5,6 +5,90 @@ import {
   parseGitHubUrl,
 } from "@gitimpact/analysis";
 
+async function runAdmin(args: string[]): Promise<void> {
+  const [subcommand, target] = args;
+  const { listDeadLetterJobs, listFailedJobs, retryDeadLetterJob, getAnalysisJob } =
+    await import("@gitimpact/queue");
+  const {
+    deleteAnalysesForRepository,
+    purgeExpiredAnalyses,
+    purgeExpiredJobs,
+    purgeOldWebhookDeliveries,
+  } = await import("@gitimpact/db");
+  const { validateConfig, getMetricsSnapshot, redisPing } = await import("@gitimpact/ops");
+
+  if (!subcommand || subcommand === "help") {
+    console.log(`gitimpact admin
+
+  gitimpact admin health
+  gitimpact admin jobs failed
+  gitimpact admin jobs dead
+  gitimpact admin jobs retry <id>
+  gitimpact admin jobs inspect <id>
+  gitimpact admin cache purge <owner/repo>
+  gitimpact admin retention run
+`);
+    return;
+  }
+
+  if (subcommand === "health") {
+    const config = validateConfig();
+    const redisOk = await redisPing();
+    console.log(JSON.stringify({ config, redisOk, metrics: getMetricsSnapshot() }, null, 2));
+    if (!config.ok) process.exit(1);
+    return;
+  }
+
+  if (subcommand === "jobs") {
+    const action = target;
+    const id = args[2];
+    if (action === "failed") {
+      console.log(JSON.stringify(await listFailedJobs(50), null, 2));
+      return;
+    }
+    if (action === "dead") {
+      console.log(JSON.stringify(await listDeadLetterJobs(50), null, 2));
+      return;
+    }
+    if (action === "inspect" && id) {
+      console.log(JSON.stringify(await getAnalysisJob(id), null, 2));
+      return;
+    }
+    if (action === "retry" && id) {
+      const result = await retryDeadLetterJob(id);
+      console.log(JSON.stringify(result ?? { error: "not found or not retryable" }, null, 2));
+      return;
+    }
+    console.error("Unknown jobs action. Try: failed | dead | inspect <id> | retry <id>");
+    process.exit(1);
+  }
+
+  if (subcommand === "cache" && target === "purge" && args[2]) {
+    const [owner, repo] = args[2].split("/");
+    if (!owner || !repo) {
+      console.error("Expected owner/repo");
+      process.exit(1);
+    }
+    const n = await deleteAnalysesForRepository(owner, repo);
+    console.log(`Purged ${n} analysis record(s) for ${owner}/${repo}`);
+    return;
+  }
+
+  if (subcommand === "retention" && target === "run") {
+    const now = new Date();
+    const jobCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const webhookCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const analyses = await purgeExpiredAnalyses(now);
+    const jobs = await purgeExpiredJobs(jobCutoff);
+    const webhooks = await purgeOldWebhookDeliveries(webhookCutoff);
+    console.log(JSON.stringify({ analyses, jobs, webhooks }, null, 2));
+    return;
+  }
+
+  console.error(`Unknown admin command: ${subcommand}`);
+  process.exit(1);
+}
+
 async function main() {
   const [, , command, target, ...rest] = process.argv;
 
@@ -15,13 +99,23 @@ Usage:
   gitimpact analyze <github-url>
   gitimpact comment <github-pr-url> [--dry-run]
   gitimpact diff <github-pr-url>
+  gitimpact admin <subcommand>
 
 Examples:
   gitimpact analyze github.com/owner/repo
   gitimpact analyze github.com/owner/repo/pull/123
   gitimpact comment github.com/owner/repo/pull/123
   gitimpact comment github.com/owner/repo/pull/123 --dry-run
+  gitimpact admin health
+  gitimpact admin jobs failed
+  gitimpact admin jobs retry job_abc
+  gitimpact admin cache purge owner/repo
 `);
+    return;
+  }
+
+  if (command === "admin") {
+    await runAdmin([target, ...rest].filter(Boolean));
     return;
   }
 

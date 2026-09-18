@@ -1,8 +1,52 @@
 import type { AnalysisErrorPayload, AnalysisIssueCode } from "@gitimpact/shared";
 
 export function classifyAnalysisError(error: unknown): AnalysisErrorPayload {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string"
+  ) {
+    const code = (error as {
+      code: AnalysisIssueCode;
+      message?: string;
+      detail?: string;
+    }).code;
+    const message =
+      (error as { message?: string }).message ?? "Analysis failed.";
+    const detail = (error as { detail?: string }).detail;
+    if (
+      code === "REPOSITORY_TOO_LARGE" ||
+      code === "FILE_LIMIT_EXCEEDED" ||
+      code === "GRAPH_LIMIT_EXCEEDED" ||
+      code === "ANALYSIS_TIMEOUT" ||
+      code === "GITHUB_RATE_LIMITED" ||
+      code === "INVALID_REPOSITORY_URL" ||
+      code === "UNSUPPORTED_REPOSITORY"
+    ) {
+      return {
+        code,
+        message,
+        detail,
+        action: code === "GITHUB_RATE_LIMITED" ? "retry" : "none",
+      };
+    }
+  }
+
   const message = error instanceof Error ? error.message : String(error);
   const lower = message.toLowerCase();
+
+  if (/rate limit/i.test(lower)) {
+    return {
+      code: "GITHUB_RATE_LIMITED",
+      message:
+        error instanceof Error
+          ? error.message
+          : "GitHub's API rate limit has been reached.",
+      detail: message,
+      action: "retry",
+    };
+  }
 
   if (
     /not found or private|authentication failed|could not read username|bad credentials|401|403/.test(

@@ -135,7 +135,7 @@ function countByFile(
   };
 }
 
-function clusterDeployment(components: ArchitectureComponent[]): ArchitectureComponent[] {
+export function clusterDeployment(components: ArchitectureComponent[]): ArchitectureComponent[] {
   const deployKids = components.filter(
     (c) => c.band === "deployment" && c.level !== "COMPONENT" && c.level !== "CODE",
   );
@@ -423,7 +423,7 @@ function buildWalkthrough(
   return steps;
 }
 
-function capSystems(components: ArchitectureComponent[]): ArchitectureComponent[] {
+export function capSystems(components: ArchitectureComponent[]): ArchitectureComponent[] {
   const systems = components.filter((c) => (c.level ?? "SYSTEM") === "SYSTEM");
   if (systems.length <= SYSTEM_CAP) return components;
 

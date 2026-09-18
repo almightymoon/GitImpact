@@ -1,0 +1,79 @@
+# Production-oriented stack: web + worker + postgres + redis
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gitimpact
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gitimpact}
+      POSTGRES_DB: gitimpact
+    volumes:
+      - gitimpact_pg:/var/lib/postgresql/data
+      - ./packages/db/drizzle/0000_init.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
+      - ./packages/db/drizzle/0001_github_app.sql:/docker-entrypoint-initdb.d/01_github_app.sql:ro
+      - ./packages/db/drizzle/0002_intelligence.sql:/docker-entrypoint-initdb.d/02_intelligence.sql:ro
+      - ./packages/db/drizzle/0003_checks.sql:/docker-entrypoint-initdb.d/03_checks.sql:ro
+      - ./packages/db/drizzle/0004_v1_jobs.sql:/docker-entrypoint-initdb.d/04_v1_jobs.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitimpact -d gitimpact"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://gitimpact:${POSTGRES_PASSWORD:-gitimpact}@postgres:5432/gitimpact
+      REDIS_URL: redis://redis:6379
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITIMPACT_PUBLIC_URL: ${GITIMPACT_PUBLIC_URL}
+      GITIMPACT_MAX_FILES: ${GITIMPACT_MAX_FILES:-800}
+      GITIMPACT_ANALYZE_RATE_LIMIT: ${GITIMPACT_ANALYZE_RATE_LIMIT:-10}
+      GITIMPACT_ANALYZE_RATE_WINDOW_SECONDS: ${GITIMPACT_ANALYZE_RATE_WINDOW_SECONDS:-60}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://gitimpact:${POSTGRES_PASSWORD:-gitimpact}@postgres:5432/gitimpact
+      REDIS_URL: redis://redis:6379
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
+      GITIMPACT_PUBLIC_URL: ${GITIMPACT_PUBLIC_URL}
+      GITIMPACT_MAX_FILES: ${GITIMPACT_MAX_FILES:-800}
+      GITIMPACT_WORKER_CONCURRENCY: ${GITIMPACT_WORKER_CONCURRENCY:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  gitimpact_pg:

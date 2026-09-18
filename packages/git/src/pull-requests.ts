@@ -1,4 +1,4 @@
-import { githubApiHeaders } from "./github-api.js";
+import { githubFetch } from "./github-api.js";
 import { resolveGitHubToken } from "./github-app.js";
 import type { OpenPullRequestSummary } from "@gitimpact/shared";
 
@@ -12,10 +12,16 @@ export async function listOpenPullRequests(
 ): Promise<OpenPullRequestSummary[]> {
   const token = options?.token ?? (await resolveGitHubToken());
   const limit = options?.limit ?? 30;
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=${limit}&sort=updated&direction=desc`,
-    { headers: githubApiHeaders(token) },
-  );
+  let response: Response;
+  try {
+    response = await githubFetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=${limit}&sort=updated&direction=desc`,
+      { token },
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error) throw error;
+    return [];
+  }
 
   if (response.status === 404 || response.status === 401 || response.status === 403) {
     return [];

@@ -153,6 +153,9 @@ export async function POST(request: Request) {
   }
 
   await updateWebhookDelivery(deliveryId, { status: "queued" });
+  const requestId =
+    request.headers.get("x-request-id") ||
+    `wh_${deliveryId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
   const queued = await enqueuePrAnalysis({
     deliveryId,
     owner,
@@ -162,6 +165,7 @@ export async function POST(request: Request) {
     installationId,
     headSha: payload.pull_request?.head?.sha,
     analysisBaseUrl: process.env.GITIMPACT_PUBLIC_URL,
+    requestId,
   });
 
   return NextResponse.json(
@@ -169,11 +173,14 @@ export async function POST(request: Request) {
       ok: true,
       accepted: true,
       deliveryId,
+      jobId: queued.jobId,
       queue: queued.mode,
+      deduped: queued.deduped ?? false,
+      requestId,
       owner,
       repo,
       number,
     },
-    { status: 202 },
+    { status: 202, headers: { "x-request-id": requestId } },
   );
 }

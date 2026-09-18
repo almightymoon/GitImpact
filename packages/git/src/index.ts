@@ -15,9 +15,30 @@ export interface ParsedGitHubUrl {
 }
 
 const GITHUB_HOSTS = new Set(["github.com", "www.github.com"]);
+const SAFE_NAME = /^[A-Za-z0-9_.-]+$/;
+
+function assertSafeGitHubName(value: string, label: string): void {
+  if (!SAFE_NAME.test(value) || value.includes("..")) {
+    const err = new Error(`Invalid ${label} in repository URL.`);
+    (err as Error & { code?: string }).code = "INVALID_REPOSITORY_URL";
+    throw err;
+  }
+}
+
+export function redactGitCredentials(text: string): string {
+  return text
+    .replace(/x-access-token:[^@\s]+@/gi, "x-access-token:[redacted]@")
+    .replace(/\/\/[^:@\s]+:[^@\s]+@/g, "//[redacted]@")
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [redacted]");
+}
 
 export function parseGitHubUrl(input: string): ParsedGitHubUrl {
   const trimmed = input.trim();
+  if (/^(file|git|ssh|git\+ssh):/i.test(trimmed)) {
+    const err = new Error("Only HTTPS GitHub repository URLs are supported.");
+    (err as Error & { code?: string }).code = "INVALID_REPOSITORY_URL";
+    throw err;
+  }
   const withProtocol = /^https?:\/\//i.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
@@ -26,20 +47,28 @@ export function parseGitHubUrl(input: string): ParsedGitHubUrl {
   try {
     url = new URL(withProtocol);
   } catch {
-    throw new Error(`Invalid GitHub URL: ${input}`);
+    const err = new Error(`Invalid GitHub URL: ${input}`);
+    (err as Error & { code?: string }).code = "INVALID_REPOSITORY_URL";
+    throw err;
   }
 
   if (!GITHUB_HOSTS.has(url.hostname.toLowerCase())) {
-    throw new Error("Only GitHub repository and pull request URLs are supported in MVP");
+    const err = new Error("Only GitHub repository and pull request URLs are supported");
+    (err as Error & { code?: string }).code = "UNSUPPORTED_REPOSITORY";
+    throw err;
   }
 
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts.length < 2) {
-    throw new Error("Expected a GitHub URL like github.com/owner/repo");
+    const err = new Error("Expected a GitHub URL like github.com/owner/repo");
+    (err as Error & { code?: string }).code = "INVALID_REPOSITORY_URL";
+    throw err;
   }
 
   const [owner, repoRaw, maybePull, prNumber] = parts;
   const repo = repoRaw.replace(/\.git$/, "");
+  assertSafeGitHubName(owner, "owner");
+  assertSafeGitHubName(repo, "repository name");
 
   if (maybePull === "pull" && prNumber && /^\d+$/.test(prNumber)) {
     return {
@@ -152,19 +181,21 @@ export async function cloneOrUpdateRepository(options: {
 }
 
 function friendlyGitError(error: unknown, url: string): string {
-  const raw =
+  void url;
+  const raw = redactGitCredentials(
     error instanceof Error
       ? `${error.message}${"stderr" in error && typeof (error as { stderr?: unknown }).stderr === "string" ? `\n${(error as { stderr: string }).stderr}` : ""}`
-      : String(error);
+      : String(error),
+  );
 
   if (/Could not resolve host|nodename nor servname|getaddrinfo/i.test(raw)) {
-    return `Could not reach GitHub (DNS/network). Check your internet connection, then retry. Tried: ${url}`;
+    return `Could not reach GitHub (DNS/network). Check your internet connection, then retry.`;
   }
   if (/Repository not found|Authentication failed|could not read Username/i.test(raw)) {
-    return `GitHub repository not found or private. For private repos, set GITHUB_TOKEN. Tried: ${url}`;
+    return `GitHub repository not found or private. Private repositories require GitHub App authorization.`;
   }
   if (/timed out|ETIMEDOUT|timeout/i.test(raw)) {
-    return `Git clone timed out while fetching ${url}. Retry in a moment.`;
+    return `Git clone timed out while fetching repository. Retry in a moment.`;
   }
 
   const compact = raw
@@ -174,6 +205,14 @@ function friendlyGitError(error: unknown, url: string): string {
     .slice(0, 4)
     .join(" ");
   return `Failed to clone repository: ${compact}`;
+}
+
+export async function resolveCommitSha(clonePath: string): Promise<string> {
+  const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
+    cwd: clonePath,
+    timeout: 30_000,
+  });
+  return stdout.trim();
 }
 
 export async function fetchPullRequestHead(options: {
@@ -195,16 +234,22 @@ export async function fetchPullRequestHead(options: {
       await execFileAsync("git", ["clone", "--depth", "1", url, clonePath], {
         timeout: 180_000,
       });
+    } else {
+      await execFileAsync("git", ["remote", "set-url", "origin", url], {
+        cwd: clonePath,
+        timeout: 30_000,
+      });
     }
 
-    // GitHub exposes PR heads as pull/<n>/head
+    // Fetch into FETCH_HEAD only — never into a local branch that may already
+    // be checked out (git refuses: "refusing to fetch into branch ... checked out").
     await execFileAsync(
       "git",
-      ["fetch", "--depth", "1", "origin", `pull/${number}/head:pr-${number}`],
+      ["fetch", "--depth", "1", "origin", `pull/${number}/head`],
       { cwd: clonePath, timeout: 120_000 },
     );
 
-    await execFileAsync("git", ["checkout", `pr-${number}`], {
+    await execFileAsync("git", ["checkout", "--force", "--detach", "FETCH_HEAD"], {
       cwd: clonePath,
       timeout: 60_000,
     });
@@ -227,13 +272,11 @@ export async function getPullRequestMeta(
   number: number,
   token?: string,
 ): Promise<PullRequestMeta> {
-  const { githubApiHeaders } = await import("./github-api.js");
+  const { githubFetch } = await import("./github-api.js");
   const { resolveGitHubToken } = await import("./github-app.js");
   const auth = token ?? (await resolveGitHubToken());
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`;
-  const response = await fetch(apiUrl, {
-    headers: githubApiHeaders(auth),
-  });
+  const response = await githubFetch(apiUrl, { token: auth });
 
   if (!response.ok) {
     throw new Error(
@@ -274,7 +317,7 @@ export async function getPullRequestFiles(
     deletions?: number;
   }>
 > {
-  const { githubApiHeaders } = await import("./github-api.js");
+  const { githubFetch } = await import("./github-api.js");
   const { resolveGitHubToken } = await import("./github-app.js");
   const auth = token ?? (await resolveGitHubToken());
   const files: Array<{
@@ -287,9 +330,7 @@ export async function getPullRequestFiles(
 
   for (let page = 1; page <= 10; page += 1) {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${number}/files?per_page=100&page=${page}`;
-    const response = await fetch(apiUrl, {
-      headers: githubApiHeaders(auth),
-    });
+    const response = await githubFetch(apiUrl, { token: auth });
 
     if (!response.ok) {
       throw new Error(
@@ -367,7 +408,12 @@ export {
   type CheckConclusion,
 } from "./check-runs.js";
 
-export { githubApiHeaders } from "./github-api.js";
+export {
+  githubApiHeaders,
+  githubFetch,
+  assertGitHubRateLimit,
+  GitHubRateLimitError,
+} from "./github-api.js";
 
 export {
   listOpenPullRequests,

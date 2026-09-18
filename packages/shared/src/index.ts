@@ -346,7 +346,20 @@ export type AnalysisIssueCode =
   | "ACCESS_DENIED"
   | "ANALYSIS_FAILED"
   | "NO_SUPPORTED_FILES"
-  | "NOT_FOUND";
+  | "NOT_FOUND"
+  | "INVALID_REPOSITORY_URL"
+  | "REPOSITORY_NOT_FOUND"
+  | "REPOSITORY_TOO_LARGE"
+  | "UNSUPPORTED_REPOSITORY"
+  | "FILE_LIMIT_EXCEEDED"
+  | "ANALYSIS_TIMEOUT"
+  | "RATE_LIMITED"
+  | "GITHUB_RATE_LIMITED"
+  | "QUEUE_UNAVAILABLE"
+  | "DATABASE_UNAVAILABLE"
+  | "GRAPH_LIMIT_EXCEEDED"
+  | "INVALID_REQUEST"
+  | "INTERNAL_ERROR";
 
 export interface AnalysisHealth {
   filesDiscovered: number;
@@ -543,6 +556,26 @@ export type {
   GitImpactConfig,
   GitImpactChecksConfig,
 } from "./checks.js";
+
+export {
+  ANALYSIS_SCHEMA_VERSION,
+  isRetryableJobError,
+  isDeterministicJobFailure,
+} from "./jobs.js";
+
+export type {
+  JobType,
+  JobStatus,
+  AnalysisPhase,
+  AnalyzeRepositoryJobPayload,
+  AnalyzePullRequestJobPayload,
+  UpdatePrCommentJobPayload,
+  UpdateCheckRunJobPayload,
+  JobPayload,
+  AnalysisJobRecord,
+  ApiErrorCode,
+  ApiErrorBody,
+} from "./jobs.js";
 
 export {
   relationLabel,
