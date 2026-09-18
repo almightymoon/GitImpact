@@ -666,6 +666,15 @@ export type {
   ApiErrorBody,
 } from "./jobs.js";
 
+export type {
+  AnalysisHistorySystem,
+  AnalysisHistoryArchEdge,
+  AnalysisHistoryImpactMetrics,
+  AnalysisHistorySnapshot,
+  AnalysisHistoryEntry,
+  ArchitectureDiff,
+} from "./history.js";
+
 export {
   relationLabel,
   formatRelationshipChain,

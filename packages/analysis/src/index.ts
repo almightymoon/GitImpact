@@ -28,6 +28,9 @@ import {
   saveAnalysis as saveAnalysisToDb,
   findCachedAnalysis,
   putAnalysisCache,
+  appendAnalysisHistory,
+  listAnalysisHistory,
+  getAnalysisHistoryEntry,
 } from "@gitimpact/db";
 import {
   getResourceQuotas,
@@ -145,19 +148,42 @@ async function persist(analysis: StoredAnalysis): Promise<StoredAnalysis> {
     schemaVersion: analysis.schemaVersion ?? schemaVersion(),
     expiresAt: analysis.expiresAt,
   });
-  if (!isDatabaseConfigured()) {
-    return { ...analysis, persisted: false };
+
+  let persisted = false;
+  if (isDatabaseConfigured()) {
+    try {
+      await saveAnalysisToDb(analysis);
+      persisted = true;
+    } catch (error) {
+      log("error", "persist_analysis_failed", {
+        analysisId: analysis.id,
+        detail: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
+
+  // Compact history snapshot (memory always; DB after repository row exists).
   try {
-    await saveAnalysisToDb(analysis);
-    return { ...analysis, persisted: true };
+    const { buildHistorySnapshot } = await import("./compare.js");
+    await appendAnalysisHistory({
+      repositoryId: `${analysis.repository.owner}/${analysis.repository.name}`,
+      analysisId: analysis.id,
+      kind: analysis.pullRequest ? "pull_request" : "repository",
+      commitSha: analysis.commitSha,
+      baseSha: analysis.baseSha,
+      headSha: analysis.headSha,
+      prNumber: analysis.pullRequest?.number,
+      snapshot: buildHistorySnapshot(analysis),
+      createdAt: analysis.createdAt,
+    });
   } catch (error) {
-    log("error", "persist_analysis_failed", {
+    log("warn", "append_history_failed", {
       analysisId: analysis.id,
       detail: error instanceof Error ? error.message : String(error),
     });
-    return { ...analysis, persisted: false };
   }
+
+  return { ...analysis, persisted };
 }
 
 function resolveLanguages(
@@ -1213,6 +1239,19 @@ export {
 } from "@gitimpact/shared";
 
 export { buildChecksReport, buildInfrastructureNodes } from "./checks/index.js";
+
+export {
+  buildHistorySnapshot,
+  compareAnalyses,
+  compareHistorySnapshots,
+  buildReviewReportMarkdown,
+  formatArchitectureDiffMarkdown,
+} from "./compare.js";
+
+export {
+  listAnalysisHistory,
+  getAnalysisHistoryEntry,
+};
 
 export { enqueuePrAnalysis, enqueueRepositoryAnalysis, ensureInlineAnalysisHandlers, type PrAnalysisJob, type RepoAnalysisJob } from "./queue.js";
 export { processPrAnalysisJob } from "./pr-workflow.js";

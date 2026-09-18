@@ -49,6 +49,8 @@
 - v1.1.3 complete: Python class/method + src-layout + service→repo relationship fixtures; `self.method` HIGH CALLS; src-layout `authkit.*` imports; Python packages classify as LIBRARY; Django route noise cut (tests/docs skipped: 749→27); held-out edge review harness (`relationships:review-sample`) — 57 TRUE / 0 FALSE / 8 AMBIGUOUS
 - **v1.1.4 start:** Go surface (`.go` inventory, heuristic parser for packages/imports/funcs/methods/structs/calls), Echo/Gin/Chi/Cobra/GORM detection + route HANDLED_BY, GORM QUERIES, local fixtures + relationship cases, dogfood wave 6 activated (Echo, Cobra, Gin, Chi, GORM, testify); language freeze after Go → v1.2 history/workflows
 - Wave-6 dogfood 6/6: Go modules without HTTP surface classify as LIBRARY (GORM, testify); skip Chi `_examples/` route noise (47→9); surface Go heuristic + anonymous-handler blind spots in dogfood coverage; held-out Go edge review 22 TRUE / 0 FALSE
+- **v1.1.4 complete / language freeze:** JS/TS + Python + Go are the supported languages; no Java/Rust/C# until v1.2 workflow value ships
+- **v1.2 start:** analysis history snapshots (`analysis_history`), architecture + blast-radius compare (`gitimpact compare`, history API), deterministic review reports + export packs, Overview history panel
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 

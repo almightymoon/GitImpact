@@ -7,6 +7,7 @@ import type {
 } from "@gitimpact/shared";
 import { EmptyState } from "@/components/EmptyState";
 import { AnalysisFeedbackLink } from "@/components/AnalysisFeedbackLink";
+import { AnalysisHistoryPanel } from "@/components/AnalysisHistoryPanel";
 
 export function RepoOverviewPanel({
   summary,
@@ -396,6 +397,8 @@ export function RepoOverviewPanel({
           </ul>
         </section>
       ) : null}
+
+      <AnalysisHistoryPanel owner={repository.owner} repo={repository.name} />
 
       <div className="flex flex-wrap gap-2">
         <button

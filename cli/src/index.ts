@@ -6,8 +6,13 @@ import {
   analyzeLocalPath,
   analyzeRepositoryUrl,
   parseGitHubUrl,
+  listAnalysisHistory,
+  compareAnalyses,
+  buildReviewReportMarkdown,
+  formatArchitectureDiffMarkdown,
 } from "@gitimpact/analysis";
 import type { StoredAnalysis } from "@gitimpact/analysis";
+import { mkdir } from "node:fs/promises";
 
 async function runAdmin(args: string[]): Promise<void> {
   const [subcommand, target] = args;
@@ -268,7 +273,11 @@ Usage:
   gitimpact impact <github-pr-url>
   gitimpact impact --from <ref> --to <ref> <local-path>
   gitimpact pr --base <branch> <github-url|local-path>
+  gitimpact history <owner/repo|github-url> [--limit N]
+  gitimpact compare <path-or-url-a> <path-or-url-b>
   gitimpact export architecture.md <github-url|local-path>
+  gitimpact export review.md <github-url|local-path>
+  gitimpact export pack <dir> <github-url|local-path>
   gitimpact comment <github-pr-url> [--dry-run]
   gitimpact diff <github-pr-url>
   gitimpact admin <subcommand>
@@ -277,8 +286,12 @@ Examples:
   gitimpact analyze .
   gitimpact structure .
   gitimpact impact github.com/owner/repo/pull/123
+  gitimpact history owner/repo
+  gitimpact compare ./old-checkout ./new-checkout
   gitimpact pr --base main .
   gitimpact export architecture.md .
+  gitimpact export review.md .
+  gitimpact export pack ./gitimpact-pack .
   gitimpact comment github.com/owner/repo/pull/123 --dry-run
   gitimpact admin health
 `);
@@ -340,13 +353,130 @@ async function main() {
     return;
   }
 
+  if (command === "history") {
+    const target = argv[0];
+    if (!target) {
+      console.error("history requires owner/repo or a GitHub URL");
+      process.exit(1);
+    }
+    const limit = Number(flagValue(argv, "--limit") ?? 20);
+    let owner: string;
+    let repo: string;
+    if (target.includes("github.com") || target.startsWith("http")) {
+      const parsed = parseGitHubUrl(target);
+      owner = parsed.owner;
+      repo = parsed.repo;
+    } else {
+      const [o, r] = target.replace(/^\//, "").split("/");
+      if (!o || !r) {
+        console.error("history requires owner/repo");
+        process.exit(1);
+      }
+      owner = o;
+      repo = r;
+    }
+    const entries = await listAnalysisHistory(owner, repo, {
+      limit: Number.isFinite(limit) ? limit : 20,
+    });
+    if (entries.length === 0) {
+      console.log(`No analysis history for ${owner}/${repo} yet.`);
+      console.log("Run `gitimpact analyze` (with DATABASE_URL) to start recording.");
+      return;
+    }
+    console.log(`# History — ${owner}/${repo} (${entries.length})`);
+    console.log("");
+    for (const entry of entries) {
+      const sha = (entry.commitSha ?? entry.headSha ?? "?").slice(0, 7);
+      const kind = entry.kind === "pull_request" ? `PR #${entry.prNumber}` : "repo";
+      const impact = entry.snapshot.impact
+        ? ` · blast ${entry.snapshot.impact.directCount}/${entry.snapshot.impact.indirectCount}`
+        : "";
+      console.log(
+        `- ${entry.createdAt.slice(0, 19)}  ${sha}  ${kind}  ${entry.snapshot.typeLabel ?? "?"}  routes=${entry.snapshot.summary.apiRoutes}${impact}`,
+      );
+      console.log(`  id=${entry.id}`);
+    }
+    return;
+  }
+
+  if (command === "compare") {
+    const aTarget = argv[0];
+    const bTarget = argv[1];
+    if (!aTarget || !bTarget) {
+      console.error("compare requires two paths or URLs");
+      process.exit(1);
+    }
+    console.log("Analyzing A…");
+    const a = await loadAnalysis(aTarget);
+    console.log("Analyzing B…");
+    const b = await loadAnalysis(bTarget);
+    const diff = compareAnalyses(a, b);
+    console.log("");
+    console.log(formatArchitectureDiffMarkdown(diff));
+    return;
+  }
+
   if (command === "export") {
-    const outName = argv[0] ?? "architecture.md";
-    const target = argv[1] ?? ".";
+    const format = argv[0] ?? "architecture.md";
     console.log("Analyzing…");
+
+    if (format === "pack") {
+      const packDir = path.resolve(argv[1] ?? "./gitimpact-pack");
+      const packTarget = argv[2] ?? ".";
+      const packed = await loadAnalysis(packTarget);
+      await mkdir(packDir, { recursive: true });
+      await writeFile(
+        path.join(packDir, "architecture.md"),
+        buildArchitectureMarkdown(packed),
+        "utf8",
+      );
+      await writeFile(
+        path.join(packDir, "review.md"),
+        buildReviewReportMarkdown(packed),
+        "utf8",
+      );
+      await writeFile(
+        path.join(packDir, "snapshot.json"),
+        JSON.stringify(
+          {
+            id: packed.id,
+            createdAt: packed.createdAt,
+            commitSha: packed.commitSha,
+            repository: packed.repository,
+            summary: packed.summary,
+            intelligence: {
+              repositoryType: packed.intelligence?.repositoryType,
+              typeLabel: packed.intelligence?.typeLabel,
+              architectureSummary: packed.intelligence?.architectureSummary,
+              coverage: packed.intelligence?.coverage,
+            },
+            routes: packed.routes?.length ?? 0,
+            impact: packed.impact
+              ? {
+                  direct: packed.impact.directImpact.length,
+                  indirect: packed.impact.indirectImpact.length,
+                  complexityScore: packed.impact.complexityScore,
+                }
+              : null,
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+      console.log(`Wrote architecture pack → ${packDir}`);
+      return;
+    }
+
+    const target = argv[1] ?? ".";
     const analysis = await loadAnalysis(target);
-    const markdown = buildArchitectureMarkdown(analysis);
-    const outPath = path.resolve(outName.endsWith(".md") ? outName : `${outName}.md`);
+    const isReview = /review\.md$/i.test(format) || format === "review";
+    const markdown = isReview
+      ? buildReviewReportMarkdown(analysis)
+      : buildArchitectureMarkdown(analysis);
+    const outPath = path.resolve(
+      format.endsWith(".md") ? format : isReview ? "review.md" : `${format}.md`,
+    );
     await writeFile(outPath, markdown, "utf8");
     console.log(`Wrote ${outPath}`);
     return;

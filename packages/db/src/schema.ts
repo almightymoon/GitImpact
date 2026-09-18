@@ -137,10 +137,36 @@ export const analysisJobs = pgTable(
   ],
 );
 
+/** v1.2 — append-only analysis history for compare / team workflows */
+export const analysisHistory = pgTable(
+  "analysis_history",
+  {
+    id: text("id").primaryKey(),
+    repositoryId: text("repository_id")
+      .notNull()
+      .references(() => repositories.id, { onDelete: "cascade" }),
+    analysisId: text("analysis_id").notNull(),
+    kind: text("kind").notNull().default("repository"),
+    commitSha: text("commit_sha"),
+    baseSha: text("base_sha"),
+    headSha: text("head_sha"),
+    prNumber: integer("pr_number"),
+    snapshot: jsonb("snapshot").$type<unknown>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("analysis_history_repository_id_idx").on(table.repositoryId),
+    index("analysis_history_created_at_idx").on(table.createdAt),
+    index("analysis_history_commit_sha_idx").on(table.commitSha),
+    index("analysis_history_pr_number_idx").on(table.prNumber),
+  ],
+);
+
 export const schema = {
   repositories,
   analyses,
   githubInstallations,
   webhookDeliveries,
   analysisJobs,
+  analysisHistory,
 };

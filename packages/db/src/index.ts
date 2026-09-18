@@ -199,3 +199,11 @@ export {
   type CacheLookup,
   type RecentRepository,
 } from "./cache.js";
+export {
+  appendAnalysisHistory,
+  listAnalysisHistory,
+  getAnalysisHistoryEntry,
+  clearMemoryHistoryForTests,
+  type AppendHistoryInput,
+} from "./history.js";
+export { analysisHistory } from "./schema.js";
