@@ -1,0 +1,72 @@
+{
+  "id": "go-library-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:main.go:main→FUNCTION:pkg/tokens/tokens.go:Issue:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:pkg/tokens/tokens.go:Issue",
+      "matchedEdgeId": "FUNCTION:main.go:main->FUNCTION:pkg/tokens/tokens.go:Issue:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:main.go:main→FUNCTION:pkg/tokens/tokens.go:Verify:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:pkg/tokens/tokens.go:Verify",
+      "matchedEdgeId": "FUNCTION:main.go:main->FUNCTION:pkg/tokens/tokens.go:Verify:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:main.go→FILE:pkg/tokens/tokens.go:2",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:main.go",
+      "to": "FILE:pkg/tokens/tokens.go",
+      "matchedEdgeId": "FILE:main.go->FILE:pkg/tokens/tokens.go:IMPORTS",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 3,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 3,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

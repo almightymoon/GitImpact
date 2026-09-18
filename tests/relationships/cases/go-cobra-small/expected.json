@@ -1,0 +1,12 @@
+{
+  "description": "Go Cobra package import + Execute CALLS",
+  "mustImport": [
+    { "from": "FILE:main.go", "to": "FILE:cmd/root.go" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:cmd/root.go:Execute"
+    }
+  ]
+}

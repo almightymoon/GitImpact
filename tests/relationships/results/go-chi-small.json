@@ -1,0 +1,53 @@
+{
+  "id": "go-chi-small",
+  "classifications": [
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:chi:GET:/health:main.go→FUNCTION:main.go:health:0",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:chi:GET:/health:main.go",
+      "to": "FUNCTION:main.go:health",
+      "matchedEdgeId": "API_ROUTE:chi:GET:/health:main.go->FUNCTION:main.go:health:HANDLED_BY",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:chi:POST:/items:main.go→FUNCTION:main.go:createItem:1",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:chi:POST:/items:main.go",
+      "to": "FUNCTION:main.go:createItem",
+      "matchedEdgeId": "API_ROUTE:chi:POST:/items:main.go->FUNCTION:main.go:createItem:HANDLED_BY",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 2,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 2,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

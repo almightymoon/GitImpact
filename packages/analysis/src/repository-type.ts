@@ -168,7 +168,7 @@ export function detectRepositoryType(input: {
     /next|react|vue|svelte|angular|remix/.test(f),
   );
   const hasBackend = frameworks.some((f) =>
-    /express|nestjs|fastify|koa|hono|flask|fastapi|django/.test(f),
+    /express|nestjs|fastify|koa|hono|flask|fastapi|django|echo|gin|chi/.test(f),
   );
   const hasCli = frameworks.some((f) => /click|cobra|commander/.test(f));
   const hasNext = frameworks.some((f) => f.includes("next"));
@@ -241,7 +241,7 @@ export function detectRepositoryType(input: {
     return {
       type: "API_SERVICE",
       label: hasBackend
-        ? `${input.frameworks.find((f) => /express|nest|fastify|koa|hono|flask|fastapi|django/i.test(f)) ?? "API"} Service`
+        ? `${input.frameworks.find((f) => /express|nest|fastify|koa|hono|flask|fastapi|django|echo|gin|chi/i.test(f)) ?? "API"} Service`
         : "API Service",
     };
   }

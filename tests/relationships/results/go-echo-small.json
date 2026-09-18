@@ -1,0 +1,91 @@
+{
+  "id": "go-echo-small",
+  "classifications": [
+    {
+      "expectationId": "CALLS:FUNCTION:handlers/users.go:Login→FUNCTION:handlers/users.go:IssueToken:0",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:handlers/users.go:Login",
+      "to": "FUNCTION:handlers/users.go:IssueToken",
+      "matchedEdgeId": "FUNCTION:handlers/users.go:Login->FUNCTION:handlers/users.go:IssueToken:CALLS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "IMPORTS:FILE:main.go→FILE:handlers/users.go:1",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:main.go",
+      "to": "FILE:handlers/users.go",
+      "matchedEdgeId": "FILE:main.go->FILE:handlers/users.go:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:echo:GET:/users:main.go→FUNCTION:handlers/users.go:ListUsers:2",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:echo:GET:/users:main.go",
+      "to": "FUNCTION:handlers/users.go:ListUsers",
+      "matchedEdgeId": "API_ROUTE:echo:GET:/users:main.go->FUNCTION:handlers/users.go:ListUsers:HANDLED_BY",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:echo:POST:/login:main.go→FUNCTION:handlers/users.go:Login:3",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:echo:POST:/login:main.go",
+      "to": "FUNCTION:handlers/users.go:Login",
+      "matchedEdgeId": "API_ROUTE:echo:POST:/login:main.go->FUNCTION:handlers/users.go:Login:HANDLED_BY",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 4,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "CALLS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 4,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

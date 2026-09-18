@@ -1,0 +1,16 @@
+{
+  "description": "Go library package IMPORTS + CALLS",
+  "mustImport": [
+    { "from": "FILE:main.go", "to": "FILE:pkg/tokens/tokens.go" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:pkg/tokens/tokens.go:Issue"
+    },
+    {
+      "from": "FUNCTION:main.go:main",
+      "to": "FUNCTION:pkg/tokens/tokens.go:Verify"
+    }
+  ]
+}

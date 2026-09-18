@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "v1.1.2/v1.1.3 relationship accuracy — curated edges + Python route HANDLED_BY",
+  "description": "v1.1.2–v1.1.4 relationship accuracy — JS/TS + Python + Go curated edges",
   "targets": {
     "CALLS": { "precision": 0.9, "recall": 0.8 },
     "IMPORTS": { "precision": 0.95, "recall": 0.9 },
@@ -122,6 +122,48 @@
       "fixture": "../real-world/cases/python-service-repo",
       "shape": "python-service-repo",
       "why": "Python service → repository CALLS"
+    },
+    {
+      "id": "go-echo-small",
+      "source": "local",
+      "fixture": "../real-world/cases/go-echo-small",
+      "shape": "go-http",
+      "why": "Go Echo route HANDLED_BY + package CALLS"
+    },
+    {
+      "id": "go-cobra-small",
+      "source": "local",
+      "fixture": "../real-world/cases/go-cobra-small",
+      "shape": "go-cli",
+      "why": "Go Cobra package IMPORTS + Execute CALLS"
+    },
+    {
+      "id": "go-gin-small",
+      "source": "local",
+      "fixture": "../real-world/cases/go-gin-small",
+      "shape": "go-http",
+      "why": "Go Gin route HANDLED_BY"
+    },
+    {
+      "id": "go-chi-small",
+      "source": "local",
+      "fixture": "../real-world/cases/go-chi-small",
+      "shape": "go-router",
+      "why": "Go Chi route HANDLED_BY"
+    },
+    {
+      "id": "go-gorm-small",
+      "source": "local",
+      "fixture": "../real-world/cases/go-gorm-small",
+      "shape": "go-orm",
+      "why": "Go GORM First/Create → QUERIES"
+    },
+    {
+      "id": "go-library-small",
+      "source": "local",
+      "fixture": "../real-world/cases/go-library-small",
+      "shape": "go-library",
+      "why": "Go library package IMPORTS + CALLS"
     },
     {
       "id": "nestjs-starter",

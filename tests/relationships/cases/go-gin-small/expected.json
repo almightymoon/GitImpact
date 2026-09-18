@@ -1,0 +1,15 @@
+{
+  "description": "Go Gin route HANDLED_BY same-file handlers",
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:gin:POST:/orders:main.go",
+      "to": "FUNCTION:main.go:createOrder",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:gin:GET:/orders/:id:main.go",
+      "to": "FUNCTION:main.go:getOrder",
+      "type": "HANDLED_BY"
+    }
+  ]
+}

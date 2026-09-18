@@ -36,6 +36,11 @@ import {
 } from "./framework-intel.js";
 import { linkPythonCalls, parsePythonFile } from "./python-parser.js";
 import { detectPythonProject } from "./python-project.js";
+import {
+  linkGoCalls,
+  parseGoFile,
+  parseGoModModule,
+} from "./go-parser.js";
 
 export interface LanguageParser {
   parseFile(filePath: string, content: string): ParsedFile;
@@ -66,10 +71,16 @@ function isTestFile(filePath: string): boolean {
 
 function languageFromPath(filePath: string): ParsedFile["language"] {
   if (filePath.endsWith(".py")) return "python";
+  if (filePath.endsWith(".go")) return "go";
   if (filePath.endsWith(".tsx")) return "tsx";
   if (filePath.endsWith(".jsx")) return "jsx";
   if (filePath.endsWith(".ts")) return "typescript";
   return "javascript";
+}
+
+function isJsTsPath(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, "/");
+  return !normalized.endsWith(".py") && !normalized.endsWith(".go");
 }
 
 function getLine(node: Node): number {
@@ -636,8 +647,9 @@ export async function parseRepository(
     },
   });
 
-  const jsTsFiles = limited.filter((p) => !p.replace(/\\/g, "/").endsWith(".py"));
+  const jsTsFiles = limited.filter((p) => isJsTsPath(p));
   const pythonFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".py"));
+  const goFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".go"));
 
   for (const relativePath of jsTsFiles) {
     const absolute = path.join(rootDir, relativePath);
@@ -651,7 +663,7 @@ export async function parseRepository(
     }
   }
 
-  for (const relativePath of pythonFiles) {
+  for (const relativePath of [...pythonFiles, ...goFiles]) {
     const absolute = path.join(rootDir, relativePath);
     try {
       const content = await readFile(absolute, "utf8");
@@ -708,6 +720,27 @@ export async function parseRepository(
     }
   }
   linkPythonCalls(files);
+
+  let goModulePath: string | undefined;
+  try {
+    const goMod = await readFile(path.join(rootDir, "go.mod"), "utf8");
+    goModulePath = parseGoModModule(goMod);
+  } catch {
+    goModulePath = undefined;
+  }
+  const goKnown = new Set(
+    [...knownFiles].map((p) => p.replace(/\\/g, "/")).filter((p) => p.endsWith(".go")),
+  );
+  for (const relativePath of goFiles) {
+    const content = contentsByPath.get(relativePath);
+    if (!content) continue;
+    try {
+      files.push(parseGoFile(relativePath, content, goKnown, goModulePath));
+    } catch {
+      parseFailures += 1;
+    }
+  }
+  linkGoCalls(files, goModulePath);
 
   const packageManifest = await readPackageManifest(rootDir);
   const packageDeps = packageManifest.deps;
@@ -1036,9 +1069,11 @@ export function detectLanguages(files: ParsedFile[]): LanguageStats[] {
     const label =
       file.language === "python"
         ? "Python"
-        : file.language === "tsx" || file.language === "typescript"
-          ? "TypeScript"
-          : "JavaScript";
+        : file.language === "go"
+          ? "Go"
+          : file.language === "tsx" || file.language === "typescript"
+            ? "TypeScript"
+            : "JavaScript";
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   const total = files.length || 1;
@@ -1199,7 +1234,81 @@ export async function detectFrameworks(
   const pythonFrameworks = await detectPythonFrameworks(rootDir, files);
   for (const fw of pythonFrameworks) frameworks.add(fw);
 
+  const goFrameworks = await detectGoFrameworks(rootDir, files);
+  for (const fw of goFrameworks) frameworks.add(fw);
+
   return [...frameworks];
+}
+
+async function detectGoFrameworks(
+  rootDir: string,
+  files: ParsedFile[],
+): Promise<string[]> {
+  const names = new Set<string>();
+  const hasGo = files.some((f) => f.language === "go");
+  if (!hasGo) return [];
+
+  const isPrimaryGo = (filePath: string) => {
+    const normalized = filePath.replace(/\\/g, "/");
+    return (
+      !/(^|\/)(tests?|spec|docs?(?:_src)?|documentation|examples?|demos?|samples?|benchmarks?|fixtures?)\//i.test(
+        normalized,
+      ) && !/_test\.go$/i.test(normalized)
+    );
+  };
+
+  let modulePath = "";
+  try {
+    const goMod = await readFile(path.join(rootDir, "go.mod"), "utf8");
+    const modMatch = /^\s*module\s+(\S+)/m.exec(goMod);
+    if (modMatch) modulePath = modMatch[1]!.toLowerCase();
+    const requireBlock = /require\s*\(([\s\S]*?)\)/.exec(goMod)?.[1] ?? "";
+    const singleRequires = [...goMod.matchAll(/^\s*require\s+(\S+)/gm)].map(
+      (m) => m[1]!,
+    );
+    const blob = `${requireBlock}\n${singleRequires.join("\n")}`.toLowerCase();
+    if (blob.includes("labstack/echo")) names.add("Echo");
+    if (blob.includes("gin-gonic/gin")) names.add("Gin");
+    if (blob.includes("go-chi/chi")) names.add("Chi");
+    if (blob.includes("spf13/cobra") || modulePath.includes("cobra")) {
+      names.add("Cobra");
+    }
+    if (blob.includes("gorm.io/gorm") || blob.includes("jinzhu/gorm")) {
+      names.add("GORM");
+    }
+  } catch {
+    // no go.mod
+  }
+
+  if (modulePath.includes("labstack/echo") || modulePath.endsWith("/echo")) {
+    names.add("Echo");
+  }
+  if (modulePath.includes("gin-gonic/gin") || /\/gin$/.test(modulePath)) {
+    names.add("Gin");
+  }
+  if (modulePath.includes("go-chi/chi") || modulePath.endsWith("/chi")) {
+    names.add("Chi");
+  }
+  if (modulePath.includes("spf13/cobra") || modulePath.endsWith("/cobra")) {
+    names.add("Cobra");
+  }
+  if (modulePath.includes("gorm.io/gorm") || modulePath.endsWith("/gorm")) {
+    names.add("GORM");
+  }
+
+  for (const file of files) {
+    if (file.language !== "go" || !isPrimaryGo(file.path)) continue;
+    for (const imp of file.imports) {
+      const m = imp.moduleSpecifier.toLowerCase();
+      if (m.includes("labstack/echo")) names.add("Echo");
+      if (m.includes("gin-gonic/gin")) names.add("Gin");
+      if (m.includes("go-chi/chi") || /\/chi(\/v\d+)?$/.test(m)) names.add("Chi");
+      if (m.includes("spf13/cobra")) names.add("Cobra");
+      if (m.includes("gorm.io/gorm") || m.includes("jinzhu/gorm")) names.add("GORM");
+    }
+  }
+
+  return [...names];
 }
 
 async function detectPythonFrameworks(

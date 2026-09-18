@@ -1,0 +1,6 @@
+{
+  "mustDetect": {
+    "languages": ["Go"],
+    "frameworks": ["Cobra"]
+  }
+}

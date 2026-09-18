@@ -1,0 +1,18 @@
+{
+  "description": "Go GORM First/Create → QUERIES model",
+  "mustImport": [
+    { "from": "FILE:service.go", "to": "FILE:models/user.go" }
+  ],
+  "mustEdge": [
+    {
+      "from": "FUNCTION:service.go:FindUser",
+      "to": "DATABASE_MODEL:service.go:User",
+      "type": "QUERIES"
+    },
+    {
+      "from": "FUNCTION:service.go:CreateUser",
+      "to": "DATABASE_MODEL:service.go:User",
+      "type": "QUERIES"
+    }
+  ]
+}

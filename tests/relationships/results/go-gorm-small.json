@@ -1,0 +1,72 @@
+{
+  "id": "go-gorm-small",
+  "classifications": [
+    {
+      "expectationId": "IMPORTS:FILE:service.go→FILE:models/user.go:0",
+      "class": "TRUE_POSITIVE",
+      "type": "IMPORTS",
+      "from": "FILE:service.go",
+      "to": "FILE:models/user.go",
+      "matchedEdgeId": "FILE:service.go->FILE:models/user.go:IMPORTS",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "QUERIES:FUNCTION:service.go:FindUser→DATABASE_MODEL:service.go:User:1",
+      "class": "TRUE_POSITIVE",
+      "type": "QUERIES",
+      "from": "FUNCTION:service.go:FindUser",
+      "to": "DATABASE_MODEL:service.go:User",
+      "matchedEdgeId": "FUNCTION:service.go:FindUser->DATABASE_MODEL:service.go:User:QUERIES",
+      "confidence": "MEDIUM"
+    },
+    {
+      "expectationId": "QUERIES:FUNCTION:service.go:CreateUser→DATABASE_MODEL:service.go:User:2",
+      "class": "TRUE_POSITIVE",
+      "type": "QUERIES",
+      "from": "FUNCTION:service.go:CreateUser",
+      "to": "DATABASE_MODEL:service.go:User",
+      "matchedEdgeId": "FUNCTION:service.go:CreateUser->DATABASE_MODEL:service.go:User:QUERIES",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 3,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "IMPORTS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "QUERIES",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 3,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

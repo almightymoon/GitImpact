@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-18T19:59:00.624Z",
-  "fixtures": 11,
+  "generatedAt": "2026-09-18T20:35:40.184Z",
+  "fixtures": 17,
   "assertions": 69,
   "softMisses": 0,
   "unsupportedPatternCount": 5,
   "coverage": {
-    "totalCalls": 63,
-    "resolvedCalls": 59,
+    "totalCalls": 111,
+    "resolvedCalls": 107,
     "unresolvedCalls": 4,
-    "resolutionCoverage": 0.9365079365079365,
-    "resolutionCoveragePct": "93.7%",
+    "resolutionCoverage": 0.963963963963964,
+    "resolutionCoveragePct": "96.4%",
     "unresolvedSamples": [
       {
         "file": "express-small:src/routes/auth.ts",
@@ -68,10 +68,10 @@
   "summary": {
     "precision": "100.0%",
     "recall": "100.0%",
-    "resolutionCoverage": "93.7%",
+    "resolutionCoverage": "96.4%",
     "unsupportedPatternCount": 5
   },
-  "headline": "Resolved calls: 59 / 63 (93.7%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 5.",
+  "headline": "Resolved calls: 107 / 111 (96.4%). Labelled precision 100.0%, recall 100.0%, unsupported patterns 5.",
   "cases": [
     {
       "name": "express-small",
@@ -90,6 +90,78 @@
       "unsupportedPatterns": [
         "framework-app-post-binding"
       ],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "go-chi-small",
+      "totalCalls": 9,
+      "resolvedCalls": 9,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "go-cobra-small",
+      "totalCalls": 8,
+      "resolvedCalls": 8,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "go-echo-small",
+      "totalCalls": 11,
+      "resolvedCalls": 11,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "go-gin-small",
+      "totalCalls": 10,
+      "resolvedCalls": 10,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "go-gorm-small",
+      "totalCalls": 4,
+      "resolvedCalls": 4,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
+      "knownUnresolved": 0,
+      "softMisses": 0
+    },
+    {
+      "name": "go-library-small",
+      "totalCalls": 6,
+      "resolvedCalls": 6,
+      "unresolvedCalls": 0,
+      "resolutionCoverage": 1,
+      "resolutionCoveragePct": "100.0%",
+      "unresolvedSamples": [],
+      "unsupportedPatterns": [],
       "knownUnresolved": 0,
       "softMisses": 0
     },

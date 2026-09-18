@@ -1,0 +1,15 @@
+{
+  "description": "Go Chi route HANDLED_BY",
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:chi:GET:/health:main.go",
+      "to": "FUNCTION:main.go:health",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:chi:POST:/items:main.go",
+      "to": "FUNCTION:main.go:createItem",
+      "type": "HANDLED_BY"
+    }
+  ]
+}

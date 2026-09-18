@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-18T19:54:50.886Z",
-  "caseCount": 18,
-  "scoredCases": 18,
+  "generatedAt": "2026-09-18T20:35:27.175Z",
+  "caseCount": 24,
+  "scoredCases": 24,
   "counts": {
-    "TRUE_POSITIVE": 91,
+    "TRUE_POSITIVE": 107,
     "FALSE_POSITIVE": 0,
     "MISSING_EDGE": 0,
     "WRONG_TARGET": 0,
@@ -12,7 +12,7 @@
   },
   "overall": {
     "type": "overall",
-    "truePositives": 91,
+    "truePositives": 107,
     "falsePositives": 0,
     "falseNegatives": 0,
     "lowConfidence": 0,
@@ -23,7 +23,7 @@
   "byType": [
     {
       "type": "CALLS",
-      "truePositives": 39,
+      "truePositives": 43,
       "falsePositives": 0,
       "falseNegatives": 0,
       "lowConfidence": 0,
@@ -33,7 +33,7 @@
     },
     {
       "type": "IMPORTS",
-      "truePositives": 31,
+      "truePositives": 35,
       "falsePositives": 0,
       "falseNegatives": 0,
       "lowConfidence": 0,
@@ -53,7 +53,7 @@
     },
     {
       "type": "HANDLED_BY",
-      "truePositives": 9,
+      "truePositives": 15,
       "falsePositives": 0,
       "falseNegatives": 0,
       "lowConfidence": 0,
@@ -73,7 +73,7 @@
     },
     {
       "type": "QUERIES",
-      "truePositives": 3,
+      "truePositives": 5,
       "falsePositives": 0,
       "falseNegatives": 0,
       "lowConfidence": 0,
@@ -157,7 +157,7 @@
       "id": "nestjs-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 827,
+      "durationMs": 1364,
       "shape": "controller-service",
       "edgeCount": 48,
       "checked": 9,
@@ -310,7 +310,7 @@
       "id": "express-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 409,
+      "durationMs": 836,
       "shape": "middleware-service",
       "edgeCount": 28,
       "checked": 8,
@@ -444,7 +444,7 @@
       "id": "nextjs-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 367,
+      "durationMs": 662,
       "shape": "api-handler",
       "edgeCount": 26,
       "checked": 7,
@@ -559,7 +559,7 @@
       "id": "monorepo-project",
       "ok": true,
       "skipped": false,
-      "durationMs": 356,
+      "durationMs": 548,
       "shape": "package-graph",
       "edgeCount": 16,
       "checked": 5,
@@ -656,7 +656,7 @@
       "id": "prisma-project",
       "ok": true,
       "skipped": false,
-      "durationMs": 306,
+      "durationMs": 577,
       "shape": "service-repo-queries",
       "edgeCount": 28,
       "checked": 7,
@@ -781,7 +781,7 @@
       "id": "tiny-fixture",
       "ok": true,
       "skipped": false,
-      "durationMs": 335,
+      "durationMs": 750,
       "shape": "controller-service",
       "edgeCount": 96,
       "checked": 9,
@@ -913,7 +913,7 @@
       "id": "class-method",
       "ok": true,
       "skipped": false,
-      "durationMs": 284,
+      "durationMs": 513,
       "shape": "method-calls",
       "edgeCount": 12,
       "checked": 3,
@@ -992,7 +992,7 @@
       "id": "function-import",
       "ok": true,
       "skipped": false,
-      "durationMs": 261,
+      "durationMs": 501,
       "shape": "function-calls",
       "edgeCount": 7,
       "checked": 3,
@@ -1081,7 +1081,7 @@
       "id": "cjs-require",
       "ok": true,
       "skipped": false,
-      "durationMs": 311,
+      "durationMs": 521,
       "shape": "commonjs-require",
       "edgeCount": 8,
       "checked": 2,
@@ -1151,7 +1151,7 @@
       "id": "fetch-external",
       "ok": true,
       "skipped": false,
-      "durationMs": 265,
+      "durationMs": 512,
       "shape": "http-fetch",
       "edgeCount": 6,
       "checked": 2,
@@ -1211,7 +1211,7 @@
       "id": "python-flask-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 16,
+      "durationMs": 27,
       "shape": "python-web",
       "edgeCount": 24,
       "checked": 7,
@@ -1346,7 +1346,7 @@
       "id": "python-fastapi-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 9,
+      "durationMs": 16,
       "shape": "python-web",
       "edgeCount": 21,
       "checked": 5,
@@ -1453,7 +1453,7 @@
       "id": "python-django-small",
       "ok": true,
       "skipped": false,
-      "durationMs": 8,
+      "durationMs": 18,
       "shape": "python-web",
       "edgeCount": 21,
       "checked": 5,
@@ -1560,7 +1560,7 @@
       "id": "python-class-method",
       "ok": true,
       "skipped": false,
-      "durationMs": 9,
+      "durationMs": 11,
       "shape": "python-methods",
       "edgeCount": 15,
       "checked": 2,
@@ -1630,7 +1630,7 @@
       "id": "python-src-layout",
       "ok": true,
       "skipped": false,
-      "durationMs": 7,
+      "durationMs": 16,
       "shape": "python-package",
       "edgeCount": 7,
       "checked": 2,
@@ -1700,7 +1700,7 @@
       "id": "python-service-repo",
       "ok": true,
       "skipped": false,
-      "durationMs": 9,
+      "durationMs": 6,
       "shape": "python-service-repo",
       "edgeCount": 14,
       "checked": 5,
@@ -1804,10 +1804,456 @@
       ]
     },
     {
+      "id": "go-echo-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 25,
+      "shape": "go-http",
+      "edgeCount": 17,
+      "checked": 4,
+      "counts": {
+        "TRUE_POSITIVE": 4,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 4,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "HANDLED_BY",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:handlers/users.go:Login→FUNCTION:handlers/users.go:IssueToken:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:handlers/users.go:Login",
+          "to": "FUNCTION:handlers/users.go:IssueToken",
+          "matchedEdgeId": "FUNCTION:handlers/users.go:Login->FUNCTION:handlers/users.go:IssueToken:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:main.go→FILE:handlers/users.go:1",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:main.go",
+          "to": "FILE:handlers/users.go",
+          "matchedEdgeId": "FILE:main.go->FILE:handlers/users.go:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:echo:GET:/users:main.go→FUNCTION:handlers/users.go:ListUsers:2",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:echo:GET:/users:main.go",
+          "to": "FUNCTION:handlers/users.go:ListUsers",
+          "matchedEdgeId": "API_ROUTE:echo:GET:/users:main.go->FUNCTION:handlers/users.go:ListUsers:HANDLED_BY",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:echo:POST:/login:main.go→FUNCTION:handlers/users.go:Login:3",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:echo:POST:/login:main.go",
+          "to": "FUNCTION:handlers/users.go:Login",
+          "matchedEdgeId": "API_ROUTE:echo:POST:/login:main.go->FUNCTION:handlers/users.go:Login:HANDLED_BY",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "go-cobra-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 14,
+      "shape": "go-cli",
+      "edgeCount": 8,
+      "checked": 2,
+      "counts": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:main.go:main→FUNCTION:cmd/root.go:Execute:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:main.go:main",
+          "to": "FUNCTION:cmd/root.go:Execute",
+          "matchedEdgeId": "FUNCTION:main.go:main->FUNCTION:cmd/root.go:Execute:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:main.go→FILE:cmd/root.go:1",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:main.go",
+          "to": "FILE:cmd/root.go",
+          "matchedEdgeId": "FILE:main.go->FILE:cmd/root.go:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "go-gin-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 6,
+      "shape": "go-http",
+      "edgeCount": 11,
+      "checked": 2,
+      "counts": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "HANDLED_BY",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:gin:POST:/orders:main.go→FUNCTION:main.go:createOrder:0",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:gin:POST:/orders:main.go",
+          "to": "FUNCTION:main.go:createOrder",
+          "matchedEdgeId": "API_ROUTE:gin:POST:/orders:main.go->FUNCTION:main.go:createOrder:HANDLED_BY",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:gin:GET:/orders/:id:main.go→FUNCTION:main.go:getOrder:1",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:gin:GET:/orders/:id:main.go",
+          "to": "FUNCTION:main.go:getOrder",
+          "matchedEdgeId": "API_ROUTE:gin:GET:/orders/:id:main.go->FUNCTION:main.go:getOrder:HANDLED_BY",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "go-chi-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 11,
+      "shape": "go-router",
+      "edgeCount": 11,
+      "checked": 2,
+      "counts": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "HANDLED_BY",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:chi:GET:/health:main.go→FUNCTION:main.go:health:0",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:chi:GET:/health:main.go",
+          "to": "FUNCTION:main.go:health",
+          "matchedEdgeId": "API_ROUTE:chi:GET:/health:main.go->FUNCTION:main.go:health:HANDLED_BY",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "HANDLED_BY:API_ROUTE:chi:POST:/items:main.go→FUNCTION:main.go:createItem:1",
+          "class": "TRUE_POSITIVE",
+          "type": "HANDLED_BY",
+          "from": "API_ROUTE:chi:POST:/items:main.go",
+          "to": "FUNCTION:main.go:createItem",
+          "matchedEdgeId": "API_ROUTE:chi:POST:/items:main.go->FUNCTION:main.go:createItem:HANDLED_BY",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "go-gorm-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 14,
+      "shape": "go-orm",
+      "edgeCount": 9,
+      "checked": 3,
+      "counts": {
+        "TRUE_POSITIVE": 3,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 3,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "QUERIES",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "IMPORTS:FILE:service.go→FILE:models/user.go:0",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:service.go",
+          "to": "FILE:models/user.go",
+          "matchedEdgeId": "FILE:service.go->FILE:models/user.go:IMPORTS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "QUERIES:FUNCTION:service.go:FindUser→DATABASE_MODEL:service.go:User:1",
+          "class": "TRUE_POSITIVE",
+          "type": "QUERIES",
+          "from": "FUNCTION:service.go:FindUser",
+          "to": "DATABASE_MODEL:service.go:User",
+          "matchedEdgeId": "FUNCTION:service.go:FindUser->DATABASE_MODEL:service.go:User:QUERIES",
+          "confidence": "MEDIUM"
+        },
+        {
+          "expectationId": "QUERIES:FUNCTION:service.go:CreateUser→DATABASE_MODEL:service.go:User:2",
+          "class": "TRUE_POSITIVE",
+          "type": "QUERIES",
+          "from": "FUNCTION:service.go:CreateUser",
+          "to": "DATABASE_MODEL:service.go:User",
+          "matchedEdgeId": "FUNCTION:service.go:CreateUser->DATABASE_MODEL:service.go:User:QUERIES",
+          "confidence": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "go-library-small",
+      "ok": true,
+      "skipped": false,
+      "durationMs": 13,
+      "shape": "go-library",
+      "edgeCount": 8,
+      "checked": 3,
+      "counts": {
+        "TRUE_POSITIVE": 3,
+        "FALSE_POSITIVE": 0,
+        "MISSING_EDGE": 0,
+        "WRONG_TARGET": 0,
+        "WRONG_TYPE": 0,
+        "LOW_CONFIDENCE": 0
+      },
+      "overall": {
+        "type": "overall",
+        "truePositives": 3,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "lowConfidence": 0,
+        "softMisses": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      "byType": [
+        {
+          "type": "CALLS",
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        {
+          "type": "IMPORTS",
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "lowConfidence": 0,
+          "softMisses": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      ],
+      "failures": [],
+      "classifications": [
+        {
+          "expectationId": "CALLS:FUNCTION:main.go:main→FUNCTION:pkg/tokens/tokens.go:Issue:0",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:main.go:main",
+          "to": "FUNCTION:pkg/tokens/tokens.go:Issue",
+          "matchedEdgeId": "FUNCTION:main.go:main->FUNCTION:pkg/tokens/tokens.go:Issue:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "CALLS:FUNCTION:main.go:main→FUNCTION:pkg/tokens/tokens.go:Verify:1",
+          "class": "TRUE_POSITIVE",
+          "type": "CALLS",
+          "from": "FUNCTION:main.go:main",
+          "to": "FUNCTION:pkg/tokens/tokens.go:Verify",
+          "matchedEdgeId": "FUNCTION:main.go:main->FUNCTION:pkg/tokens/tokens.go:Verify:CALLS",
+          "confidence": "HIGH"
+        },
+        {
+          "expectationId": "IMPORTS:FILE:main.go→FILE:pkg/tokens/tokens.go:2",
+          "class": "TRUE_POSITIVE",
+          "type": "IMPORTS",
+          "from": "FILE:main.go",
+          "to": "FILE:pkg/tokens/tokens.go",
+          "matchedEdgeId": "FILE:main.go->FILE:pkg/tokens/tokens.go:IMPORTS",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    {
       "id": "nestjs-starter",
       "ok": true,
       "skipped": false,
-      "durationMs": 351,
+      "durationMs": 584,
       "shape": "controller-service",
       "edgeCount": 37,
       "checked": 6,
@@ -1933,7 +2379,7 @@
       "id": "express",
       "ok": true,
       "skipped": false,
-      "durationMs": 1021,
+      "durationMs": 1714,
       "shape": "framework-core",
       "edgeCount": 546,
       "checked": 4,

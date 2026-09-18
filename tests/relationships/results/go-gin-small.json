@@ -1,0 +1,53 @@
+{
+  "id": "go-gin-small",
+  "classifications": [
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:gin:POST:/orders:main.go→FUNCTION:main.go:createOrder:0",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:gin:POST:/orders:main.go",
+      "to": "FUNCTION:main.go:createOrder",
+      "matchedEdgeId": "API_ROUTE:gin:POST:/orders:main.go->FUNCTION:main.go:createOrder:HANDLED_BY",
+      "confidence": "HIGH"
+    },
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:gin:GET:/orders/:id:main.go→FUNCTION:main.go:getOrder:1",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:gin:GET:/orders/:id:main.go",
+      "to": "FUNCTION:main.go:getOrder",
+      "matchedEdgeId": "API_ROUTE:gin:GET:/orders/:id:main.go->FUNCTION:main.go:getOrder:HANDLED_BY",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 2,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 2,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 2,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

@@ -334,7 +334,10 @@ export class DependencyGraphBuilder {
             type: "DATABASE_MODEL",
             name: query.model,
             file: file.path,
-            metadata: { orm: "prisma", method: query.method },
+            metadata: {
+              orm: file.language === "go" ? "gorm" : "prisma",
+              method: query.method,
+            },
           });
           addEdge(fromId, modelId, "QUERIES", "MEDIUM");
         }
@@ -365,7 +368,10 @@ export class DependencyGraphBuilder {
               type: "DATABASE_MODEL",
               name: query.model,
               file: file.path,
-              metadata: { orm: "prisma", method: query.method },
+              metadata: {
+                orm: file.language === "go" ? "gorm" : "prisma",
+                method: query.method,
+              },
             });
             addEdge(fromId, modelId, "QUERIES", "MEDIUM");
           }

@@ -1,0 +1,10 @@
+{
+  "mustDetect": {
+    "languages": ["Go"],
+    "frameworks": ["Chi"]
+  },
+  "mustHaveRoutes": [
+    { "method": "GET", "path": "/health" },
+    { "method": "POST", "path": "/items" }
+  ]
+}

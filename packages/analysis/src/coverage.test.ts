@@ -134,6 +134,38 @@ describe("buildAnalysisCoverage", () => {
     ).toBe(true);
     expect(report.blindSpots.some((s) => /Redis-side/i.test(s))).toBe(true);
   });
+
+  it("lists Go heuristic blind spots when .go files are present", () => {
+    const edges: GraphEdge[] = Array.from({ length: 10 }, (_, i) => ({
+      id: `e${i}`,
+      from: "a",
+      to: "b",
+      type: "CALLS",
+      confidence: "HIGH" as const,
+    }));
+    const report = buildAnalysisCoverage({
+      analysisHealth: healthy,
+      graphEdges: edges,
+      graphNodeCount: 20,
+      frameworks: ["Echo"],
+      files: [
+        {
+          path: "main.go",
+          language: "go",
+          imports: [],
+          exports: [],
+          functions: [],
+          classes: [],
+          isTest: false,
+          envVariables: [],
+        },
+      ],
+    });
+    expect(report.frameworks.find((f) => f.name === "Echo")?.confidence).toBe("HIGH");
+    expect(
+      report.blindSpots.some((s) => /Go analysis is heuristic/i.test(s)),
+    ).toBe(true);
+  });
 });
 
 describe("groupUnsupportedFiles", () => {

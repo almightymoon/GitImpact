@@ -383,19 +383,61 @@
       "id": "go-echo",
       "url": "https://github.com/labstack/echo",
       "shape": "go-http",
-      "priority": 9,
+      "priority": 6,
       "wave": 6,
-      "status": "planned",
-      "why": "v1.1.4 Go track — after Python accuracy"
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "v1.1.4 Go accuracy — Echo HTTP framework"
     },
     {
       "id": "go-cobra",
       "url": "https://github.com/spf13/cobra",
       "shape": "go-cli",
-      "priority": 9,
+      "priority": 6,
       "wave": 6,
-      "status": "planned",
-      "why": "v1.1.4 Go track — CLI graph"
+      "status": "active",
+      "maxFiles": 3000,
+      "why": "v1.1.4 Go accuracy — Cobra CLI graph"
+    },
+    {
+      "id": "go-gin",
+      "url": "https://github.com/gin-gonic/gin",
+      "shape": "go-http",
+      "priority": 6,
+      "wave": 6,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "v1.1.4 Go accuracy — Gin HTTP framework"
+    },
+    {
+      "id": "go-chi",
+      "url": "https://github.com/go-chi/chi",
+      "shape": "go-router",
+      "priority": 6,
+      "wave": 6,
+      "status": "active",
+      "maxFiles": 3000,
+      "why": "v1.1.4 Go accuracy — Chi router / middleware"
+    },
+    {
+      "id": "go-gorm",
+      "url": "https://github.com/go-gorm/gorm",
+      "shape": "go-orm",
+      "priority": 6,
+      "wave": 6,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "v1.1.4 Go accuracy — GORM data layer"
+    },
+    {
+      "id": "go-testify",
+      "url": "https://github.com/stretchr/testify",
+      "shape": "go-library",
+      "priority": 6,
+      "wave": 6,
+      "status": "active",
+      "maxFiles": 3000,
+      "why": "v1.1.4 Go accuracy — non-framework library package"
     }
   ]
 }

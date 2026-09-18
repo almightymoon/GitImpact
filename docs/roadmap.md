@@ -11,12 +11,12 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 | Version | Theme | Status |
 |---------|--------|--------|
 | **v1.0** | Public beta / production hardening | RC in progress — see `docs/release-candidate.md` |
-| **v1.1** | Real-world accuracy + adoption | Steps 1–6 done |
+| **v1.1** | Real-world accuracy + adoption | Through v1.1.3 done |
 | **v1.1.1** | Trust, coverage & explainability | Done |
 | **v1.1.2** | Relationship accuracy + Python baseline | Done |
-| **v1.1.3** | Python accuracy & framework intelligence | **Done** (held-out review + wave-5 green) |
-| **v1.1.4** | Go support | **Next** |
-| **v1.2** | Team collaboration + history + reports | Later |
+| **v1.1.3** | Python accuracy & framework intelligence | Done |
+| **v1.1.4** | Go parsing, framework intel & relationship accuracy | **Next** |
+| **v1.2** | History, change intelligence & team workflows | After language freeze |
 | **v1.3** | Optional AI layer / BYOK | Later |
 
 ---
@@ -27,93 +27,114 @@ Production stack, durable queue, private GitHub App path, quotas, ops. Tag `1.0.
 
 ---
 
-## v1.1 — Real-world accuracy & adoption
+## v1.1.3 — Python accuracy & framework intelligence ✅
 
-**Success metric:** On a held-out dogfood set, overview + key call/import relationships match reality closely enough that a developer does not second-guess the graph.
-
-### Order of work (mandatory)
-
-1. ~~Dogfood **20–30** real public repositories (`pnpm dogfood`)~~ ✅
-2. ~~Record misses~~ ✅
-3. ~~Fix relationship / framework / monorepo accuracy~~ ✅
-4. ~~Coverage / confidence~~ ✅
-5. ~~Adoption polish~~ ✅
-6. ~~**Python baseline**~~ ✅ (v1.1.2)
-7. ~~**Python accuracy**~~ ✅ **v1.1.3**
-8. **Then** Go ← **v1.1.4**
-
-Do **not** start Go until Python wave 5 stays clean and Python relationship / held-out edge review targets hold.
+Proved Python the same way as JS/TS: dogfood → misses → fixtures → curated relationships → held-out emitted-edge review.
 
 ---
 
-## v1.1.2 — Relationship accuracy + Python baseline ✅
+## v1.1.4 — Go parsing, framework intelligence & relationship accuracy
 
-**Shipped:** `pnpm relationships` harness (13 cases, P=1 / R=1 on curated set), CJS `require()`, HOF attribution, `fetch()` → FETCHES, `.py` inventory + heuristic parser, Flask/FastAPI/Django labels, `python-flask-small` fixture.
+**Goal:** Add Go with the *same discipline* as Python — not “parser exists” but trustworthy graph edges + honest confidence. **No new languages after this** until v1.2 workflow value is shipped.
 
-**Honest caveat:** 100/100 on a curated expectation set proves recall of labelled edges — it does **not** prove emitted-edge precision. That is the job of v1.1.3 held-out sampling.
+### Dogfood wave 6 (start)
 
----
+| Shape | Repo |
+|-------|------|
+| HTTP framework | `labstack/echo` |
+| CLI | `spf13/cobra` |
+| HTTP framework | `gin-gonic/gin` |
+| Router / middleware | `go-chi/chi` |
+| ORM / data | `go-gorm/gorm` |
+| Library | e.g. `stretchr/testify` or `spf13/viper` |
 
-## v1.1.3 — Python accuracy & framework intelligence
+### First-pass language surface
 
-**Goal:** Prove Python the same way JS/TS was proved — dogfood → misses → fixtures → relationship edges → honest blind spots. No Go until this bar is met.
+`.go` files · packages · imports · functions · methods · structs · interfaces · function/method calls · cross-package imports (via `go.mod` module prefix)
+
+**Explicitly deferred (use MEDIUM/LOW + blind spots):** interface satisfaction / method sets, constructor DI graphs, generated code, build tags, reflection, dynamic registration.
+
+### Framework intelligence
+
+| Framework | Pattern → edge |
+|-----------|----------------|
+| Echo | `e.GET("/users", getUsers)` → HANDLED_BY `getUsers` |
+| Gin | `router.POST("/orders", createOrder)` → HANDLED_BY `createOrder` |
+| Chi | `r.Get("/…", handler)` → HANDLED_BY |
+| Cobra | `rootCmd.AddCommand(serverCmd)` → DEPENDS_ON / CALLS |
+| GORM | `db.Where(…).Find(&model)` → QUERIES model (incremental) |
+
+### Trust pipeline (mandatory)
+
+```
+Go dogfood → miss log → regression fixtures
+         → curated relationship benchmark
+         → held-out emitted-edge review
+         → confidence / blind spots
+```
+
+### Targets (same bar as JS/TS)
+
+| Relation | Precision | Recall |
+|----------|-----------|--------|
+| IMPORTS | ≥ 95% | ≥ 90% |
+| CALLS | ≥ 90% | ≥ 80% |
+| HANDLED_BY | ≥ 90% | ≥ 85% |
+| Overall important edges | ≥ 90% | ≥ 80% |
+| Held-out emitted-edge precision | ≥ 85% among non-AMBIGUOUS |
 
 ### Order of work
 
-1. ~~**Dogfood wave 5** — Flask, FastAPI, Django, CLI, library, monorepo-ish~~ ✅ (6/6 ok)
-2. ~~**Record every miss**~~ ✅ (FastAPI Flask FP, route double-count, Click missing — fixed)
-3. ~~**Framework route intelligence**~~ ✅ (Flask/FastAPI decorators + Django urls → HANDLED_BY)
-4. ~~**Python relationship benchmark**~~ ✅ (class/method, src-layout, service→repo; curated P=1/R=1)
-5. ~~**Python project detection**~~ ✅ (Poetry/uv/Pipenv/setuptools/src-layout)
-6. ~~**Held-out emitted-edge review**~~ ✅ (65-sample: 57 TRUE / 0 FALSE / 8 AMBIGUOUS → 100% non-AMBIGUOUS)
-7. ~~**Confidence / blind spots**~~ ✅ (heuristic Python limits + inventory wording)
-8. ~~**Regression fixtures**~~ ✅ (wave-5 misses + Python LIBRARY typing + Django route noise)
-
-### Targets
-
-| Metric | Target |
-|--------|--------|
-| Python relationship P/R (curated) | ≥ JS/TS targets for IMPORTS/CALLS/HANDLED_BY |
-| Held-out emitted-edge precision (TRUE / (TRUE+FALSE)) | ≥ 85% among non-AMBIGUOUS |
-| Wave-5 dogfood | 0 unexplained overview/framework misses |
-
-### Held-out edge sampling
-
-Curated benchmarks measure “did we find known-true edges?”  
-Sampling measures “of edges we emit, how often are they true?”
-
-```bash
-pnpm relationships:sample          # write stratified sample for review
-pnpm relationships:sample -- --score samples/reviewed.json
-```
-
-Default mix (100 edges): CALLS 30 · IMPORTS 25 · USES 15 · FETCHES 10 · HANDLED_BY 10 · QUERIES 10.
+1. **Go inventory + heuristic parser** (`.go` in CODE_EXTENSIONS)
+2. **Activate wave-6 dogfood** (Echo + Cobra first, then Gin/Chi/GORM/library)
+3. **Framework route / command intelligence**
+4. **Curated Go relationship fixtures** + `pnpm relationships`
+5. **Held-out emitted-edge review** on Go cases
+6. **Blind spots** for interfaces, reflection, build tags, generated code
+7. **Language coverage freeze** — no Java/Rust/C# until v1.2 lands
 
 ---
 
-## v1.1.4 — Go support
+## After Go — language freeze → v1.2
 
-After v1.1.3 is green: Echo + Cobra (already planned in dogfood matrix), then expand.
+Once JS/TS + Python + Go are trustworthy, **stop adding languages**. Deeper workflow features add more product value than another parser.
+
+### v1.2 — History, change intelligence & team workflows
+
+```
+Repository analysis history
+      ↓
+compare two analyses
+      ↓
+"What changed in the architecture?"
+
+PR impact history
+      ↓
+"Did this PR increase/decrease blast radius?"
+
+Architecture export packs · Saved/team views · Deterministic review reports
+```
+
+Turn GitImpact from an occasional lookup into something teams keep in their development workflow.
 
 ---
 
 ## Explicitly deferred
 
 - Private-repo / webhook RC E2E → v1.0 when App credentials are available
-- Go → **v1.1.4** only after Python accuracy holds
-- History / team dashboards → **v1.2**
+- Java / Rust / C# → **not** immediately after Go
 - AI → **v1.3**
-- More UI / platform infra → not the bottleneck; deepen language accuracy first
+- More UI / platform infra → not the bottleneck while language accuracy is open
 
 ---
 
 ## Commands
 
 ```bash
-pnpm dogfood -- --wave 5           # Python accuracy dogfood
+pnpm dogfood -- --wave 6           # Go accuracy dogfood
 pnpm relationships                 # curated edge precision/recall
 pnpm relationships:sample          # held-out emitted-edge sample
-pnpm relationships:review-sample   # auto-assist labels from curated expectations
+pnpm relationships:review-sample   # auto-assist labels
 pnpm test:accuracy
 pnpm test:real-world
 ```

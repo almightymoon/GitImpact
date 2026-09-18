@@ -103,6 +103,11 @@ const PRODUCT_FRAMEWORKS = new Set([
   "Celery",
   "SQLAlchemy",
   "Click",
+  "Echo",
+  "Gin",
+  "Chi",
+  "Cobra",
+  "GORM",
 ]);
 
 /** Score framework labels so adapters / supporting libs read as Medium when a product stack is present. */
@@ -200,6 +205,13 @@ export function buildBlindSpots(input: {
     // Honest limits of the heuristic Python surface
     spots.push(
       "Python analysis is heuristic — dynamic imports, monkeypatch, runtime decorators, and metaclasses may be missed",
+    );
+  }
+
+  const goFiles = (input.files ?? []).filter((f) => f.language === "go");
+  if (goFiles.length > 0) {
+    spots.push(
+      "Go analysis is heuristic — interfaces/method sets, constructor DI, build tags, reflection, generated code, and dynamic registration may be missed or low-confidence",
     );
   }
 

@@ -275,4 +275,46 @@ describe("Express detection", () => {
     );
     expect(routes.find((r) => r.path === "/login")?.handlerName).toBe("login");
   });
+
+  it("detects Echo from Go imports and extracts route handlers", () => {
+    const files = [
+      {
+        path: "main.go",
+        language: "go" as const,
+        imports: [
+          {
+            moduleSpecifier: "github.com/labstack/echo/v4",
+            namedImports: ["echo"],
+            isTypeOnly: false,
+          },
+        ],
+        exports: ["getUsers"],
+        functions: [
+          {
+            name: "getUsers",
+            startLine: 10,
+            endLine: 12,
+            exported: true,
+            calls: [],
+            parameters: [],
+          },
+        ],
+        classes: [],
+        isTest: false,
+        envVariables: [],
+      },
+    ];
+    expect(detectFrameworkNames(files)).toContain("Echo");
+    const contents = new Map([
+      [
+        "main.go",
+        'package main\nimport "github.com/labstack/echo/v4"\nfunc main() {\n  e := echo.New()\n  e.GET("/users", getUsers)\n}\nfunc getUsers(c echo.Context) error { return nil }\n',
+      ],
+    ]);
+    const routes = extractAllRoutes(files, contents);
+    expect(routes.some((r) => r.framework === "echo" && r.path === "/users")).toBe(
+      true,
+    );
+    expect(routes.find((r) => r.path === "/users")?.handlerName).toBe("getUsers");
+  });
 });

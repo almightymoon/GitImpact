@@ -1,0 +1,10 @@
+{
+  "mustDetect": {
+    "languages": ["Go"],
+    "frameworks": ["Echo"]
+  },
+  "mustHaveRoutes": [
+    { "method": "GET", "path": "/users" },
+    { "method": "POST", "path": "/login" }
+  ]
+}

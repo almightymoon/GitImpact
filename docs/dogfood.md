@@ -33,7 +33,7 @@ Optional: `GITHUB_TOKEN` raises GitHub API rate limits for HEAD SHA / clone of p
 
 ## Matrix shapes
 
-See `tests/dogfood/matrix.json`. Wave 1 is JS/TS + infra-only repos. Python/Go entries are reserved (`status: planned`) until wave-1 miss rate is under control.
+See `tests/dogfood/matrix.json`. Wave 1 is JS/TS + infra-only repos. Wave 5 is Python; wave 6 is Go (Echo/Cobra/Gin/Chi/GORM/testify).
 
 ## Recording a miss
 

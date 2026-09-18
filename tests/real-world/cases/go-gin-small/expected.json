@@ -1,0 +1,10 @@
+{
+  "mustDetect": {
+    "languages": ["Go"],
+    "frameworks": ["Gin"]
+  },
+  "mustHaveRoutes": [
+    { "method": "POST", "path": "/orders" },
+    { "method": "GET", "path": "/orders/:id" }
+  ]
+}

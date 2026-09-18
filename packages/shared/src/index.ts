@@ -152,7 +152,7 @@ export interface ParsedClass {
 
 export interface ParsedFile {
   path: string;
-  language: "typescript" | "javascript" | "tsx" | "jsx" | "python";
+  language: "typescript" | "javascript" | "tsx" | "jsx" | "python" | "go";
   imports: ParsedImport[];
   exports: string[];
   functions: ParsedFunction[];
@@ -295,7 +295,7 @@ export type HttpMethod =
 
 export interface DetectedRoute {
   id: string;
-  framework: "nextjs" | "express" | "nestjs" | "flask" | "fastapi" | "django" | "unknown";
+  framework: "nextjs" | "express" | "nestjs" | "flask" | "fastapi" | "django" | "echo" | "gin" | "chi" | "unknown";
   method: HttpMethod;
   path: string;
   file: string;
@@ -334,6 +334,7 @@ export const CODE_EXTENSIONS = [
   ".mjs",
   ".cjs",
   ".py",
+  ".go",
 ] as const;
 
 export const SECRET_PATTERNS = [

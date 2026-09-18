@@ -1,0 +1,24 @@
+{
+  "description": "Go Echo route registration + package CALLS",
+  "mustImport": [
+    { "from": "FILE:main.go", "to": "FILE:handlers/users.go" }
+  ],
+  "mustCall": [
+    {
+      "from": "FUNCTION:handlers/users.go:Login",
+      "to": "FUNCTION:handlers/users.go:IssueToken"
+    }
+  ],
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:echo:GET:/users:main.go",
+      "to": "FUNCTION:handlers/users.go:ListUsers",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "API_ROUTE:echo:POST:/login:main.go",
+      "to": "FUNCTION:handlers/users.go:Login",
+      "type": "HANDLED_BY"
+    }
+  ]
+}
