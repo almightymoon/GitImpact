@@ -32,10 +32,12 @@ function isTestPath(filePath: string): boolean {
   );
 }
 
-/** Examples/demos are not the product stack — ignore for framework attribution. */
+/** Examples/demos/docs sites are not the product stack — ignore for framework attribution. */
 export function isExampleOrDemoPath(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, "/");
-  return /(^|\/)(examples?|demos?|samples?|playgrounds?)\//i.test(normalized);
+  return /(^|\/)(examples?|demos?|samples?|playgrounds?|docs(?:-v\d+)?|documentation|www|website|bench(?:mark)?s?|e2e)\//i.test(
+    normalized,
+  );
 }
 
 export function isPrimarySourcePath(filePath: string): boolean {
@@ -51,7 +53,10 @@ export function hasProductionExpressImport(files: ParsedFile[]): boolean {
   return files.some(
     (file) =>
       isPrimarySourcePath(file.path) &&
-      file.imports.some((imp) => isExpressModuleSpecifier(imp.moduleSpecifier)),
+      file.imports.some(
+        (imp) =>
+          !imp.isTypeOnly && isExpressModuleSpecifier(imp.moduleSpecifier),
+      ),
   );
 }
 
@@ -331,8 +336,23 @@ export function detectFrameworkNames(
   files: ParsedFile[],
   packageDeps: Record<string, string> = {},
   packageName?: string,
+  packageNames: string[] = [],
 ): string[] {
   const names: string[] = [];
+  const workspace = new Set(
+    [packageName, ...packageNames].filter(Boolean) as string[],
+  );
+  const hasWorkspace = (...candidates: string[]) =>
+    candidates.some((c) => workspace.has(c));
+  const hasWorkspacePrefix = (...prefixes: string[]) =>
+    [...workspace].some((n) => prefixes.some((p) => n.startsWith(p)));
+  const hasWorkspaceShort = (...shorts: string[]) =>
+    shorts.some(
+      (s) =>
+        workspace.has(s) ||
+        [...workspace].some((n) => !n.startsWith("@") && (n.includes("/") ? n.split("/").pop()! : n) === s),
+    );
+
   const next = new NextJSAnalyzer();
   const express = new ExpressAnalyzer();
   const nest = new NestJSAnalyzer();
@@ -340,16 +360,89 @@ export function detectFrameworkNames(
   if (express.detect(files, packageDeps, packageName)) names.push("Express");
   if (nest.detect(files, packageDeps, packageName)) names.push("NestJS");
   if (packageDeps.react && !names.includes("Next.js")) names.push("React");
-  if (packageDeps.fastify || packageName === "fastify") names.push("Fastify");
-  if (packageDeps.hono || packageName === "hono") names.push("Hono");
-  if (packageDeps.koa || packageName === "koa") names.push("Koa");
+  if (packageDeps.fastify || hasWorkspace("fastify") || hasWorkspaceShort("fastify")) {
+    names.push("Fastify");
+  }
+  if (packageDeps.hono || hasWorkspace("hono") || hasWorkspaceShort("hono")) {
+    names.push("Hono");
+  }
+  if (packageDeps.koa || hasWorkspace("koa") || hasWorkspaceShort("koa")) names.push("Koa");
   if (packageDeps.prisma || packageDeps["@prisma/client"]) names.push("Prisma");
-  if (packageDeps["drizzle-orm"]) names.push("Drizzle");
-  if (packageName === "socket.io" || packageDeps["socket.io"]) names.push("Socket.IO");
-  if (packageName === "msw" || packageDeps.msw) names.push("MSW");
-  if (packageName === "preact" || packageDeps.preact) names.push("Preact");
-  if (packageName === "formik" || packageDeps.formik) names.push("Formik");
-  if (packageName === "vite" || packageDeps.vite) names.push("Vite");
+  if (hasWorkspace("socket.io") || hasWorkspaceShort("socket.io") || packageDeps["socket.io"]) {
+    names.push("Socket.IO");
+  }
+  if (hasWorkspace("msw") || hasWorkspaceShort("msw") || packageDeps.msw) names.push("MSW");
+  if (hasWorkspace("preact") || hasWorkspaceShort("preact") || packageDeps.preact) {
+    names.push("Preact");
+  }
+  if (hasWorkspace("formik") || hasWorkspaceShort("formik") || packageDeps.formik) {
+    names.push("Formik");
+  }
+  if (hasWorkspace("vite") || hasWorkspaceShort("vite") || packageDeps.vite) names.push("Vite");
+  if (hasWorkspace("zod") || hasWorkspaceShort("zod") || packageDeps.zod) names.push("Zod");
+  if (
+    hasWorkspace("solid-js") ||
+    hasWorkspaceShort("solid-js", "solid") ||
+    packageDeps["solid-js"]
+  ) {
+    names.push("Solid");
+  }
+  if (
+    hasWorkspace("drizzle-orm") ||
+    hasWorkspaceShort("drizzle-orm") ||
+    packageDeps["drizzle-orm"]
+  ) {
+    names.push("Drizzle");
+  }
+  if (
+    hasWorkspace("remix") ||
+    hasWorkspaceShort("remix") ||
+    hasWorkspacePrefix("@remix-run/") ||
+    packageDeps["@remix-run/react"] ||
+    packageDeps["@remix-run/node"]
+  ) {
+    names.push("Remix");
+  }
+  if (
+    hasWorkspace("lit") ||
+    hasWorkspaceShort("lit") ||
+    packageDeps.lit ||
+    packageDeps["@lit/reactive-element"]
+  ) {
+    names.push("Lit");
+  }
+  if (hasWorkspace("bullmq") || hasWorkspaceShort("bullmq") || packageDeps.bullmq) {
+    names.push("BullMQ");
+  }
+  if (hasWorkspace("zustand") || hasWorkspaceShort("zustand") || packageDeps.zustand) {
+    names.push("Zustand");
+  }
+  if (
+    hasWorkspace("trpc") ||
+    hasWorkspacePrefix("@trpc/") ||
+    packageDeps["@trpc/server"] ||
+    packageDeps["@trpc/client"]
+  ) {
+    names.push("tRPC");
+  }
+  if (
+    hasWorkspace("@tanstack/query-core") ||
+    hasWorkspace("@tanstack/react-query") ||
+    hasWorkspacePrefix("@tanstack/query-") ||
+    packageDeps["@tanstack/query-core"] ||
+    packageDeps["@tanstack/react-query"]
+  ) {
+    names.push("TanStack Query");
+  }
+  if (
+    hasWorkspace("payload") ||
+    hasWorkspaceShort("payload") ||
+    hasWorkspacePrefix("@payloadcms/") ||
+    packageDeps.payload ||
+    packageDeps["@payloadcms/db-mongodb"]
+  ) {
+    names.push("Payload");
+  }
   return [...new Set(names)];
 }
 

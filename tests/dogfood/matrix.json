@@ -205,6 +205,121 @@
       "why": "pnpm monorepo; expect truncation unless maxFiles raised"
     },
     {
+      "id": "zustand",
+      "url": "https://github.com/pmndrs/zustand",
+      "shape": "react-lib",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "why": "Held-out: tiny React state lib; unusual export surface"
+    },
+    {
+      "id": "zod",
+      "url": "https://github.com/colinhacks/zod",
+      "shape": "util-lib",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "why": "Held-out: schema DSL; method chaining / fluent API"
+    },
+    {
+      "id": "bullmq",
+      "url": "https://github.com/taskforcesh/bullmq",
+      "shape": "node-lib",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "why": "Held-out: job queue library; Redis-backed workers"
+    },
+    {
+      "id": "drizzle-orm",
+      "url": "https://github.com/drizzle-team/drizzle-orm",
+      "shape": "orm-monorepo",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Held-out: ORM monorepo; Drizzle label + package graph"
+    },
+    {
+      "id": "trpc",
+      "url": "https://github.com/trpc/trpc",
+      "shape": "fullstack-monorepo",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Held-out: end-to-end typesafe API monorepo"
+    },
+    {
+      "id": "tanstack-query",
+      "url": "https://github.com/TanStack/query",
+      "shape": "react-monorepo",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Held-out: packages/* React Query monorepo"
+    },
+    {
+      "id": "solid",
+      "url": "https://github.com/solidjs/solid",
+      "shape": "frontend-lib",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "why": "Held-out: SolidJS core; non-React frontend"
+    },
+    {
+      "id": "lit",
+      "url": "https://github.com/lit/lit",
+      "shape": "webcomponents-monorepo",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Held-out: Lit packages monorepo"
+    },
+    {
+      "id": "remix",
+      "url": "https://github.com/remix-run/remix",
+      "shape": "fullstack-monorepo",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "maxFiles": 5000,
+      "why": "Held-out: Remix framework monorepo; mixed FE/BE"
+    },
+    {
+      "id": "nestjs-mono",
+      "url": "https://github.com/nestjs/nest",
+      "shape": "nestjs-monorepo",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "maxFiles": 5000,
+      "why": "Held-out: full NestJS monorepo (not starter)"
+    },
+    {
+      "id": "payload",
+      "url": "https://github.com/payloadcms/payload",
+      "shape": "cms-monorepo",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "maxFiles": 8000,
+      "why": "Held-out: headless CMS; mixed packages"
+    },
+    {
+      "id": "terraform-eks",
+      "url": "https://github.com/terraform-aws-modules/terraform-aws-eks",
+      "shape": "terraform",
+      "priority": 4,
+      "wave": 4,
+      "status": "active",
+      "why": "Held-out: infra-heavy Terraform module (non-VPC)"
+    },
+    {
       "id": "python-flask",
       "url": "https://github.com/pallets/flask",
       "shape": "python-web",

@@ -23,6 +23,12 @@ function edgeId(from: string, to: string, type: RelationType): string {
   return `${from}->${to}:${type}`;
 }
 
+function confidenceRank(level: ConfidenceLevel): number {
+  if (level === "HIGH") return 3;
+  if (level === "MEDIUM") return 2;
+  return 1;
+}
+
 function inferFileType(file: ParsedFile): NodeType {
   const p = file.path.toLowerCase();
   if (file.isTest) return "TEST";
@@ -87,11 +93,23 @@ export class DependencyGraphBuilder {
       to: string,
       type: RelationType,
       confidence: ConfidenceLevel = "HIGH",
+      evidence?: GraphEdge["evidence"],
     ) => {
       if (!nodes.has(from) || !nodes.has(to) || from === to) return;
       const id = edgeId(from, to, type);
-      if (!edges.has(id)) {
-        edges.set(id, { id, from, to, type, confidence });
+      const existing = edges.get(id);
+      if (!existing) {
+        edges.set(id, { id, from, to, type, confidence, evidence });
+        return;
+      }
+      // Prefer higher confidence + keep first evidence if already present
+      if (
+        confidenceRank(confidence) > confidenceRank(existing.confidence)
+      ) {
+        existing.confidence = confidence;
+      }
+      if (!existing.evidence && evidence) {
+        existing.evidence = evidence;
       }
     };
 
@@ -190,15 +208,31 @@ export class DependencyGraphBuilder {
           resolveImportPath(file.path, imp.moduleSpecifier, knownFiles);
         if (!resolved) continue;
         const targetFileId = nodeId("FILE", resolved);
-        addEdge(fileNodeId, targetFileId, "IMPORTS", "HIGH");
+        const importEvidence: GraphEdge["evidence"] = {
+          file: file.path,
+          snippet: imp.namedImports.length
+            ? `import { ${imp.namedImports.slice(0, 4).join(", ")}${imp.namedImports.length > 4 ? ", …" : ""} } from "${imp.moduleSpecifier}"`
+            : imp.defaultImport
+              ? `import ${imp.defaultImport} from "${imp.moduleSpecifier}"`
+              : `import "${imp.moduleSpecifier}"`,
+          resolvedThrough: `${imp.moduleSpecifier} → ${resolved}`,
+          symbol: imp.defaultImport ?? imp.namedImports[0],
+        };
+        addEdge(fileNodeId, targetFileId, "IMPORTS", "HIGH", importEvidence);
 
         for (const named of imp.namedImports) {
           const targetFn = nodeId("FUNCTION", resolved, named);
           const targetClass = nodeId("CLASS", resolved, named);
+          const namedEvidence: GraphEdge["evidence"] = {
+            file: file.path,
+            snippet: `import { ${named} } from "${imp.moduleSpecifier}"`,
+            resolvedThrough: `${imp.moduleSpecifier} → ${resolved}`,
+            symbol: named,
+          };
           if (nodes.has(targetFn)) {
-            addEdge(fileNodeId, targetFn, "USES", "HIGH");
+            addEdge(fileNodeId, targetFn, "USES", "HIGH", namedEvidence);
           } else if (nodes.has(targetClass)) {
-            addEdge(fileNodeId, targetClass, "USES", "HIGH");
+            addEdge(fileNodeId, targetClass, "USES", "HIGH", namedEvidence);
           } else {
             // Barrel re-export: find unique exported symbol with this name elsewhere
             const matches = [...nodes.values()].filter(
@@ -206,7 +240,7 @@ export class DependencyGraphBuilder {
                 (n.type === "FUNCTION" || n.type === "CLASS") && n.name === named,
             );
             if (matches.length === 1) {
-              addEdge(fileNodeId, matches[0].id, "USES", "MEDIUM");
+              addEdge(fileNodeId, matches[0].id, "USES", "MEDIUM", namedEvidence);
             }
           }
         }
@@ -243,20 +277,31 @@ export class DependencyGraphBuilder {
         return target && nodes.has(target) ? target : undefined;
       };
 
+      const callEvidence = (call: ResolvedCall): GraphEdge["evidence"] => ({
+        file: file.path,
+        startLine: call.startLine,
+        snippet: `${call.calleeName}(…)`,
+        symbol: call.calleeName,
+        resolvedThrough: call.resolvedFile
+          ? `${call.resolvedKind.toLowerCase()} ${call.resolvedSymbol ?? call.calleeName} in ${call.resolvedFile}`
+          : `${call.resolvedKind.toLowerCase()} ${call.resolvedSymbol ?? call.calleeName}`,
+      });
+
       const wireCalls = (fromId: string, calls: ResolvedCall[]) => {
         for (const call of calls) {
           const target = resolveCallTarget(call);
           if (!target) continue;
+          const evidence = callEvidence(call);
           if (call.resolvedKind === "MODULE") {
-            addEdge(fromId, target, "IMPORTS", call.confidence);
-            addEdge(fileNodeId, target, "IMPORTS", call.confidence);
+            addEdge(fromId, target, "IMPORTS", call.confidence, evidence);
+            addEdge(fileNodeId, target, "IMPORTS", call.confidence, evidence);
             continue;
           }
           if (call.resolvedKind === "QUERY") {
-            addEdge(fromId, target, "QUERIES", call.confidence);
+            addEdge(fromId, target, "QUERIES", call.confidence, evidence);
             continue;
           }
-          addEdge(fromId, target, "CALLS", call.confidence);
+          addEdge(fromId, target, "CALLS", call.confidence, evidence);
         }
       };
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access } from "node:fs/promises";
+import { access, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   analyzeAndCommentOnPullRequest,
@@ -7,6 +7,7 @@ import {
   analyzeRepositoryUrl,
   parseGitHubUrl,
 } from "@gitimpact/analysis";
+import type { StoredAnalysis } from "@gitimpact/analysis";
 
 async function runAdmin(args: string[]): Promise<void> {
   const [subcommand, target] = args;
@@ -92,128 +93,32 @@ async function runAdmin(args: string[]): Promise<void> {
   process.exit(1);
 }
 
-async function main() {
-  const [, , command, target, ...rest] = process.argv;
-
-  if (!command || command === "help" || command === "--help") {
-    console.log(`GitImpact CLI
-
-Usage:
-  gitimpact analyze <github-url>
-  gitimpact analyze <local-path>
-  gitimpact comment <github-pr-url> [--dry-run]
-  gitimpact diff <github-pr-url>
-  gitimpact admin <subcommand>
-
-Examples:
-  gitimpact analyze github.com/owner/repo
-  gitimpact analyze github.com/owner/repo/pull/123
-  gitimpact analyze ./my-app
-  gitimpact comment github.com/owner/repo/pull/123
-  gitimpact comment github.com/owner/repo/pull/123 --dry-run
-  gitimpact admin health
-  gitimpact admin jobs failed
-  gitimpact admin jobs retry job_abc
-  gitimpact admin cache purge owner/repo
-`);
-    return;
-  }
-
-  if (command === "admin") {
-    await runAdmin([target, ...rest].filter(Boolean));
-    return;
-  }
-
-  if (!["analyze", "diff", "pr", "comment"].includes(command)) {
-    console.error(`Unknown command: ${command}`);
-    process.exit(1);
-  }
-
-  if (!target) {
-    console.error("A GitHub repository URL or local path is required.");
-    process.exit(1);
-  }
-
-  if (command === "comment") {
-    const dryRun = rest.includes("--dry-run");
-    const parsed = parseGitHubUrl(target);
-    if (parsed.kind !== "pull_request" || !parsed.prNumber) {
-      console.error("comment requires a pull request URL");
-      process.exit(1);
-    }
-
-    console.log(dryRun ? "Analyzing (dry-run, will not post)…" : "Analyzing and commenting…");
-    const result = await analyzeAndCommentOnPullRequest({
-      owner: parsed.owner,
-      repo: parsed.repo,
-      number: parsed.prNumber,
-      maxFiles: 800,
-      postComment: !dryRun,
-      analysisBaseUrl: process.env.GITIMPACT_PUBLIC_URL,
-    });
-
-    console.log("");
-    console.log(result.commentBody);
-    console.log("");
-    if (result.posted) {
-      console.log(
-        result.commentCreated ? "Posted new PR comment." : "Updated existing GitImpact comment.",
-      );
-      if (result.commentUrl) console.log(result.commentUrl);
-    } else {
-      console.log(`Comment not posted: ${result.skippedReason ?? "unknown"}`);
-    }
-    return;
-  }
-
-  console.log("Analyzing…");
-  const jsonOut = rest.includes("--json");
-  let analysis;
-
-  const isRemote =
+function isRemoteTarget(target: string): boolean {
+  return (
     /^https?:\/\//i.test(target) ||
     /github\.com/i.test(target) ||
-    /^[\w.-]+\/[\w.-]+(\/pull\/\d+)?$/i.test(target);
+    /^[\w.-]+\/[\w.-]+(\/pull\/\d+)?$/i.test(target)
+  );
+}
 
-  if (!isRemote) {
+async function loadAnalysis(
+  target: string,
+  options?: { maxFiles?: number },
+): Promise<StoredAnalysis> {
+  const maxFiles = options?.maxFiles ?? 2000;
+  if (!isRemoteTarget(target)) {
     const localDir = path.resolve(target.replace(/^~(?=\/|$)/, process.env.HOME ?? ""));
     try {
       await access(localDir);
-      analysis = await analyzeLocalPath(localDir, { maxFiles: 2000 });
+      return await analyzeLocalPath(localDir, { maxFiles });
     } catch {
-      console.error(`Local path not found: ${localDir}`);
-      process.exit(1);
+      throw new Error(`Local path not found: ${localDir}`);
     }
-  } else {
-    analysis = await analyzeRepositoryUrl(target, { maxFiles: 800 });
   }
+  return await analyzeRepositoryUrl(target, { maxFiles: Math.min(maxFiles, 800) });
+}
 
-  if (jsonOut) {
-    console.log(
-      JSON.stringify(
-        {
-          id: analysis.id,
-          summary: analysis.summary,
-          repositoryType: analysis.intelligence?.repositoryType,
-          coverage: analysis.intelligence?.coverage
-            ? {
-                confidence: analysis.intelligence.coverage.confidence,
-                codeParseCoveragePercent:
-                  analysis.intelligence.coverage.codeParseCoveragePercent,
-                highConfidenceEdgePercent:
-                  analysis.intelligence.coverage.highConfidenceEdgePercent,
-                reasons: analysis.intelligence.coverage.reasons,
-              }
-            : null,
-          frameworks: analysis.summary.frameworks,
-        },
-        null,
-        2,
-      ),
-    );
-    return;
-  }
-
+function printAnalyzeSummary(analysis: StoredAnalysis): void {
   console.log("");
   console.log("Repository analyzed.");
   console.log(`Type: ${analysis.intelligence?.typeLabel ?? "unknown"}`);
@@ -248,8 +153,312 @@ Examples:
 
   if (analysis.prOverview) {
     console.log("");
-    console.log(`Complexity: ${analysis.prOverview.complexityScore}/100 (${analysis.prOverview.impactLevel})`);
+    console.log(
+      `Complexity: ${analysis.prOverview.complexityScore}/100 (${analysis.prOverview.impactLevel})`,
+    );
   }
+}
+
+function printStructure(analysis: StoredAnalysis): void {
+  const intel = analysis.intelligence;
+  console.log("");
+  console.log(`# ${analysis.repository.owner}/${analysis.repository.name}`);
+  console.log(`Type: ${intel?.typeLabel ?? "unknown"}`);
+  if (intel?.architectureSummary) {
+    console.log("");
+    console.log(intel.architectureSummary);
+  }
+  if (analysis.summary.frameworks.length) {
+    console.log("");
+    console.log(`Frameworks: ${analysis.summary.frameworks.join(", ")}`);
+  }
+  const systems =
+    intel?.architecture?.components.filter((c) => (c.level ?? "SYSTEM") === "SYSTEM") ?? [];
+  if (systems.length) {
+    console.log("");
+    console.log("Systems");
+    for (const system of systems.slice(0, 20)) {
+      const hint = system.pathHint ? ` (${system.pathHint})` : "";
+      console.log(`- ${system.title}${hint} — ${system.role}`);
+    }
+  }
+  const edges = intel?.architecture?.edges ?? [];
+  if (edges.length) {
+    console.log("");
+    console.log("Relationships");
+    for (const edge of edges.slice(0, 30)) {
+      const from = systems.find((s) => s.id === edge.from)?.title ?? edge.from;
+      const to = systems.find((s) => s.id === edge.to)?.title ?? edge.to;
+      console.log(`- ${from} ${edge.label} ${to}`);
+    }
+  }
+  if (intel?.coverage?.blindSpots?.length) {
+    console.log("");
+    console.log("Blind spots");
+    for (const spot of intel.coverage.blindSpots) {
+      console.log(`- ${spot}`);
+    }
+  }
+}
+
+function buildArchitectureMarkdown(analysis: StoredAnalysis): string {
+  const intel = analysis.intelligence;
+  const lines: string[] = [];
+  lines.push(`# Architecture — ${analysis.repository.owner}/${analysis.repository.name}`);
+  lines.push("");
+  lines.push(`**Type:** ${intel?.typeLabel ?? "unknown"}`);
+  if (analysis.summary.frameworks.length) {
+    lines.push(`**Stack:** ${analysis.summary.frameworks.join(", ")}`);
+  }
+  if (intel?.coverage) {
+    lines.push(
+      `**Coverage:** ${intel.coverage.confidenceLabel}` +
+        (intel.coverage.codeParseCoveragePercent != null
+          ? ` · ${intel.coverage.codeParseCoveragePercent}% parsed`
+          : ""),
+    );
+  }
+  lines.push("");
+  if (intel?.architectureSummary) {
+    lines.push(intel.architectureSummary);
+    lines.push("");
+  }
+  const systems =
+    intel?.architecture?.components.filter((c) => (c.level ?? "SYSTEM") === "SYSTEM") ?? [];
+  if (systems.length) {
+    lines.push("## Systems");
+    lines.push("");
+    for (const system of systems) {
+      const hint = system.pathHint ? ` \`${system.pathHint}\`` : "";
+      lines.push(`- **${system.title}**${hint} — ${system.role}`);
+    }
+    lines.push("");
+  }
+  const edges = intel?.architecture?.edges ?? [];
+  if (edges.length) {
+    lines.push("## Relationships");
+    lines.push("");
+    for (const edge of edges) {
+      const from = systems.find((s) => s.id === edge.from)?.title ?? edge.from;
+      const to = systems.find((s) => s.id === edge.to)?.title ?? edge.to;
+      lines.push(`- ${from} → ${to} (${edge.label})`);
+    }
+    lines.push("");
+  }
+  if (intel?.coverage?.blindSpots?.length) {
+    lines.push("## Blind spots");
+    lines.push("");
+    for (const spot of intel.coverage.blindSpots) {
+      lines.push(`- ${spot}`);
+    }
+    lines.push("");
+  }
+  lines.push("---");
+  lines.push("");
+  lines.push(`Generated by GitImpact · ${new Date().toISOString()}`);
+  return `${lines.join("\n")}\n`;
+}
+
+function printHelp(): void {
+  console.log(`GitImpact CLI
+
+Usage:
+  gitimpact analyze <github-url|local-path> [--json]
+  gitimpact structure <github-url|local-path>
+  gitimpact impact <github-pr-url>
+  gitimpact impact --from <ref> --to <ref> <local-path>
+  gitimpact pr --base <branch> <github-url|local-path>
+  gitimpact export architecture.md <github-url|local-path>
+  gitimpact comment <github-pr-url> [--dry-run]
+  gitimpact diff <github-pr-url>
+  gitimpact admin <subcommand>
+
+Examples:
+  gitimpact analyze .
+  gitimpact structure .
+  gitimpact impact github.com/owner/repo/pull/123
+  gitimpact pr --base main .
+  gitimpact export architecture.md .
+  gitimpact comment github.com/owner/repo/pull/123 --dry-run
+  gitimpact admin health
+`);
+}
+
+function flagValue(args: string[], name: string): string | undefined {
+  const idx = args.indexOf(name);
+  if (idx === -1) return undefined;
+  return args[idx + 1];
+}
+
+async function main() {
+  const [, , command, ...argv] = process.argv;
+
+  if (!command || command === "help" || command === "--help") {
+    printHelp();
+    return;
+  }
+
+  if (command === "admin") {
+    await runAdmin(argv);
+    return;
+  }
+
+  if (command === "comment") {
+    const target = argv[0];
+    const dryRun = argv.includes("--dry-run");
+    if (!target) {
+      console.error("comment requires a pull request URL");
+      process.exit(1);
+    }
+    const parsed = parseGitHubUrl(target);
+    if (parsed.kind !== "pull_request" || !parsed.prNumber) {
+      console.error("comment requires a pull request URL");
+      process.exit(1);
+    }
+
+    console.log(dryRun ? "Analyzing (dry-run, will not post)…" : "Analyzing and commenting…");
+    const result = await analyzeAndCommentOnPullRequest({
+      owner: parsed.owner,
+      repo: parsed.repo,
+      number: parsed.prNumber,
+      maxFiles: 800,
+      postComment: !dryRun,
+      analysisBaseUrl: process.env.GITIMPACT_PUBLIC_URL,
+    });
+
+    console.log("");
+    console.log(result.commentBody);
+    console.log("");
+    if (result.posted) {
+      console.log(
+        result.commentCreated ? "Posted new PR comment." : "Updated existing GitImpact comment.",
+      );
+      if (result.commentUrl) console.log(result.commentUrl);
+    } else {
+      console.log(`Comment not posted: ${result.skippedReason ?? "unknown"}`);
+    }
+    return;
+  }
+
+  if (command === "export") {
+    const outName = argv[0] ?? "architecture.md";
+    const target = argv[1] ?? ".";
+    console.log("Analyzing…");
+    const analysis = await loadAnalysis(target);
+    const markdown = buildArchitectureMarkdown(analysis);
+    const outPath = path.resolve(outName.endsWith(".md") ? outName : `${outName}.md`);
+    await writeFile(outPath, markdown, "utf8");
+    console.log(`Wrote ${outPath}`);
+    return;
+  }
+
+  if (command === "structure") {
+    const target = argv[0] ?? ".";
+    console.log("Analyzing…");
+    const analysis = await loadAnalysis(target);
+    printStructure(analysis);
+    return;
+  }
+
+  if (command === "pr") {
+    const base = flagValue(argv, "--base") ?? "main";
+    const target =
+      argv.find((a, i) => !a.startsWith("--") && argv[i - 1] !== "--base") ?? ".";
+    // Local/PR compare against base is represented via GitHub PR URL when remote;
+    // for local paths we surface structure + coverage as the PR readiness snapshot.
+    console.log(`Analyzing PR surface (base ${base})…`);
+    const analysis = await loadAnalysis(target);
+    printStructure(analysis);
+    if (analysis.prOverview) {
+      console.log("");
+      console.log(
+        `PR complexity vs ${base}: ${analysis.prOverview.complexityScore}/100 (${analysis.prOverview.impactLevel})`,
+      );
+    } else if (isRemoteTarget(target) && /\/pull\//i.test(target)) {
+      // already included via analyze
+    } else {
+      console.log("");
+      console.log(
+        `Tip: pass a PR URL for blast-radius impact, e.g. gitimpact pr --base ${base} owner/repo/pull/123`,
+      );
+    }
+    return;
+  }
+
+  if (command === "impact") {
+    const fromRef = flagValue(argv, "--from");
+    const toRef = flagValue(argv, "--to");
+    const target =
+      argv.find((a, i) => !a.startsWith("--") && argv[i - 1] !== "--from" && argv[i - 1] !== "--to") ??
+      ".";
+
+    if (fromRef || toRef) {
+      console.log(
+        `Local ref impact (${fromRef ?? "HEAD~1"} → ${toRef ?? "HEAD"}) is not wired yet.`,
+      );
+      console.log("Analyzing repository structure instead; use a PR URL for blast radius.");
+    }
+
+    console.log("Analyzing…");
+    const analysis = await loadAnalysis(target);
+    if (analysis.impact) {
+      printAnalyzeSummary(analysis);
+    } else if (isRemoteTarget(target) && /\/pull\//i.test(target)) {
+      printAnalyzeSummary(analysis);
+    } else {
+      printStructure(analysis);
+      console.log("");
+      console.log(
+        "No PR impact report — pass a pull request URL, e.g. gitimpact impact owner/repo/pull/12",
+      );
+    }
+    return;
+  }
+
+  if (!["analyze", "diff"].includes(command)) {
+    console.error(`Unknown command: ${command}`);
+    printHelp();
+    process.exit(1);
+  }
+
+  const target = argv[0];
+  if (!target) {
+    console.error("A GitHub repository URL or local path is required.");
+    process.exit(1);
+  }
+
+  console.log("Analyzing…");
+  const jsonOut = argv.includes("--json");
+  const analysis = await loadAnalysis(target);
+
+  if (jsonOut) {
+    console.log(
+      JSON.stringify(
+        {
+          id: analysis.id,
+          summary: analysis.summary,
+          repositoryType: analysis.intelligence?.repositoryType,
+          coverage: analysis.intelligence?.coverage
+            ? {
+                confidence: analysis.intelligence.coverage.confidence,
+                codeParseCoveragePercent:
+                  analysis.intelligence.coverage.codeParseCoveragePercent,
+                highConfidenceEdgePercent:
+                  analysis.intelligence.coverage.highConfidenceEdgePercent,
+                reasons: analysis.intelligence.coverage.reasons,
+                blindSpots: analysis.intelligence.coverage.blindSpots,
+              }
+            : null,
+          frameworks: analysis.summary.frameworks,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  printAnalyzeSummary(analysis);
 }
 
 main().catch((error) => {

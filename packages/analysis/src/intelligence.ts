@@ -20,6 +20,7 @@ import {
   buildArchitectureExperience,
   collectArchitectureArtifacts,
 } from "./architecture/index.js";
+import { detectWorkspacePackages } from "./architecture-map.js";
 import { buildAnalysisCoverage } from "./coverage.js";
 import { buildInfrastructureNodes } from "./checks/index.js";
 
@@ -93,6 +94,7 @@ export async function buildRepositoryIntelligence(input: {
   }
 
   const testCount = input.files.filter((f) => f.isTest).length;
+  const workspacePackages = detectWorkspacePackages(filePaths);
   const architectureSummary = buildArchitectureSummary({
     typeLabel: label,
     frameworks: input.frameworks,
@@ -102,6 +104,7 @@ export async function buildRepositoryIntelligence(input: {
     languages,
     infraSignals,
     codeFileCount: input.files.length,
+    workspacePackages,
   });
 
   const architectureArtifacts = collectArchitectureArtifacts(filePaths);
@@ -126,6 +129,8 @@ export async function buildRepositoryIntelligence(input: {
     allRelativeFiles: filePaths,
     codeFilePaths: input.files.map((f) => f.path),
     infraSignals,
+    frameworks: input.frameworks,
+    files: input.files,
   });
 
   return {

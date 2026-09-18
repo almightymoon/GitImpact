@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { access, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import {
   Project,
@@ -544,6 +544,7 @@ export async function parseRepository(
   contentsByPath: Map<string, string>;
   packageDeps: Record<string, string>;
   packageName?: string;
+  packageNames?: string[];
   analysisHealth: {
     filesDiscovered: number;
     filesParsed: number;
@@ -635,7 +636,13 @@ export async function parseRepository(
 
   const packageManifest = await readPackageManifest(rootDir);
   const packageDeps = packageManifest.deps;
-  const frameworks = await detectFrameworks(rootDir, files, packageDeps, packageManifest.name);
+  const frameworks = await detectFrameworks(
+    rootDir,
+    files,
+    packageDeps,
+    packageManifest.name,
+    packageManifest.packageNames,
+  );
 
   return {
     files,
@@ -644,6 +651,7 @@ export async function parseRepository(
     contentsByPath,
     packageDeps,
     packageName: packageManifest.name,
+    packageNames: packageManifest.packageNames,
     allRelativeFiles: inventory.allRelativeFiles,
     analysisHealth: {
       filesDiscovered: relativePaths.length,
@@ -741,10 +749,15 @@ async function readJsonPackage(
 function prodAndPeerDeps(pkg: {
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
 }): Record<string, string> {
+  const peers = { ...pkg.peerDependencies };
+  for (const [name, meta] of Object.entries(pkg.peerDependenciesMeta ?? {})) {
+    if (meta?.optional) delete peers[name];
+  }
   return {
     ...pkg.dependencies,
-    ...pkg.peerDependencies,
+    ...peers,
   };
 }
 
@@ -790,6 +803,26 @@ async function listWorkspacePackageDirs(rootDir: string): Promise<string[]> {
     // no pnpm workspace file
   }
 
+  // Also probe top-level package dirs used by flat monorepos (drizzle-*, etc.)
+  try {
+    const entries = await readdir(rootDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+      if (["packages", "apps", "node_modules", "docs", "examples"].includes(entry.name)) {
+        continue;
+      }
+      const pkgPath = path.join(rootDir, entry.name, "package.json");
+      try {
+        await access(pkgPath);
+        dirs.add(path.join(rootDir, entry.name));
+      } catch {
+        // no package.json
+      }
+    }
+  } catch {
+    // ignore
+  }
+
   return [...dirs];
 }
 
@@ -802,24 +835,67 @@ function shortPackageName(name: string): string {
   return trimmed;
 }
 
+function isToolingOrDocsPackage(name: string): boolean {
+  const short = shortPackageName(name);
+  return /(?:^|-)(docs?|documentation|website|www|bench(?:mark)?s?|examples?|e2e|integration|treeshake|tsc|perf|native|playground)$/i.test(
+    short,
+  );
+}
+
 function pickPrimaryPackageName(
   rootName: string | undefined,
   workspaceNames: string[],
 ): string | undefined {
   const avoid = /(?:^|-)(project|monorepo|web|website|docs|examples?)$/i;
-  const scored = workspaceNames
-    .filter((n) => n && !avoid.test(shortPackageName(n)))
+  const knownProduct = (n: string) => {
+    const short = shortPackageName(n);
+    return (
+      /^(zod|solid-js|drizzle-orm|lit|bullmq|zustand|remix|express|fastify|hono|koa|msw|payload|vite|preact|formik)$/i.test(
+        short,
+      ) ||
+      n === "@trpc/server" ||
+      n === "@tanstack/query-core" ||
+      n === "@tanstack/react-query" ||
+      n.startsWith("@remix-run/") ||
+      n === "payload" ||
+      n.startsWith("@payloadcms/payload") ||
+      n === "@nestjs/core"
+    );
+  };
+  const isIntegrationPackage = (n: string) => {
+    const short = shortPackageName(n);
+    return /^(next|react-query|tanstack-react-query|express|fastify|nestjs|openapi|upgrade|devtools)$/i.test(
+      short,
+    );
+  };
+  const candidates = workspaceNames.filter(
+    (n) => n && !avoid.test(shortPackageName(n)) && !isToolingOrDocsPackage(n),
+  );
+  // Prefer known product packages, then unscoped, then remaining workspace names.
+  const known = candidates.filter(knownProduct);
+  const unscoped = candidates.filter((n) => !n.startsWith("@"));
+  const pool =
+    known.length > 0 ? known : unscoped.length > 0 ? unscoped : candidates;
+  const scored = pool
     .map((n) => ({
       name: n,
       short: shortPackageName(n),
-      score: (n.startsWith("@") ? 1 : 0) + shortPackageName(n).length,
+      score:
+        (n.startsWith("@") ? 10 : 0) +
+        shortPackageName(n).length +
+        (knownProduct(n) ? -40 : 0) +
+        (isIntegrationPackage(n) ? 40 : 0) +
+        (/^(server|core|orm|runtime)$/i.test(shortPackageName(n)) ? -25 : 0) +
+        (/adapter|plugin|create-|eslint|config|devtools/i.test(n) ? 20 : 0),
     }))
     .sort((a, b) => a.score - b.score);
-  if (scored[0]?.name) return scored[0].short;
-  if (rootName && !avoid.test(shortPackageName(rootName))) {
-    return shortPackageName(rootName);
+  if (scored[0]?.name) {
+    return scored[0].name;
   }
-  return rootName ? shortPackageName(rootName) : undefined;
+  if (rootName && !avoid.test(shortPackageName(rootName)) && !isToolingOrDocsPackage(rootName)) {
+    return rootName;
+  }
+  return rootName;
 }
 
 async function readPackageManifest(rootDir: string): Promise<{
@@ -832,28 +908,48 @@ async function readPackageManifest(rootDir: string): Promise<{
     return { deps: {}, packageNames: [] };
   }
 
-  const deps: Record<string, string> = { ...prodAndPeerDeps(rootPkg) };
   const packageNames = new Set<string>();
   if (rootPkg.name) packageNames.add(rootPkg.name);
 
   const workspaceDirs = await listWorkspacePackageDirs(rootDir);
-  for (const dir of workspaceDirs.slice(0, 40)) {
+  const workspacePkgs: Array<{ dir: string; name?: string; deps: Record<string, string> }> =
+    [];
+
+  for (const dir of workspaceDirs.slice(0, 60)) {
+    const base = path.basename(dir);
+    if (isToolingOrDocsPackage(base)) continue;
     const pkg = await readJsonPackage(path.join(dir, "package.json"));
     if (!pkg) continue;
+    if (pkg.name && isToolingOrDocsPackage(pkg.name)) continue;
     if (pkg.name) packageNames.add(pkg.name);
-    Object.assign(deps, prodAndPeerDeps(pkg));
+    workspacePkgs.push({ dir, name: pkg.name, deps: prodAndPeerDeps(pkg) });
   }
 
   const names = [...packageNames];
+  const primaryName =
+    pickPrimaryPackageName(rootPkg.name, names) ?? rootPkg.name;
+
+  // Framework signals use the primary package only — never merge every adapter/docs peer.
+  let deps = prodAndPeerDeps(rootPkg);
+  if (primaryName) {
+    const primaryShort = shortPackageName(primaryName);
+    const match = workspacePkgs.find(
+      (p) =>
+        p.name === primaryName ||
+        (p.name && shortPackageName(p.name) === primaryShort) ||
+        path.basename(p.dir) === primaryShort ||
+        path.basename(p.dir) === primaryName,
+    );
+    if (match) {
+      deps = match.deps;
+    }
+  }
+
   return {
-    name: pickPrimaryPackageName(rootPkg.name, names) ?? rootPkg.name,
+    name: primaryName,
     deps,
     packageNames: names,
   };
-}
-
-async function readPackageDeps(rootDir: string): Promise<Record<string, string>> {
-  return (await readPackageManifest(rootDir)).deps;
 }
 
 export function detectLanguages(files: ParsedFile[]): LanguageStats[] {
@@ -880,15 +976,36 @@ export async function detectFrameworks(
   files: ParsedFile[],
   packageDeps?: Record<string, string>,
   packageName?: string,
+  packageNames: string[] = [],
 ): Promise<string[]> {
-  const deps = packageDeps ?? (await readPackageDeps(rootDir));
-  const name = packageName ?? (await readPackageManifest(rootDir)).name;
+  const manifest =
+    packageDeps && packageName !== undefined
+      ? { deps: packageDeps, name: packageName, packageNames }
+      : await readPackageManifest(rootDir);
+  const deps = packageDeps ?? manifest.deps;
+  const name = packageName ?? manifest.name;
+  const workspaceNames =
+    packageNames.length > 0 ? packageNames : manifest.packageNames;
+  const workspace = new Set(
+    [name, ...workspaceNames].filter(Boolean) as string[],
+  );
+  const hasWorkspace = (...candidates: string[]) =>
+    candidates.some((c) => workspace.has(c));
+  const hasWorkspacePrefix = (...prefixes: string[]) =>
+    [...workspace].some((n) => prefixes.some((p) => n.startsWith(p)));
+  // Short-name match only for unambiguous unscoped packages (avoid @trpc/react-query → "react-query").
+  const hasWorkspaceShort = (...shorts: string[]) =>
+    shorts.some(
+      (s) =>
+        workspace.has(s) ||
+        [...workspace].some((n) => !n.startsWith("@") && shortPackageName(n) === s),
+    );
   const frameworks = new Set<string>();
 
   const isPrimary = (filePath: string) => {
     const normalized = filePath.replace(/\\/g, "/");
     return (
-      !/(^|\/)(__(tests|mocks)__|tests?|spec|fixtures?|examples?|demos?|samples?|playgrounds?)\//i.test(
+      !/(^|\/)(__(tests|mocks)__|tests?|spec|fixtures?|examples?|demos?|samples?|playgrounds?|docs(?:-v\d+)?|documentation|www|website|bench(?:mark)?s?|e2e)\//i.test(
         normalized,
       ) && !/\.(test|spec)\.[cm]?[jt]sx?$/i.test(normalized)
     );
@@ -896,8 +1013,8 @@ export async function detectFrameworks(
 
   if (deps.next) frameworks.add("Next.js");
   if (deps.react) frameworks.add("React");
-  if (deps["@nestjs/core"]) frameworks.add("NestJS");
-  if (name === "express") {
+  if (deps["@nestjs/core"] || hasWorkspace("@nestjs/core")) frameworks.add("NestJS");
+  if (hasWorkspace("express") || hasWorkspaceShort("express")) {
     frameworks.add("Express");
   } else if (
     files.some(
@@ -905,25 +1022,93 @@ export async function detectFrameworks(
         isPrimary(file.path) &&
         file.imports.some(
           (imp) =>
-            imp.moduleSpecifier === "express" ||
-            imp.moduleSpecifier.startsWith("express/"),
+            !imp.isTypeOnly &&
+            (imp.moduleSpecifier === "express" ||
+              imp.moduleSpecifier.startsWith("express/")),
         ),
     )
   ) {
     frameworks.add("Express");
   }
-  if (deps.fastify || name === "fastify") frameworks.add("Fastify");
-  if (deps.hono || name === "hono") frameworks.add("Hono");
-  if (deps.koa || name === "koa") frameworks.add("Koa");
+  if (deps.fastify || hasWorkspace("fastify") || hasWorkspaceShort("fastify")) {
+    frameworks.add("Fastify");
+  }
+  if (deps.hono || hasWorkspace("hono") || hasWorkspaceShort("hono")) frameworks.add("Hono");
+  if (deps.koa || hasWorkspace("koa") || hasWorkspaceShort("koa")) frameworks.add("Koa");
   if (deps.vue) frameworks.add("Vue");
   if (deps["@angular/core"]) frameworks.add("Angular");
   if (deps.prisma || deps["@prisma/client"]) frameworks.add("Prisma");
-  if (deps["drizzle-orm"]) frameworks.add("Drizzle");
-  if (name === "socket.io" || deps["socket.io"]) frameworks.add("Socket.IO");
-  if (name === "msw" || deps.msw) frameworks.add("MSW");
-  if (name === "preact" || deps.preact) frameworks.add("Preact");
-  if (name === "formik" || deps.formik) frameworks.add("Formik");
-  if (name === "vite" || deps.vite) frameworks.add("Vite");
+  if (hasWorkspace("socket.io") || hasWorkspaceShort("socket.io") || deps["socket.io"]) {
+    frameworks.add("Socket.IO");
+  }
+  if (hasWorkspace("msw") || hasWorkspaceShort("msw") || deps.msw) frameworks.add("MSW");
+  if (hasWorkspace("preact") || hasWorkspaceShort("preact") || deps.preact) {
+    frameworks.add("Preact");
+  }
+  if (hasWorkspace("formik") || hasWorkspaceShort("formik") || deps.formik) {
+    frameworks.add("Formik");
+  }
+  if (hasWorkspace("vite") || hasWorkspaceShort("vite") || deps.vite) frameworks.add("Vite");
+  if (hasWorkspace("zod") || hasWorkspaceShort("zod") || deps.zod) frameworks.add("Zod");
+  if (
+    hasWorkspace("solid-js") ||
+    hasWorkspaceShort("solid-js", "solid") ||
+    deps["solid-js"]
+  ) {
+    frameworks.add("Solid");
+  }
+  if (hasWorkspace("drizzle-orm") || hasWorkspaceShort("drizzle-orm") || deps["drizzle-orm"]) {
+    frameworks.add("Drizzle");
+  }
+  if (
+    hasWorkspace("remix") ||
+    hasWorkspaceShort("remix") ||
+    hasWorkspacePrefix("@remix-run/") ||
+    deps["@remix-run/react"] ||
+    deps["@remix-run/node"]
+  ) {
+    frameworks.add("Remix");
+  }
+  if (
+    hasWorkspace("lit") ||
+    hasWorkspaceShort("lit") ||
+    deps.lit ||
+    deps["@lit/reactive-element"]
+  ) {
+    frameworks.add("Lit");
+  }
+  if (hasWorkspace("bullmq") || hasWorkspaceShort("bullmq") || deps.bullmq) {
+    frameworks.add("BullMQ");
+  }
+  if (hasWorkspace("zustand") || hasWorkspaceShort("zustand") || deps.zustand) {
+    frameworks.add("Zustand");
+  }
+  if (
+    hasWorkspace("trpc") ||
+    hasWorkspacePrefix("@trpc/") ||
+    deps["@trpc/server"] ||
+    deps["@trpc/client"]
+  ) {
+    frameworks.add("tRPC");
+  }
+  if (
+    hasWorkspace("@tanstack/query-core") ||
+    hasWorkspace("@tanstack/react-query") ||
+    hasWorkspacePrefix("@tanstack/query-") ||
+    deps["@tanstack/query-core"] ||
+    deps["@tanstack/react-query"]
+  ) {
+    frameworks.add("TanStack Query");
+  }
+  if (
+    hasWorkspace("payload") ||
+    hasWorkspaceShort("payload") ||
+    hasWorkspacePrefix("@payloadcms/") ||
+    deps.payload ||
+    deps["@payloadcms/db-mongodb"]
+  ) {
+    frameworks.add("Payload");
+  }
 
   const primaryPaths = files.filter((f) => isPrimary(f.path)).map((f) => f.path);
   const joined = primaryPaths.join("\n");

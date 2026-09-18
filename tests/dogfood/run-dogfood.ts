@@ -3,6 +3,7 @@
  *
  *   pnpm dogfood
  *   pnpm dogfood -- --priority 2
+ *   pnpm dogfood -- --wave 4
  *   pnpm dogfood -- --all
  *   pnpm dogfood -- --id express
  */
@@ -21,6 +22,7 @@ interface MatrixRepo {
   url: string;
   shape: string;
   priority: number;
+  wave?: number;
   status: "active" | "planned" | "skipped";
   why?: string;
   maxFiles?: number;
@@ -46,11 +48,16 @@ async function main(): Promise<void> {
   const matrix = JSON.parse(await readFile(matrixPath, "utf8")) as MatrixFile;
   const all = hasFlag("--all");
   const idFilter = argValue("--id");
-  const priorityCap = Number(argValue("--priority") ?? (all ? 99 : 1));
+  const waveFilter = argValue("--wave");
+  const priorityRaw = argValue("--priority");
+  const priorityCap = Number(priorityRaw ?? (all ? 99 : 1));
 
   let selected = matrix.repos.filter((r) => r.status === "active");
   if (idFilter) {
     selected = matrix.repos.filter((r) => r.id === idFilter);
+  } else if (waveFilter) {
+    const wave = Number(waveFilter);
+    selected = selected.filter((r) => r.wave === wave);
   } else {
     selected = selected.filter((r) => r.priority <= priorityCap);
   }

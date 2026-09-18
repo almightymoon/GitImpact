@@ -33,6 +33,11 @@
 - GitOps/YAML-only overview: classify as GITOPS, surface manifest languages/modules/infra signals
 - Wave-2: ignore `devDependencies` and `examples/` for framework labels; label Socket.IO/MSW/Preact by package name; stop classifying CI-only libs as DEVOPS
 - Wave-3: aggregate workspace package prod/peer deps for monorepos; label Formik/Vite; treat `src/<package>.ts` as library entry
+- Wave-4 held-out set (12 repos): primary-package-only deps, skip optional peers, ignore type-only Express imports, label Zod/Solid/Drizzle/Remix/Lit/BullMQ/Zustand/tRPC/TanStack Query/Payload; docs/www/bench excluded from framework signals
+- Richer Analysis Coverage panel: file inventory counts, edge confidence mix, per-framework confidence, potential blind spots
+- Relationship evidence on CALLS/IMPORTS/USES edges (file, snippet, resolved-through) with graph edge inspect UI
+- Monorepo architecture: `apps/*` / `packages/*` become first-class systems with cross-package uses/calls edges
+- CLI: `structure`, `impact`, `pr --base`, `export architecture.md` for local adoption without GitHub
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 

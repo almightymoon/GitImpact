@@ -279,11 +279,24 @@ export function buildArchitectureSummary(input: {
   languages: Array<{ language: string; percentage: number }>;
   infraSignals?: InfraSignal[];
   codeFileCount?: number;
+  workspacePackages?: Array<{ root: string; name: string; kind: "app" | "package" }>;
 }): string {
   const parts: string[] = [];
   parts.push(`Classified as a ${input.typeLabel}.`);
   if (input.frameworks.length) {
     parts.push(`Detected stack: ${input.frameworks.join(", ")}.`);
+  }
+  if (input.workspacePackages && input.workspacePackages.length >= 2) {
+    const apps = input.workspacePackages.filter((p) => p.kind === "app");
+    const pkgs = input.workspacePackages.filter((p) => p.kind === "package");
+    const lines: string[] = [];
+    if (apps.length) {
+      lines.push(`Apps: ${apps.map((a) => a.name).join(", ")}`);
+    }
+    if (pkgs.length) {
+      lines.push(`Packages: ${pkgs.map((p) => p.name).join(", ")}`);
+    }
+    parts.push(`Workspace layout — ${lines.join("; ")}.`);
   }
   if (input.languages.length) {
     const top = input.languages

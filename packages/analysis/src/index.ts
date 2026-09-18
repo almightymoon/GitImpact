@@ -203,6 +203,7 @@ function buildGraphFromParse(parsed: Awaited<ReturnType<typeof parseRepository>>
     parsed.files,
     parsed.packageDeps,
     parsed.packageName,
+    parsed.packageNames,
   );
   const frameworks = [...new Set([...parsed.frameworks, ...detectedFrameworks])];
   const routes = extractAllRoutes(

@@ -2,8 +2,11 @@ import type {
   AnalysisCoverageReport,
   AnalysisHealth,
   AnalysisTrustLevel,
+  ConfidenceLevel,
+  FrameworkDetectionConfidence,
   GraphEdge,
   InfraSignal,
+  ParsedFile,
   UnsupportedFileGroup,
 } from "@gitimpact/shared";
 
@@ -20,6 +23,8 @@ function extensionKind(filePath: string): string {
   if (/\.rs$/i.test(base)) return "Rust";
   if (/\.java$/i.test(base)) return "Java";
   if (/\.rb$/i.test(base)) return "Ruby";
+  if (/\.lua$/i.test(base)) return "Lua";
+  if (/\.sql$/i.test(base)) return "SQL";
   if (/\.(ts|tsx)$/i.test(base)) return "TypeScript";
   if (/\.(js|jsx|mjs|cjs)$/i.test(base)) return "JavaScript";
   const ext = base.includes(".") ? base.slice(base.lastIndexOf(".") + 1).toLowerCase() : "other";
@@ -66,6 +71,119 @@ function trustLabel(level: AnalysisTrustLevel): string {
   }
 }
 
+const PRODUCT_FRAMEWORKS = new Set([
+  "NestJS",
+  "Next.js",
+  "Remix",
+  "tRPC",
+  "TanStack Query",
+  "Payload",
+  "Drizzle",
+  "Prisma",
+  "Solid",
+  "Lit",
+  "BullMQ",
+  "Zustand",
+  "MSW",
+  "Socket.IO",
+  "Formik",
+  "Vite",
+  "Hono",
+  "Fastify",
+  "Koa",
+  "Express",
+  "React",
+  "Vue",
+  "Angular",
+  "Zod",
+  "Preact",
+]);
+
+/** Score framework labels so adapters / supporting libs read as Medium when a product stack is present. */
+export function scoreFrameworkConfidence(
+  frameworks: string[],
+): FrameworkDetectionConfidence[] {
+  if (frameworks.length === 0) return [];
+  const set = new Set(frameworks);
+  const hasProduct = frameworks.some(
+    (f) => PRODUCT_FRAMEWORKS.has(f) && f !== "Express" && f !== "React" && f !== "Zod",
+  );
+
+  return frameworks.map((name) => {
+    let confidence: ConfidenceLevel = "HIGH";
+    if (name === "Express" && (set.has("NestJS") || set.has("Remix") || set.has("tRPC"))) {
+      confidence = "MEDIUM";
+    } else if (name === "Zod" && set.has("Payload")) {
+      confidence = "MEDIUM";
+    } else if (name === "React" && hasProduct && !set.has("Next.js") && !set.has("Remix")) {
+      confidence = "MEDIUM";
+    } else if (!PRODUCT_FRAMEWORKS.has(name)) {
+      confidence = "MEDIUM";
+    }
+    return { name, confidence };
+  });
+}
+
+export function buildBlindSpots(input: {
+  unsupportedGroups: UnsupportedFileGroup[];
+  analysisHealth: AnalysisHealth;
+  files?: ParsedFile[];
+  graphEdges?: GraphEdge[];
+}): string[] {
+  const spots: string[] = [];
+  const health = input.analysisHealth;
+
+  if (health.truncated) {
+    spots.push(
+      `File cap reached (${health.maxFilesCap ?? "limit"}) — some source was skipped`,
+    );
+  }
+  if (health.parseFailures > 0) {
+    spots.push(
+      `${health.parseFailures} parse failure${health.parseFailures === 1 ? "" : "s"}`,
+    );
+  }
+
+  const languageBlind = new Set([
+    "Python",
+    "Go",
+    "Rust",
+    "Java",
+    "Ruby",
+    "Lua",
+    "SQL",
+    "Terraform (HCL)",
+  ]);
+  for (const group of input.unsupportedGroups) {
+    if (languageBlind.has(group.kind) && group.fileCount > 0) {
+      spots.push(`${group.fileCount} ${group.kind} file${group.fileCount === 1 ? "" : "s"} unsupported`);
+    }
+  }
+
+  let unresolvedDynamic = 0;
+  for (const file of input.files ?? []) {
+    for (const imp of file.imports) {
+      if (imp.isDynamic && !imp.resolvedPath) unresolvedDynamic += 1;
+    }
+  }
+  if (unresolvedDynamic > 0) {
+    spots.push(
+      `${unresolvedDynamic} dynamic import${unresolvedDynamic === 1 ? "" : "s"} unresolved`,
+    );
+  }
+
+  const lowEdges = (input.graphEdges ?? []).filter((e) => e.confidence === "LOW").length;
+  if (lowEdges >= 10) {
+    spots.push(`${lowEdges} low-confidence relationship edges`);
+  }
+
+  if (health.filesIgnored > 0 && health.filesIgnored >= 10) {
+    spots.push(`${health.filesIgnored} paths ignored by inventory rules`);
+  }
+
+  return spots.slice(0, 8);
+}
+
 export function buildAnalysisCoverage(input: {
   analysisHealth: AnalysisHealth;
   graphEdges: GraphEdge[];
@@ -73,6 +191,8 @@ export function buildAnalysisCoverage(input: {
   allRelativeFiles?: string[];
   codeFilePaths?: string[];
   infraSignals?: InfraSignal[];
+  frameworks?: string[];
+  files?: ParsedFile[];
 }): AnalysisCoverageReport {
   const health = input.analysisHealth;
   const infraPrimary =
@@ -98,6 +218,8 @@ export function buildAnalysisCoverage(input: {
   const edgeTotal = input.graphEdges.length;
   const highConfidenceEdgePercent =
     edgeTotal > 0 ? Math.round((100 * high) / edgeTotal) : null;
+  const mediumPercent = edgeTotal > 0 ? Math.round((100 * medium) / edgeTotal) : null;
+  const lowPercent = edgeTotal > 0 ? Math.round((100 * low) / edgeTotal) : null;
 
   const codePaths = new Set(
     (input.codeFilePaths ?? []).map((p) => p.replace(/\\/g, "/")),
@@ -106,6 +228,14 @@ export function buildAnalysisCoverage(input: {
     input.allRelativeFiles ?? [],
     codePaths,
   );
+
+  const frameworks = scoreFrameworkConfidence(input.frameworks ?? []);
+  const blindSpots = buildBlindSpots({
+    unsupportedGroups,
+    analysisHealth: health,
+    files: input.files,
+    graphEdges: input.graphEdges,
+  });
 
   const reasons: string[] = [];
   if (health.truncated) {
@@ -167,15 +297,12 @@ export function buildAnalysisCoverage(input: {
     health.filesUnsupported > health.filesParsed * 2 ||
     infraPrimary
   ) {
-    confidence = infraPrimary && (input.infraSignals?.length ?? 0) >= 2 ? "MEDIUM" : "MEDIUM";
-  } else if (infraPrimary) {
     confidence = "MEDIUM";
   }
 
   // Infra-only with clear signals is trustworthy for that shape.
   if (infraPrimary && (input.infraSignals?.length ?? 0) >= 2 && !health.truncated) {
     confidence = "HIGH";
-    // Keep the infra-primary reason; drop edge-ratio noise
   }
 
   if (reasons.length === 0 && confidence === "HIGH") {
@@ -187,6 +314,13 @@ export function buildAnalysisCoverage(input: {
     confidenceLabel: trustLabel(confidence),
     codeParseCoveragePercent,
     highConfidenceEdgePercent,
+    edgeConfidence: {
+      highPercent: highConfidenceEdgePercent,
+      mediumPercent,
+      lowPercent,
+    },
+    frameworks,
+    blindSpots,
     reasons: reasons.slice(0, 6),
     inventory: { ...health },
     unsupportedGroups,

@@ -74,6 +74,34 @@ describe("buildAnalysisCoverage", () => {
     expect(report.confidence).toBe("HIGH");
     expect(report.codeParseCoveragePercent).toBeNull();
   });
+
+  it("scores Nest Express as medium and lists language blind spots", () => {
+    const report = buildAnalysisCoverage({
+      analysisHealth: {
+        ...healthy,
+        filesUnsupported: 50,
+      },
+      graphEdges: Array.from({ length: 10 }, (_, i) => ({
+        id: `e${i}`,
+        from: "a",
+        to: "b",
+        type: "CALLS",
+        confidence: i < 8 ? ("HIGH" as const) : ("MEDIUM" as const),
+      })),
+      graphNodeCount: 20,
+      allRelativeFiles: [
+        "src/a.ts",
+        ...Array.from({ length: 42 }, (_, i) => `scripts/job_${i}.py`),
+      ],
+      codeFilePaths: ["src/a.ts"],
+      frameworks: ["NestJS", "Express"],
+    });
+    expect(report.frameworks.find((f) => f.name === "NestJS")?.confidence).toBe("HIGH");
+    expect(report.frameworks.find((f) => f.name === "Express")?.confidence).toBe("MEDIUM");
+    expect(report.edgeConfidence.highPercent).toBe(80);
+    expect(report.edgeConfidence.mediumPercent).toBe(20);
+    expect(report.blindSpots.some((s) => /Python/i.test(s))).toBe(true);
+  });
 });
 
 describe("groupUnsupportedFiles", () => {

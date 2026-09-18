@@ -82,6 +82,87 @@ describe("Express detection", () => {
     );
   });
 
+  it("labels wave-4 libraries from package identity without peer soup", () => {
+    expect(detectFrameworkNames([], {}, "zod")).toEqual(["Zod"]);
+    expect(detectFrameworkNames([], {}, "solid-js")).toEqual(["Solid"]);
+    expect(detectFrameworkNames([], {}, "drizzle-orm")).toEqual(["Drizzle"]);
+    expect(detectFrameworkNames([], {}, "bullmq")).toEqual(["BullMQ"]);
+    expect(detectFrameworkNames([], {}, "zustand")).toEqual(["Zustand"]);
+    expect(detectFrameworkNames([], {}, "lit")).toEqual(["Lit"]);
+    expect(
+      detectFrameworkNames([], {}, "@remix-run/react", [
+        "@remix-run/react",
+        "@remix-run/node",
+        "@remix-run/express",
+      ]),
+    ).toContain("Remix");
+    expect(
+      detectFrameworkNames([], {}, "@trpc/server", ["@trpc/server", "@trpc/client"]),
+    ).toEqual(["tRPC"]);
+    expect(
+      detectFrameworkNames([], {}, "@tanstack/query-core", [
+        "@tanstack/query-core",
+        "@tanstack/react-query",
+      ]),
+    ).toEqual(["TanStack Query"]);
+    expect(
+      detectFrameworkNames([], {}, "payload", ["payload", "@payloadcms/ui"]),
+    ).toEqual(["Payload"]);
+  });
+
+  it("does not treat @trpc/react-query short-name as TanStack Query", () => {
+    expect(
+      detectFrameworkNames([], {}, "@trpc/server", [
+        "@trpc/server",
+        "@trpc/client",
+        "@trpc/react-query",
+        "@trpc/next",
+      ]),
+    ).toEqual(["tRPC"]);
+  });
+
+  it("does not treat docs-only Next paths as the product stack when identity is zod", () => {
+    expect(
+      detectFrameworkNames(
+        [file("docs/app/api/hello/route.ts", { exports: ["GET"] })],
+        {},
+        "zod",
+        ["zod"],
+      ),
+    ).toEqual(["Zod"]);
+  });
+
+  it("does not treat type-only express imports as Express", () => {
+    const files = [
+      {
+        path: "src/adapters/express.ts",
+        language: "typescript" as const,
+        imports: [
+          {
+            moduleSpecifier: "express",
+            importedNames: ["Request"],
+            namedImports: ["Request"],
+            isTypeOnly: true,
+          },
+        ],
+        exports: ["createExpressMiddleware"],
+        functions: [],
+        classes: [],
+        isTest: false,
+        envVariables: [],
+      },
+    ];
+    expect(new ExpressAnalyzer().detect(files, {}, "@trpc/server")).toBe(false);
+  });
+
+  it("ignores express imports under docs/", () => {
+    const files = [
+      file("packages/core/index.ts", { exports: ["create"] }),
+      file("docs/examples/server.ts", { imports: ["express"] }),
+    ];
+    expect(new ExpressAnalyzer().detect(files, {}, "zod")).toBe(false);
+  });
+
   it("labels msw by package name without Fastify when Fastify is not a prod dep", () => {
     expect(detectFrameworkNames([], {}, "msw")).toEqual(["MSW"]);
   });

@@ -67,6 +67,20 @@ export interface GraphEdge {
   to: string;
   type: RelationType;
   confidence: ConfidenceLevel;
+  /** Why this relationship exists — file:line, snippet, resolution path. */
+  evidence?: GraphEdgeEvidence;
+}
+
+export interface GraphEdgeEvidence {
+  /** Source file where the relationship was observed */
+  file: string;
+  startLine?: number;
+  /** Short source snippet (e.g. `authService.login(...)`) */
+  snippet?: string;
+  /** How the target was resolved (import path, symbol binding, etc.) */
+  resolvedThrough?: string;
+  /** Callee / import name as written in source */
+  symbol?: string;
 }
 
 export interface DependencyGraph {
@@ -384,6 +398,11 @@ export interface UnsupportedFileGroup {
  * Measurable coverage + confidence for Overview trust.
  * Built from inventory health, graph edge confidence, and infra fallbacks.
  */
+export interface FrameworkDetectionConfidence {
+  name: string;
+  confidence: ConfidenceLevel;
+}
+
 export interface AnalysisCoverageReport {
   confidence: AnalysisTrustLevel;
   confidenceLabel: string;
@@ -391,6 +410,16 @@ export interface AnalysisCoverageReport {
   codeParseCoveragePercent: number | null;
   /** 0–100 share of graph edges marked HIGH confidence; null if no edges. */
   highConfidenceEdgePercent: number | null;
+  /** Edge confidence mix (percentages); nulls when no edges. */
+  edgeConfidence: {
+    highPercent: number | null;
+    mediumPercent: number | null;
+    lowPercent: number | null;
+  };
+  /** Per-framework trust for what we claimed to detect. */
+  frameworks: FrameworkDetectionConfidence[];
+  /** Human-readable gaps: unsupported languages, unresolved dynamics, truncation. */
+  blindSpots: string[];
   reasons: string[];
   inventory: AnalysisHealth;
   unsupportedGroups: UnsupportedFileGroup[];

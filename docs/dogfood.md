@@ -18,6 +18,7 @@ Do not tune production heuristics only against the GitImpact monorepo itself.
 pnpm build:packages
 pnpm dogfood              # priority ≤ 1 (fast wave)
 pnpm dogfood -- --priority 2
+pnpm dogfood -- --wave 4          # held-out v1.1.1 set only
 pnpm dogfood -- --all
 pnpm dogfood -- --id express
 ```

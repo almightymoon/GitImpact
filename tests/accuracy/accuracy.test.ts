@@ -202,6 +202,17 @@ describe("GitImpact accuracy benchmark (v0.4)", async () => {
           hit,
           `missing CALLS ${edge.from ?? edge.fromContains} -> ${edge.to}`,
         ).toBe(true);
+        if (hit) {
+          const matched = graph.edges.find((e) => {
+            if (e.type !== "CALLS") return false;
+            if (edge.to && e.to !== edge.to) return false;
+            if (edge.from && e.from !== edge.from) return false;
+            if (edge.fromContains && !e.from.includes(edge.fromContains)) return false;
+            return true;
+          });
+          expect(matched?.evidence?.file, "CALLS edge should carry source evidence").toBeTruthy();
+          expect(matched?.evidence?.snippet, "CALLS edge should carry snippet").toBeTruthy();
+        }
       }
 
       for (const edge of expected.mustNotCall ?? []) {

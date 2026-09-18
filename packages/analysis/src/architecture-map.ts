@@ -9,6 +9,68 @@ import type {
 
 export type { ArchitectureBandId, ArchitectureComponent, ArchitectureEdge, ArchitectureMap };
 
+export interface WorkspacePackage {
+  /** e.g. apps/web */
+  root: string;
+  /** e.g. web */
+  name: string;
+  kind: "app" | "package";
+}
+
+/** Detect apps/* and packages/* (also services/*, libs/*) workspace roots from inventory paths. */
+export function detectWorkspacePackages(filePaths: string[]): WorkspacePackage[] {
+  const roots = new Map<string, WorkspacePackage>();
+  for (const raw of filePaths) {
+    const p = raw.replace(/\\/g, "/");
+    const match = p.match(/^(apps|packages|services|libs)\/([^/]+)\//i);
+    if (!match) continue;
+    const kindDir = match[1]!.toLowerCase();
+    const name = match[2]!;
+    const root = `${kindDir}/${name}`;
+    if (roots.has(root)) continue;
+    roots.set(root, {
+      root,
+      name,
+      kind: kindDir === "apps" || kindDir === "services" ? "app" : "package",
+    });
+  }
+  return [...roots.values()].sort((a, b) => a.root.localeCompare(b.root));
+}
+
+function titleCasePackage(name: string): string {
+  return name
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function bandForWorkspacePackage(pkg: WorkspacePackage): ArchitectureBandId {
+  const n = pkg.name.toLowerCase();
+  if (pkg.kind === "app") {
+    if (/web|frontend|admin|ui|dashboard|site|www|client/i.test(n)) return "client";
+    if (/api|server|backend|worker|service/i.test(n)) return "server";
+    return "server";
+  }
+  if (/ui|components|design|icons|styles/i.test(n)) return "client";
+  if (/db|database|prisma|drizzle|schema|storage/i.test(n)) return "persistence";
+  if (/auth|security/i.test(n)) return "server";
+  return "shared";
+}
+
+function roleForWorkspacePackage(pkg: WorkspacePackage): string {
+  if (pkg.kind === "app") {
+    if (/web|frontend|admin|ui|dashboard|site|www|client/i.test(pkg.name)) {
+      return "frontend application workspace";
+    }
+    if (/api|server|backend|worker/i.test(pkg.name)) {
+      return "backend application workspace";
+    }
+    return "application workspace";
+  }
+  return "shared library package";
+}
+
 const ARCH_FILE_RE =
   /\.(ya?ml|yml|sql|html|css|scss|tf|toml)$|Dockerfile|docker-compose|vercel\.json|netlify\.toml|nginx|Caddyfile|helm|Chart\.|argocd|\.github\/workflows\//i;
 
@@ -346,17 +408,41 @@ export function buildArchitectureMap(input: {
 
   // Code files
   const codePaths = new Set<string>();
+  const allCodePaths = input.codeFiles.map((f) => f.path.replace(/\\/g, "/"));
+  const workspacePackages = detectWorkspacePackages(allCodePaths);
+  const monorepoMode = workspacePackages.length >= 2;
+
   for (const file of input.codeFiles) {
     codePaths.add(file.path.replace(/\\/g, "/"));
+    // In monorepo mode, workspace package systems own the story — skip role buckets
+    // that would flatten every app into one "Server runtime".
+    if (monorepoMode) continue;
     const classified = classifyCodeFile(file.path, file.type);
     if (classified) {
       upsert({ ...classified, files: [file.path] });
+    }
+  }
+
+  if (monorepoMode) {
+    for (const pkg of workspacePackages.slice(0, 16)) {
+      const files = allCodePaths.filter(
+        (p) => p === pkg.root || p.startsWith(`${pkg.root}/`),
+      );
+      upsert({
+        band: bandForWorkspacePackage(pkg),
+        title: titleCasePackage(pkg.name),
+        role: roleForWorkspacePackage(pkg),
+        pathHint: pkg.root,
+        shape: "box",
+        files: files.slice(0, 24),
+      });
     }
   }
   for (const node of input.graphNodes ?? []) {
     if (node.type === "FILE" || node.type === "INFRASTRUCTURE") {
       const p = node.file.replace(/\\/g, "/");
       if (codePaths.has(p)) continue;
+      if (monorepoMode && node.type === "FILE") continue;
       const classified =
         node.type === "INFRASTRUCTURE"
           ? classifyArtifact(p)
@@ -479,6 +565,21 @@ export function buildArchitectureMap(input: {
   link("API handlers", "Authentication", "uses");
 
   const narrative: string[] = [];
+  if (monorepoMode) {
+    const apps = workspacePackages.filter((p) => p.kind === "app").map((p) => titleCasePackage(p.name));
+    const pkgs = workspacePackages
+      .filter((p) => p.kind === "package")
+      .map((p) => titleCasePackage(p.name));
+    narrative.push(
+      `Monorepo with ${workspacePackages.length} workspace packages` +
+        (apps.length ? ` — apps: ${apps.join(", ")}` : "") +
+        (pkgs.length ? `; packages: ${pkgs.slice(0, 8).join(", ")}` : "") +
+        ".",
+    );
+    narrative.push(
+      "Architecture systems are workspace packages; edges show cross-package uses/calls.",
+    );
+  }
   const bands = new Set(components.map((c) => c.band));
   if (bands.has("client") && bands.has("server")) {
     narrative.push("Browser client and server runtime are separated — requests cross the HTTP boundary.");

@@ -233,43 +233,48 @@ function layoutEdges(
   edges: GraphEdge[],
   visibleIds: Set<string>,
   litEdges: Map<string, LitEdge>,
+  selectedEdgeId: string | null,
 ): Edge[] {
   return edges
     .filter((edge) => visibleIds.has(edge.from) && visibleIds.has(edge.to))
     .slice(0, 200)
     .map((edge) => {
       const lit = litEdges.get(edgeKey(edge.from, edge.to));
-      const stroke = lit?.color ?? "#94a3b8";
-      const width = lit ? 3.2 : 1.2;
+      const selected = edge.id === selectedEdgeId;
+      const stroke = selected ? "var(--teal)" : lit?.color ?? "#94a3b8";
+      const width = selected ? 3.4 : lit ? 3.2 : 1.2;
       return {
         id: edge.id,
         source: edge.from,
         target: edge.to,
-        animated: Boolean(lit) || edge.type === "IMPORTS",
-        className: lit ? "impact-edge" : undefined,
+        animated: Boolean(lit) || selected || edge.type === "IMPORTS",
+        className: lit || selected ? "impact-edge" : undefined,
+        data: { graphEdge: edge },
         style: {
           stroke,
           strokeWidth: width,
-          opacity: lit ? 1 : 0.45,
+          opacity: selected || lit ? 1 : 0.45,
         },
-        zIndex: lit ? 5 : 0,
+        zIndex: selected || lit ? 5 : 0,
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: stroke,
-          width: lit ? 18 : 14,
-          height: lit ? 18 : 14,
+          width: lit || selected ? 18 : 14,
+          height: lit || selected ? 18 : 14,
         },
-        label: lit ? `path ${lit.pathIndex + 1}` : undefined,
-        labelStyle: lit
-          ? {
-              fontSize: 9,
-              fill: lit.color,
-              fontFamily: "IBM Plex Mono, ui-monospace, monospace",
-              fontWeight: 600,
-            }
-          : undefined,
-        labelBgStyle: lit ? { fill: "#f7fafc", fillOpacity: 0.9 } : undefined,
-        labelBgPadding: lit ? ([3, 5] as [number, number]) : undefined,
+        label: selected || lit ? edge.type : undefined,
+        labelStyle:
+          selected || lit
+            ? {
+                fontSize: 9,
+                fill: selected ? "var(--teal)" : lit!.color,
+                fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+                fontWeight: 600,
+              }
+            : undefined,
+        labelBgStyle:
+          selected || lit ? { fill: "#f7fafc", fillOpacity: 0.9 } : undefined,
+        labelBgPadding: selected || lit ? ([3, 5] as [number, number]) : undefined,
         labelBgBorderRadius: 4,
       };
     });
@@ -291,6 +296,7 @@ export function ImpactGraph({
   onClear?: () => void;
 }) {
   const [pathSelection, setPathSelection] = useState<string[]>([]);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
 
   // Parent cleared → clear path chain. Parent picked a new root outside the chain → restart.
   useEffect(() => {
@@ -298,6 +304,7 @@ export function ImpactGraph({
       setPathSelection((prev) => (prev.length === 0 ? prev : []));
       return;
     }
+    setSelectedEdgeId(null);
     setPathSelection((prev) => {
       if (prev.length === 0) return [selectedId];
       if (prev.includes(selectedId)) return prev;
@@ -329,8 +336,8 @@ export function ImpactGraph({
   );
   const visibleIds = useMemo(() => new Set(initialNodes.map((n) => n.id)), [initialNodes]);
   const initialEdges = useMemo(
-    () => layoutEdges(edges, visibleIds, litEdges),
-    [edges, visibleIds, litEdges],
+    () => layoutEdges(edges, visibleIds, litEdges, selectedEdgeId),
+    [edges, visibleIds, litEdges, selectedEdgeId],
   );
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(initialNodes);
@@ -341,8 +348,14 @@ export function ImpactGraph({
     setRfEdges(initialEdges);
   }, [initialNodes, initialEdges, setRfNodes, setRfEdges]);
 
+  const selectedEdge = useMemo(
+    () => (selectedEdgeId ? edges.find((e) => e.id === selectedEdgeId) ?? null : null),
+    [edges, selectedEdgeId],
+  );
+
   const handleNodeClick = useCallback(
     (id: string) => {
+      setSelectedEdgeId(null);
       // Replace selection — do not push browser history for node picks
       setPathSelection([id]);
       queueMicrotask(() => {
@@ -352,8 +365,14 @@ export function ImpactGraph({
     [onSelect, selectedId],
   );
 
+  const handleEdgeClick = useCallback((edgeId: string) => {
+    setPathSelection([]);
+    setSelectedEdgeId(edgeId);
+  }, []);
+
   const handleClear = useCallback(() => {
     setPathSelection([]);
+    setSelectedEdgeId(null);
     onClear?.();
   }, [onClear]);
 
@@ -384,6 +403,68 @@ export function ImpactGraph({
         </div>
       ) : null}
 
+      {selectedEdge ? (
+        <div className="pointer-events-none absolute right-3 top-3 z-10 max-w-[min(380px,75%)]">
+          <div className="pointer-events-auto rounded-xl border border-[var(--line)] bg-white/95 px-3 py-2.5 shadow-sm backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--ink-soft)]/70">
+                Why this relationship exists
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedEdgeId(null)}
+                className="rounded-full px-2 py-0.5 text-[11px] text-[var(--teal)] hover:underline"
+              >
+                Close
+              </button>
+            </div>
+            <p className="mt-1.5 text-sm font-medium">
+              {nameFor(selectedEdge.from)}
+              <span className="mx-1.5 text-[var(--ink-soft)]">→</span>
+              {nameFor(selectedEdge.to)}
+            </p>
+            <dl className="mt-2 space-y-1 text-[11px]">
+              <div className="flex justify-between gap-3">
+                <dt className="text-[var(--ink-soft)]">Relationship</dt>
+                <dd className="font-mono font-medium">{selectedEdge.type}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-[var(--ink-soft)]">Confidence</dt>
+                <dd className="font-mono font-medium">{selectedEdge.confidence}</dd>
+              </div>
+              {selectedEdge.evidence?.file ? (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-[var(--ink-soft)]">Source</dt>
+                  <dd className="max-w-[220px] truncate font-mono" title={selectedEdge.evidence.file}>
+                    {selectedEdge.evidence.file}
+                    {selectedEdge.evidence.startLine
+                      ? `:${selectedEdge.evidence.startLine}`
+                      : ""}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+            {selectedEdge.evidence?.snippet ? (
+              <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--fog)] px-2 py-1.5 font-mono text-[10px] leading-relaxed">
+                {selectedEdge.evidence.snippet}
+              </pre>
+            ) : null}
+            {selectedEdge.evidence?.resolvedThrough ? (
+              <p className="mt-2 text-[10px] text-[var(--ink-soft)]">
+                Resolved through:{" "}
+                <span className="font-mono text-[var(--ink)]">
+                  {selectedEdge.evidence.resolvedThrough}
+                </span>
+              </p>
+            ) : (
+              <p className="mt-2 text-[10px] text-[var(--ink-soft)]">
+                No source snippet for this edge type yet.
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
@@ -391,6 +472,7 @@ export function ImpactGraph({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={(_, node) => handleNodeClick(node.id)}
+        onEdgeClick={(_, edge) => handleEdgeClick(edge.id)}
         onPaneClick={handleClear}
         fitView
         minZoom={0.2}

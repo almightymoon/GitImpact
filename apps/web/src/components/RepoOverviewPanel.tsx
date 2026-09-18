@@ -218,9 +218,9 @@ export function RepoOverviewPanel({
         <section className="rounded-2xl border border-[var(--line)] bg-white/70 p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="font-display text-lg font-semibold">Analysis confidence</h3>
+              <h3 className="font-display text-lg font-semibold">Analysis coverage</h3>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                How complete and trustworthy this analysis is for the files GitImpact can see.
+                How much of the repository GitImpact understood — not just a confidence badge.
               </p>
             </div>
             {intelligence?.coverage ? (
@@ -238,53 +238,20 @@ export function RepoOverviewPanel({
             ) : null}
           </div>
 
-          {intelligence?.coverage ? (
-            <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {(
-                [
-                  [
-                    "Code parse coverage",
-                    intelligence.coverage.codeParseCoveragePercent === null
-                      ? "n/a"
-                      : `${intelligence.coverage.codeParseCoveragePercent}%`,
-                  ],
-                  [
-                    "High-confidence edges",
-                    intelligence.coverage.highConfidenceEdgePercent === null
-                      ? "n/a"
-                      : `${intelligence.coverage.highConfidenceEdgePercent}%`,
-                  ],
-                  ["Graph nodes", intelligence.coverage.graph.nodes],
-                  ["Graph edges", intelligence.coverage.graph.edges],
-                ] as Array<[string, string | number]>
-              ).map(([label, value]) => (
-                <div key={label} className="rounded-xl bg-[var(--fog)]/70 px-3 py-2">
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
-                    {label}
-                  </dt>
-                  <dd className="font-display text-lg font-semibold">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-
-          {intelligence?.coverage?.reasons?.length ? (
-            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-[var(--ink-soft)]">
-              {intelligence.coverage.reasons.map((reason) => (
-                <li key={reason}>{reason}</li>
-              ))}
-            </ul>
-          ) : null}
-
           <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {(
               [
-                ["Code files found", health.filesDiscovered],
-                ["Parsed", health.filesParsed],
-                ["Ignored paths", health.filesIgnored],
+                ["Files discovered", health.filesDiscovered],
+                [
+                  "Files parsed",
+                  intelligence?.coverage?.codeParseCoveragePercent != null
+                    ? `${health.filesParsed}  (${intelligence.coverage.codeParseCoveragePercent}%)`
+                    : health.filesParsed,
+                ],
                 ["Unsupported", health.filesUnsupported],
                 ["Parse failures", health.parseFailures],
-              ] as Array<[string, number]>
+                ["Ignored", health.filesIgnored],
+              ] as Array<[string, string | number]>
             ).map(([label, value]) => (
               <div key={label} className="rounded-xl bg-[var(--fog)]/70 px-3 py-2">
                 <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
@@ -294,6 +261,87 @@ export function RepoOverviewPanel({
               </div>
             ))}
           </dl>
+
+          {intelligence?.coverage ? (
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
+                  Relationship confidence
+                </p>
+                <dl className="mt-2 space-y-1.5 text-sm">
+                  {(
+                    [
+                      [
+                        "High-confidence edges",
+                        intelligence.coverage.edgeConfidence?.highPercent,
+                      ],
+                      ["Medium", intelligence.coverage.edgeConfidence?.mediumPercent],
+                      ["Low", intelligence.coverage.edgeConfidence?.lowPercent],
+                    ] as Array<[string, number | null | undefined]>
+                  ).map(([label, pct]) => (
+                    <div key={label} className="flex items-baseline justify-between gap-3">
+                      <dt className="text-[var(--ink-soft)]">{label}</dt>
+                      <dd className="font-mono font-medium">
+                        {pct == null ? "n/a" : `${pct}%`}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              {intelligence.coverage.frameworks?.length ? (
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
+                    Framework detection
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm">
+                    {intelligence.coverage.frameworks.map((fw) => (
+                      <li
+                        key={fw.name}
+                        className="flex items-baseline justify-between gap-3"
+                      >
+                        <span className="font-medium">{fw.name}</span>
+                        <span
+                          className={`font-mono text-xs ${
+                            fw.confidence === "HIGH"
+                              ? "text-emerald-800"
+                              : fw.confidence === "MEDIUM"
+                                ? "text-amber-800"
+                                : "text-rose-800"
+                          }`}
+                        >
+                          {fw.confidence === "HIGH"
+                            ? "High"
+                            : fw.confidence === "MEDIUM"
+                              ? "Medium"
+                              : "Low"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {intelligence?.coverage?.blindSpots?.length ? (
+            <div className="mt-5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
+                Potential blind spots
+              </p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--ink-soft)]">
+                {intelligence.coverage.blindSpots.map((spot) => (
+                  <li key={spot}>{spot}</li>
+                ))}
+              </ul>
+            </div>
+          ) : intelligence?.coverage?.reasons?.length ? (
+            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-[var(--ink-soft)]">
+              {intelligence.coverage.reasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          ) : null}
 
           {intelligence?.coverage?.unsupportedGroups?.length ? (
             <div className="mt-4">
@@ -321,8 +369,10 @@ export function RepoOverviewPanel({
           ) : null}
 
           {health.truncated ? (
-            <p className="mt-3 text-xs text-[var(--warning)]">
-              File cap reached ({health.maxFilesCap}). Raise GITIMPACT_MAX_FILES for larger analyses.
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              Analysis stopped at the file cap
+              {health.maxFilesCap ? ` (${health.maxFilesCap})` : ""}. Raise max files for a
+              fuller graph on large monorepos.
             </p>
           ) : null}
         </section>

@@ -535,11 +535,36 @@ export function buildArchitectureExperience(input: {
 
   // Add graph-derived PRIMARY edges between systems when imports cross files
   if (input.graphEdges?.length && graphNodes.length) {
+    const systemsOnly = components.filter((c) => (c.level ?? "SYSTEM") === "SYSTEM");
     const fileToSystem = new Map<string, string>();
-    for (const c of components) {
-      if ((c.level ?? "SYSTEM") !== "SYSTEM") continue;
+    for (const c of systemsOnly) {
       for (const f of c.files) fileToSystem.set(f.replace(/\\/g, "/"), c.id);
     }
+    const prefixSystems = systemsOnly
+      .filter((c) =>
+        c.pathHint
+          ? /^(apps|packages|services|libs)\//i.test(c.pathHint.replace(/\\/g, "/"))
+          : false,
+      )
+      .sort(
+        (a, b) =>
+          (b.pathHint?.replace(/\\/g, "/").length ?? 0) -
+          (a.pathHint?.replace(/\\/g, "/").length ?? 0),
+      );
+
+    const systemForFile = (file: string): string | undefined => {
+      const normalized = file.replace(/\\/g, "/");
+      const exact = fileToSystem.get(normalized);
+      if (exact) return exact;
+      for (const c of prefixSystems) {
+        const prefix = c.pathHint!.replace(/\\/g, "/").replace(/\/$/, "");
+        if (normalized === prefix || normalized.startsWith(`${prefix}/`)) {
+          return c.id;
+        }
+      }
+      return undefined;
+    };
+
     const nodeById = new Map(graphNodes.map((n) => [n.id, n]));
     const pair = new Map<string, number>();
     for (const edge of input.graphEdges) {
@@ -547,8 +572,8 @@ export function buildArchitectureExperience(input: {
       const a = nodeById.get(edge.from);
       const b = nodeById.get(edge.to);
       if (!a || !b) continue;
-      const sa = fileToSystem.get(a.file.replace(/\\/g, "/"));
-      const sb = fileToSystem.get(b.file.replace(/\\/g, "/"));
+      const sa = systemForFile(a.file);
+      const sb = systemForFile(b.file);
       if (!sa || !sb || sa === sb) continue;
       const key = `${sa}->${sb}`;
       pair.set(key, (pair.get(key) ?? 0) + 1);
@@ -557,14 +582,27 @@ export function buildArchitectureExperience(input: {
       if (count < 1) continue;
       const [from, to] = key.split("->") as [string, string];
       if (edges.some((e) => e.from === from && e.to === to)) continue;
+      const fromComp = components.find((c) => c.id === from);
+      const toComp = components.find((c) => c.id === to);
+      const label =
+        fromComp?.band === "client" && toComp?.band === "server"
+          ? "calls"
+          : /package|library/i.test(toComp?.role ?? "")
+            ? "uses"
+            : "uses";
       edges.push({
         from,
         to,
-        label: "depends on",
-        importance: "SECONDARY",
-        confidence: "MEDIUM",
+        label,
+        importance: "PRIMARY",
+        confidence: "HIGH",
         modes: ["architecture", "runtime", "all"],
-        evidence: [{ kind: "import_graph", detail: `${count} cross-system import/call edge(s)` }],
+        evidence: [
+          {
+            kind: "import_graph",
+            detail: `${count} cross-package import/call edge(s)`,
+          },
+        ],
       });
     }
   }
