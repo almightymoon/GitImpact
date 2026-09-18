@@ -371,6 +371,40 @@ export interface AnalysisHealth {
   truncated: boolean;
 }
 
+/** Overall trust signal for a repository analysis (product-facing). */
+export type AnalysisTrustLevel = "HIGH" | "MEDIUM" | "LOW" | "INCOMPLETE";
+
+export interface UnsupportedFileGroup {
+  kind: string;
+  fileCount: number;
+  examples: string[];
+}
+
+/**
+ * Measurable coverage + confidence for Overview trust.
+ * Built from inventory health, graph edge confidence, and infra fallbacks.
+ */
+export interface AnalysisCoverageReport {
+  confidence: AnalysisTrustLevel;
+  confidenceLabel: string;
+  /** 0–100; null when there is no JS/TS parse surface (e.g. YAML-only). */
+  codeParseCoveragePercent: number | null;
+  /** 0–100 share of graph edges marked HIGH confidence; null if no edges. */
+  highConfidenceEdgePercent: number | null;
+  reasons: string[];
+  inventory: AnalysisHealth;
+  unsupportedGroups: UnsupportedFileGroup[];
+  graph: {
+    nodes: number;
+    edges: number;
+    highConfidenceEdges: number;
+    mediumConfidenceEdges: number;
+    lowConfidenceEdges: number;
+  };
+  /** True when manifests/infra are the primary story (little or no code parsed). */
+  infraPrimary: boolean;
+}
+
 export interface ReadmeDigest {
   title?: string;
   description?: string;
@@ -430,6 +464,8 @@ export interface RepositoryIntelligence {
   importantModules: ImportantModule[];
   infraSignals: InfraSignal[];
   analysisHealth: AnalysisHealth;
+  /** Product-visible coverage / confidence for trust. */
+  coverage?: AnalysisCoverageReport;
   openPullRequests: OpenPullRequestSummary[];
   openPrCount: number;
   /** Paths used for GitDiagram-style Structure (docker, sql, html, …) */

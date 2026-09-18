@@ -26,9 +26,11 @@ pnpm --filter @gitimpact/web dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-- Paste a public GitHub repo or PR URL, or use the local demos
+- Paste a public GitHub repo or PR URL, or use the sample chips / local demos
 - Repo demo: [/demo/tiny-fixture](http://localhost:3000/demo/tiny-fixture)
 - PR demo: [/demo/tiny-fixture/pull/1](http://localhost:3000/demo/tiny-fixture/pull/1) (Overview · Graph · Changes · Tests · APIs)
+- Public examples: [docs/examples.md](docs/examples.md)
+- Offline: `gitimpact analyze ./my-checkout`
 
 ## Persistence
 

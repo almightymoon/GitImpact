@@ -31,12 +31,12 @@ Production stack, durable queue, private GitHub App path, quotas, ops. Tag `1.0.
 
 ### Order of work (mandatory)
 
-1. Dogfood **20–30** real public repositories (`pnpm dogfood`)
-2. Record misses in `tests/dogfood/misses.jsonl`
-3. Fix relationship / framework / monorepo accuracy from that log
-4. Surface **coverage / confidence** so trust is measurable
-5. Adoption polish (GitHub App onboarding, demos, docs)
-6. **Then** add Python
+1. ~~Dogfood **20–30** real public repositories (`pnpm dogfood`)~~ ✅ (~25 active matrix)
+2. ~~Record misses in `tests/dogfood/misses.jsonl`~~ ✅
+3. ~~Fix relationship / framework / monorepo accuracy from that log~~ ✅ (waves 1–3; 0 open)
+4. ~~Surface **coverage / confidence** so trust is measurable~~ ✅
+5. ~~Adoption polish (GitHub App onboarding, demos, docs)~~ ✅ (samples, feedback, local CLI, examples doc)
+6. **Then** add Python ← blocked until miss log stays quiet on JS/TS
 7. **Then** add Go
 
 Do **not** add languages before the miss log stops growing on the core JS/TS matrix.

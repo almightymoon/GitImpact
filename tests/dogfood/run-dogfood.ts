@@ -98,13 +98,24 @@ async function main(): Promise<void> {
         routes: analysis.routes?.length ?? 0,
         frameworks: analysis.summary.frameworks,
         repositoryType: analysis.intelligence?.repositoryType ?? null,
+        coverage: analysis.intelligence?.coverage
+          ? {
+              confidence: analysis.intelligence.coverage.confidence,
+              codeParseCoveragePercent:
+                analysis.intelligence.coverage.codeParseCoveragePercent,
+              highConfidenceEdgePercent:
+                analysis.intelligence.coverage.highConfidenceEdgePercent,
+              infraPrimary: analysis.intelligence.coverage.infraPrimary,
+              reasons: analysis.intelligence.coverage.reasons,
+            }
+          : null,
         truncationNotice: analysis.truncationNotice ?? null,
         error: null as string | null,
       };
       await writeFile(path.join(resultsDir, `${repo.id}.json`), JSON.stringify(row, null, 2));
       rollup.push(row);
       console.log(
-        `  ok ${row.durationMs}ms files=${row.summary.files} nodes=${row.graph.nodes} edges=${row.graph.edges} fw=${row.frameworks.join(",") || "-"}`,
+        `  ok ${row.durationMs}ms files=${row.summary.files} nodes=${row.graph.nodes} edges=${row.graph.edges} fw=${row.frameworks.join(",") || "-"} conf=${row.coverage?.confidence ?? "-"}`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ConnectGitHubButton } from "@/components/ConnectGitHubButton";
+import { SampleRepositories } from "@/components/SampleRepositories";
 
 type JobPoll = {
   id: string;
@@ -91,6 +92,15 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("repo")?.trim();
+    if (fromQuery && !initialUrl) {
+      setUrl(fromQuery);
+    }
+  }, [initialUrl]);
+
   const isPrivate =
     errorCode === "PRIVATE_REPOSITORY" || errorCode === "ACCESS_DENIED";
   const canRetry =
@@ -125,8 +135,7 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
     }
   }
 
-  function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  function runAnalyze(raw: string) {
     setError(null);
     setErrorDetail(null);
     setErrorCode(null);
@@ -134,7 +143,7 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
     setFailedJobId(null);
     setPhaseLabel(null);
     setActiveJobId(null);
-    const value = url
+    const value = raw
       .trim()
       .replace(/\.git$/i, "")
       .replace(/\/$/, "");
@@ -185,29 +194,23 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
           return;
         }
 
-        if (data.routePath && (response.status === 200 || data.fromCache)) {
+        if (response.status === 200 && data.routePath) {
           router.push(data.routePath);
           return;
         }
 
-        if (!data.jobId) {
-          setError("Analysis did not return a job id.");
+        const jobId = data.jobId ?? data.id;
+        if (!jobId) {
+          setError("Analyze did not return a job id.");
           setPhaseLabel(null);
           return;
         }
-
-        setActiveJobId(data.jobId);
-        setPhaseLabel("Queued");
-        const done = await pollJobUntilDone(data.jobId, setPhaseLabel, controller.signal);
+        setActiveJobId(jobId);
+        const done = await pollJobUntilDone(jobId, setPhaseLabel, controller.signal);
         const routePath = done.routePath ?? done.result?.routePath;
-        if (routePath) {
-          router.push(routePath);
-          return;
-        }
-        setError("Analysis finished but no repository path was returned.");
-        setPhaseLabel(null);
+        if (routePath) router.push(routePath);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Could not reach the analysis service.";
+        const message = err instanceof Error ? err.message : "Analysis failed";
         const code =
           err && typeof err === "object" && "code" in err
             ? String((err as { code?: string }).code)
@@ -227,6 +230,11 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
         setPhaseLabel(null);
       }
     });
+  }
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    runAnalyze(url);
   }
 
   function onRetryFailedJob() {
@@ -280,7 +288,8 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-xl">
+    <div className="w-full max-w-xl space-y-3">
+    <form onSubmit={onSubmit} className="w-full">
       <label className="mb-2 block font-mono text-xs uppercase tracking-[0.14em] text-[var(--ink-soft)]/70">
         Paste a GitHub repository or pull request URL
       </label>
@@ -362,5 +371,12 @@ export function AnalyzeForm({ initialUrl = "" }: { initialUrl?: string }) {
         </p>
       ) : null}
     </form>
+    <SampleRepositories
+      onSelect={(sampleUrl) => {
+        setUrl(sampleUrl);
+        runAnalyze(sampleUrl);
+      }}
+    />
+    </div>
   );
 }

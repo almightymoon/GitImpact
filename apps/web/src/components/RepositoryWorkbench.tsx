@@ -537,10 +537,16 @@ export function RepositoryWorkbench({
                 Repository analysis
               </p>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                {data.intelligence.coverage
+                  ? `${data.intelligence.coverage.confidenceLabel} · `
+                  : ""}
                 {data.intelligence.analysisHealth.filesDiscovered} code files found ·{" "}
                 {data.intelligence.analysisHealth.filesParsed} parsed ·{" "}
                 {data.intelligence.analysisHealth.filesIgnored} ignored paths ·{" "}
                 {data.intelligence.analysisHealth.filesUnsupported} unsupported
+                {data.intelligence.coverage?.codeParseCoveragePercent != null
+                  ? ` · ${data.intelligence.coverage.codeParseCoveragePercent}% parse coverage`
+                  : ""}
                 {data.intelligence.analysisHealth.parseFailures
                   ? ` · ${data.intelligence.analysisHealth.parseFailures} parse failures`
                   : ""}

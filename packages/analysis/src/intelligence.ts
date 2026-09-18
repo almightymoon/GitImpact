@@ -20,6 +20,8 @@ import {
   buildArchitectureExperience,
   collectArchitectureArtifacts,
 } from "./architecture/index.js";
+import { buildAnalysisCoverage } from "./coverage.js";
+import { buildInfrastructureNodes } from "./checks/index.js";
 
 async function findReadmeRaw(clonePath: string): Promise<string | undefined> {
   for (const name of ["README.md", "Readme.md", "readme.md", "README.MD"]) {
@@ -113,6 +115,19 @@ export async function buildRepositoryIntelligence(input: {
     repositoryType: type,
   });
 
+  const infraGraph = buildInfrastructureNodes({
+    infraSignals,
+    findings: [],
+  });
+  const coverage = buildAnalysisCoverage({
+    analysisHealth: input.analysisHealth,
+    graphEdges: [...(input.graphEdges ?? []), ...infraGraph.edges],
+    graphNodeCount: input.graphNodes.length + infraGraph.nodes.length,
+    allRelativeFiles: filePaths,
+    codeFilePaths: input.files.map((f) => f.path),
+    infraSignals,
+  });
+
   return {
     repositoryType: type,
     typeLabel: label,
@@ -121,6 +136,7 @@ export async function buildRepositoryIntelligence(input: {
     importantModules,
     infraSignals,
     analysisHealth: input.analysisHealth,
+    coverage,
     openPullRequests,
     openPrCount: openPullRequests.length,
     architectureArtifacts,

@@ -33,6 +33,8 @@
 - GitOps/YAML-only overview: classify as GITOPS, surface manifest languages/modules/infra signals
 - Wave-2: ignore `devDependencies` and `examples/` for framework labels; label Socket.IO/MSW/Preact by package name; stop classifying CI-only libs as DEVOPS
 - Wave-3: aggregate workspace package prod/peer deps for monorepos; label Formik/Vite; treat `src/<package>.ts` as library entry
+- Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
+- Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 
 ### Security
 

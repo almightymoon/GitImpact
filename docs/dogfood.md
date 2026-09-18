@@ -62,6 +62,7 @@ Or append JSONL by hand (schema in `tests/dogfood/miss-schema.md`).
 - filesDiscovered / filesParsed / parseFailures / truncated
 - graph nodes/edges
 - frameworks, apiRoutes
+- **coverage.confidence** / codeParseCoveragePercent / highConfidenceEdgePercent
 - error code if failed
 
 ## CI note

@@ -6,6 +6,7 @@ import type {
   RepositoryIntelligence,
 } from "@gitimpact/shared";
 import { EmptyState } from "@/components/EmptyState";
+import { AnalysisFeedbackLink } from "@/components/AnalysisFeedbackLink";
 
 export function RepoOverviewPanel({
   summary,
@@ -215,11 +216,67 @@ export function RepoOverviewPanel({
 
       {health ? (
         <section className="rounded-2xl border border-[var(--line)] bg-white/70 p-5">
-          <h3 className="font-display text-lg font-semibold">Repository analysis</h3>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            Analysis completeness — why the graph or structure may look smaller than the full repo.
-          </p>
-              <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="font-display text-lg font-semibold">Analysis confidence</h3>
+              <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                How complete and trustworthy this analysis is for the files GitImpact can see.
+              </p>
+            </div>
+            {intelligence?.coverage ? (
+              <p
+                className={`rounded-full px-3 py-1 font-mono text-xs ${
+                  intelligence.coverage.confidence === "HIGH"
+                    ? "bg-emerald-50 text-emerald-800"
+                    : intelligence.coverage.confidence === "MEDIUM"
+                      ? "bg-amber-50 text-amber-900"
+                      : "bg-rose-50 text-rose-900"
+                }`}
+              >
+                {intelligence.coverage.confidenceLabel}
+              </p>
+            ) : null}
+          </div>
+
+          {intelligence?.coverage ? (
+            <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {(
+                [
+                  [
+                    "Code parse coverage",
+                    intelligence.coverage.codeParseCoveragePercent === null
+                      ? "n/a"
+                      : `${intelligence.coverage.codeParseCoveragePercent}%`,
+                  ],
+                  [
+                    "High-confidence edges",
+                    intelligence.coverage.highConfidenceEdgePercent === null
+                      ? "n/a"
+                      : `${intelligence.coverage.highConfidenceEdgePercent}%`,
+                  ],
+                  ["Graph nodes", intelligence.coverage.graph.nodes],
+                  ["Graph edges", intelligence.coverage.graph.edges],
+                ] as Array<[string, string | number]>
+              ).map(([label, value]) => (
+                <div key={label} className="rounded-xl bg-[var(--fog)]/70 px-3 py-2">
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
+                    {label}
+                  </dt>
+                  <dd className="font-display text-lg font-semibold">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+
+          {intelligence?.coverage?.reasons?.length ? (
+            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-[var(--ink-soft)]">
+              {intelligence.coverage.reasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {(
               [
                 ["Code files found", health.filesDiscovered],
@@ -237,6 +294,32 @@ export function RepoOverviewPanel({
               </div>
             ))}
           </dl>
+
+          {intelligence?.coverage?.unsupportedGroups?.length ? (
+            <div className="mt-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]/70">
+                Inventory not parsed as application code
+              </p>
+              <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                {intelligence.coverage.unsupportedGroups.slice(0, 6).map((group) => (
+                  <li
+                    key={group.kind}
+                    className="rounded-xl bg-[var(--fog)]/70 px-3 py-2 text-sm"
+                  >
+                    <span className="font-medium">
+                      {group.kind} · {group.fileCount}
+                    </span>
+                    {group.examples[0] ? (
+                      <span className="mt-0.5 block font-mono text-[10px] text-[var(--ink-soft)]">
+                        e.g. {group.examples[0]}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {health.truncated ? (
             <p className="mt-3 text-xs text-[var(--warning)]">
               File cap reached ({health.maxFilesCap}). Raise GITIMPACT_MAX_FILES for larger analyses.
@@ -279,6 +362,12 @@ export function RepoOverviewPanel({
         >
           View APIs ({summary.apiRoutes})
         </button>
+        <AnalysisFeedbackLink
+          repository={repository}
+          typeLabel={intelligence?.typeLabel}
+          confidence={intelligence?.coverage?.confidenceLabel}
+          architectureSummary={intelligence?.architectureSummary}
+        />
       </div>
     </div>
   );

@@ -794,26 +794,28 @@ export async function searchAnalysis(
   return new GraphStore(analysis.graph).search(query);
 }
 
-export async function analyzeLocalFixture(
-  fixtureDir: string,
-  options?: { depth?: number; id?: string },
+export async function analyzeLocalPath(
+  localDir: string,
+  options?: { depth?: number; id?: string; maxFiles?: number },
 ): Promise<StoredAnalysis> {
   const depth = options?.depth ?? 3;
-  const id = options?.id ?? "demo/tiny-fixture";
-  const parsed = await parseRepository(fixtureDir);
+  const base = path.basename(path.resolve(localDir)) || "local";
+  const id = options?.id ?? `local/${base}`;
+  const parsed = await parseRepository(localDir, {
+    maxFiles: options?.maxFiles ?? Number(process.env.GITIMPACT_MAX_FILES ?? 2000),
+  });
   const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
 
   const seed =
-    store.getNode("METHOD:src/auth.service.ts:AuthService.authenticate") ??
-    store.findFileNode("src/auth.service.ts") ??
-    store.getNodes().find((n) => n.type !== "ENV_VARIABLE");
+    store.getNodes().find((n) => n.type === "FUNCTION" || n.type === "METHOD") ??
+    store.getNodes().find((n) => n.type === "FILE");
 
   const impact = seed ? buildImpactReport(store, [seed], depth) : undefined;
 
   const intelligence = await buildRepositoryIntelligence({
-    owner: "demo",
-    repo: "tiny-fixture",
-    clonePath: fixtureDir,
+    owner: "local",
+    repo: base,
+    clonePath: localDir,
     files: parsed.files,
     graphNodes: graph.nodes,
     graphEdges: graph.edges,
@@ -821,6 +823,7 @@ export async function analyzeLocalFixture(
     frameworks,
     languages: parsed.languages,
     packageDeps: parsed.packageDeps,
+    packageName: parsed.packageName,
     analysisHealth: parsed.analysisHealth,
     allRelativeFiles: parsed.allRelativeFiles,
     skipOpenPrs: true,
@@ -830,7 +833,7 @@ export async function analyzeLocalFixture(
     files: parsed.files,
     contentsByPath: parsed.contentsByPath,
     packageDeps: parsed.packageDeps,
-    clonePath: fixtureDir,
+    clonePath: localDir,
     allRelativeFiles: parsed.allRelativeFiles,
     infraSignals: intelligence.infraSignals,
     impact,
@@ -840,11 +843,11 @@ export async function analyzeLocalFixture(
     id,
     createdAt: new Date().toISOString(),
     repository: {
-      owner: "demo",
-      name: "tiny-fixture",
-      url: "local://demo/tiny-fixture",
+      owner: "local",
+      name: base,
+      url: `local://${base}`,
       defaultBranch: "main",
-      clonePath: fixtureDir,
+      clonePath: localDir,
     },
     summary: buildSummary(
       parsed.files,
@@ -856,13 +859,41 @@ export async function analyzeLocalFixture(
       parsed.allRelativeFiles,
     ),
     graph: finalized.graph,
-    routePath: "/demo/tiny-fixture",
+    routePath: `/${id}`,
     impact,
     routes,
     intelligence,
     checks: finalized.checks,
   };
 
+  return persist(stored);
+}
+
+export async function analyzeLocalFixture(
+  fixtureDir: string,
+  options?: { depth?: number; id?: string },
+): Promise<StoredAnalysis> {
+  const analysis = await analyzeLocalPath(fixtureDir, {
+    depth: options?.depth,
+    id: options?.id ?? "demo/tiny-fixture",
+  });
+  // Preserve stable demo identity used by the web demo routes.
+  const stored: StoredAnalysis = {
+    ...analysis,
+    id: options?.id ?? "demo/tiny-fixture",
+    repository: {
+      ...analysis.repository,
+      owner: "demo",
+      name: "tiny-fixture",
+      url: "local://demo/tiny-fixture",
+    },
+    routePath: "/demo/tiny-fixture",
+    intelligence: analysis.intelligence
+      ? {
+          ...analysis.intelligence,
+        }
+      : analysis.intelligence,
+  };
   return persist(stored);
 }
 

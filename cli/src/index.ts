@@ -1,6 +1,9 @@
 #!/usr/bin/env node
+import { access } from "node:fs/promises";
+import path from "node:path";
 import {
   analyzeAndCommentOnPullRequest,
+  analyzeLocalPath,
   analyzeRepositoryUrl,
   parseGitHubUrl,
 } from "@gitimpact/analysis";
@@ -97,6 +100,7 @@ async function main() {
 
 Usage:
   gitimpact analyze <github-url>
+  gitimpact analyze <local-path>
   gitimpact comment <github-pr-url> [--dry-run]
   gitimpact diff <github-pr-url>
   gitimpact admin <subcommand>
@@ -104,6 +108,7 @@ Usage:
 Examples:
   gitimpact analyze github.com/owner/repo
   gitimpact analyze github.com/owner/repo/pull/123
+  gitimpact analyze ./my-app
   gitimpact comment github.com/owner/repo/pull/123
   gitimpact comment github.com/owner/repo/pull/123 --dry-run
   gitimpact admin health
@@ -125,7 +130,7 @@ Examples:
   }
 
   if (!target) {
-    console.error("A GitHub repository or pull request URL is required.");
+    console.error("A GitHub repository URL or local path is required.");
     process.exit(1);
   }
 
@@ -162,15 +167,72 @@ Examples:
   }
 
   console.log("Analyzing…");
-  const analysis = await analyzeRepositoryUrl(target, { maxFiles: 800 });
+  const jsonOut = rest.includes("--json");
+  let analysis;
+
+  const isRemote =
+    /^https?:\/\//i.test(target) ||
+    /github\.com/i.test(target) ||
+    /^[\w.-]+\/[\w.-]+(\/pull\/\d+)?$/i.test(target);
+
+  if (!isRemote) {
+    const localDir = path.resolve(target.replace(/^~(?=\/|$)/, process.env.HOME ?? ""));
+    try {
+      await access(localDir);
+      analysis = await analyzeLocalPath(localDir, { maxFiles: 2000 });
+    } catch {
+      console.error(`Local path not found: ${localDir}`);
+      process.exit(1);
+    }
+  } else {
+    analysis = await analyzeRepositoryUrl(target, { maxFiles: 800 });
+  }
+
+  if (jsonOut) {
+    console.log(
+      JSON.stringify(
+        {
+          id: analysis.id,
+          summary: analysis.summary,
+          repositoryType: analysis.intelligence?.repositoryType,
+          coverage: analysis.intelligence?.coverage
+            ? {
+                confidence: analysis.intelligence.coverage.confidence,
+                codeParseCoveragePercent:
+                  analysis.intelligence.coverage.codeParseCoveragePercent,
+                highConfidenceEdgePercent:
+                  analysis.intelligence.coverage.highConfidenceEdgePercent,
+                reasons: analysis.intelligence.coverage.reasons,
+              }
+            : null,
+          frameworks: analysis.summary.frameworks,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
 
   console.log("");
   console.log("Repository analyzed.");
+  console.log(`Type: ${analysis.intelligence?.typeLabel ?? "unknown"}`);
+  if (analysis.intelligence?.coverage) {
+    console.log(
+      `Confidence: ${analysis.intelligence.coverage.confidenceLabel}` +
+        (analysis.intelligence.coverage.codeParseCoveragePercent != null
+          ? ` · parse ${analysis.intelligence.coverage.codeParseCoveragePercent}%`
+          : ""),
+    );
+  }
   console.log(`Files: ${analysis.summary.files}`);
   console.log(`Functions: ${analysis.summary.functions}`);
   console.log(`Dependencies: ${analysis.summary.dependencies}`);
   console.log(`API Routes: ${analysis.summary.apiRoutes}`);
   console.log(`Tests: ${analysis.summary.tests}`);
+  if (analysis.summary.frameworks.length) {
+    console.log(`Frameworks: ${analysis.summary.frameworks.join(", ")}`);
+  }
 
   if (analysis.impact) {
     console.log("");
