@@ -7,6 +7,7 @@ import type {
 import { humanizeChangeCategory } from "@gitimpact/shared";
 import { HelpTip, HELP } from "@/components/HelpTip";
 import { EmptyState } from "@/components/EmptyState";
+import { PrImpactHistoryPanel } from "@/components/PrImpactHistoryPanel";
 
 const levelColor: Record<PullRequestImpactOverview["impactLevel"], string> = {
   Low: "var(--medium)",
@@ -22,6 +23,8 @@ export function PullRequestOverviewPanel({
   onOpenGraph,
   onOpenTests,
   onOpenApis,
+  repository,
+  prNumber,
 }: {
   overview: PullRequestImpactOverview;
   impact?: ImpactReport | null;
@@ -29,6 +32,8 @@ export function PullRequestOverviewPanel({
   onOpenGraph?: () => void;
   onOpenTests?: () => void;
   onOpenApis?: () => void;
+  repository?: { owner: string; name: string };
+  prNumber?: number;
 }) {
   const metrics: Array<[string, number]> = [
     ["Files changed", overview.filesChanged],
@@ -205,6 +210,14 @@ export function PullRequestOverviewPanel({
           View APIs
         </button>
       </div>
+
+      {repository && prNumber != null && prNumber > 0 ? (
+        <PrImpactHistoryPanel
+          owner={repository.owner}
+          repo={repository.name}
+          prNumber={prNumber}
+        />
+      ) : null}
     </div>
   );
 }

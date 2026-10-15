@@ -286,6 +286,7 @@ Examples:
   gitimpact analyze .
   gitimpact structure .
   gitimpact impact github.com/owner/repo/pull/123
+  gitimpact impact --from main --to HEAD .
   gitimpact history owner/repo
   gitimpact compare ./old-checkout ./new-checkout
   gitimpact pr --base main .
@@ -523,10 +524,23 @@ async function main() {
       ".";
 
     if (fromRef || toRef) {
+      if (isRemoteTarget(target)) {
+        console.error(
+          "Local ref impact (--from/--to) requires a local git path, not a GitHub URL.",
+        );
+        process.exit(1);
+      }
+      const localPath = path.resolve(target);
       console.log(
-        `Local ref impact (${fromRef ?? "HEAD~1"} → ${toRef ?? "HEAD"}) is not wired yet.`,
+        `Analyzing local impact ${fromRef ?? "HEAD~1"}...${toRef ?? "HEAD"} in ${localPath}…`,
       );
-      console.log("Analyzing repository structure instead; use a PR URL for blast radius.");
+      const { analyzeLocalRefImpact } = await import("@gitimpact/analysis");
+      const analysis = await analyzeLocalRefImpact(localPath, {
+        fromRef: fromRef ?? "HEAD~1",
+        toRef: toRef ?? "HEAD",
+      });
+      printAnalyzeSummary(analysis);
+      return;
     }
 
     console.log("Analyzing…");
@@ -539,8 +553,9 @@ async function main() {
       printStructure(analysis);
       console.log("");
       console.log(
-        "No PR impact report — pass a pull request URL, e.g. gitimpact impact owner/repo/pull/12",
+        "No PR impact report — pass a pull request URL, or use local refs:",
       );
+      console.log("  gitimpact impact --from main --to HEAD .");
     }
     return;
   }

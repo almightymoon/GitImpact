@@ -113,6 +113,7 @@ type StructureNodeData = {
   root?: string;
   severity: string;
   selected: boolean;
+  pinned?: boolean;
   fileId?: string;
   shape?: "box" | "actor" | "store";
   pathHint?: string;
@@ -510,13 +511,15 @@ function StructureNode({ data }: NodeProps) {
   const border =
     d.selected
       ? "#0f7a6c"
-      : d.severity !== "NEUTRAL"
-        ? severityFill[d.severity]
-        : `${d.color}66`;
+      : d.pinned
+        ? "#0f7a6c"
+        : d.severity !== "NEUTRAL"
+          ? severityFill[d.severity]
+          : `${d.color}66`;
 
   return (
     <div
-      title={`${d.title}\n${d.root ?? ""}\n${d.subtitle}`}
+      title={`${d.title}\n${d.root ?? ""}\n${d.subtitle}${d.pinned ? "\n(pinned in saved view)" : ""}`}
       style={{
         width: 240,
         minHeight: 148,
@@ -524,13 +527,15 @@ function StructureNode({ data }: NodeProps) {
         border: `2px solid ${border}`,
         background: d.selected ? "#0b1220" : "#ffffff",
         color: d.selected ? "#f7fafc" : "#0b1220",
-        boxShadow:
-          d.severity !== "NEUTRAL"
+        boxShadow: d.pinned
+          ? "0 0 0 4px rgba(15,122,108,0.22), 0 8px 22px rgba(11,18,32,0.07)"
+          : d.severity !== "NEUTRAL"
             ? `0 0 0 4px ${(severityFill[d.severity] ?? "#64748b")}22`
             : "0 8px 22px rgba(11,18,32,0.07)",
         padding: "14px 14px 16px",
         position: "relative",
         overflow: "visible",
+        opacity: d.pinned || !d.selected ? 1 : 1,
       }}
     >
       <Handle
@@ -645,6 +650,7 @@ const nodeTypes = { structure: memo(StructureNode) };
 function buildArchitectureLayout(
   architecture: ArchitectureMap,
   selectedId: string | null,
+  pinnedSystemIds: string[] = [],
 ): {
   nodes: Node[];
   edges: Edge[];
@@ -657,6 +663,7 @@ function buildArchitectureLayout(
     (c) => !c.level || c.level === "SYSTEM",
   );
   const idSet = new Set(topComponents.map((c) => c.id));
+  const pinned = new Set(pinnedSystemIds);
 
   const byBand = new Map<ArchBandId, typeof topComponents>();
   for (const band of ARCH_BANDS) byBand.set(band.id, []);
@@ -759,6 +766,7 @@ function buildArchitectureLayout(
           shape: mod.shape,
           severity: "NEUTRAL",
           selected,
+          pinned: pinned.has(mod.id),
           fileId: mod.files[0] ? `FILE:${mod.files[0]}` : undefined,
         } satisfies StructureNodeData,
         zIndex: 2,
@@ -1192,6 +1200,7 @@ export function StructureDiagram({
   onClear,
   repositoryName,
   architecture,
+  pinnedSystemIds = [],
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -1201,16 +1210,17 @@ export function StructureDiagram({
   onClear?: () => void;
   repositoryName?: string;
   architecture?: ArchitectureMap;
+  pinnedSystemIds?: string[];
 }) {
   // Full structure by default; impact paints on top without hiding systems.
   const [focusImpacted, setFocusImpacted] = useState(false);
 
   const layout = useMemo(() => {
     if (architecture && architecture.components.length > 0) {
-      return buildArchitectureLayout(architecture, selectedId);
+      return buildArchitectureLayout(architecture, selectedId, pinnedSystemIds);
     }
     return buildLayout(nodes, edges, impacted, selectedId, focusImpacted);
-  }, [architecture, nodes, edges, impacted, selectedId, focusImpacted]);
+  }, [architecture, nodes, edges, impacted, selectedId, focusImpacted, pinnedSystemIds]);
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(layout.nodes);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(layout.edges);

@@ -51,6 +51,7 @@
 - Wave-6 dogfood 6/6: Go modules without HTTP surface classify as LIBRARY (GORM, testify); skip Chi `_examples/` route noise (47→9); surface Go heuristic + anonymous-handler blind spots in dogfood coverage; held-out Go edge review 22 TRUE / 0 FALSE
 - **v1.1.4 complete / language freeze:** JS/TS + Python + Go are the supported languages; no Java/Rust/C# until v1.2 workflow value ships
 - **v1.2 start:** analysis history snapshots (`analysis_history`), architecture + blast-radius compare (`gitimpact compare`, history API), deterministic review reports + export packs, Overview history panel
+- **v1.2 continue:** local `gitimpact impact --from/--to` ref blast radius; saved/team architecture views (Structure pins + `saved_views` API); PR Overview impact-history sparkline
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 

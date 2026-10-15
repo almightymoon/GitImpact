@@ -206,4 +206,10 @@ export {
   clearMemoryHistoryForTests,
   type AppendHistoryInput,
 } from "./history.js";
-export { analysisHistory } from "./schema.js";
+export { analysisHistory, savedViews } from "./schema.js";
+export {
+  listSavedViews,
+  createSavedView,
+  deleteSavedView,
+  clearMemoryViewsForTests,
+} from "./views.js";

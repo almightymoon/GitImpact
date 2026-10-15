@@ -30,6 +30,7 @@ import {
   PullRequestOverviewPanel,
 } from "@/components/PullRequestPanels";
 import { ChecksPanel, PrQualityReport } from "@/components/ChecksPanel";
+import { SavedViewsPanel } from "@/components/SavedViewsPanel";
 
 type TabId =
   | "overview"
@@ -138,6 +139,7 @@ export function RepositoryWorkbench({
   const [depth, setDepth] = useState(3);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<TabId>("overview");
+  const [pinnedSystemIds, setPinnedSystemIds] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
 
   const load = useCallback(async () => {
@@ -424,6 +426,8 @@ export function RepositoryWorkbench({
                 onOpenGraph={() => setTab("graph")}
                 onOpenTests={() => setTab("tests")}
                 onOpenApis={() => setTab("apis")}
+                repository={data.repository}
+                prNumber={data.pullRequest?.number}
               />
             </div>
           ) : (
@@ -556,6 +560,15 @@ export function RepositoryWorkbench({
               </p>
             </div>
           ) : null}
+          <div className="mb-4">
+            <SavedViewsPanel
+              owner={data.repository.owner}
+              repo={data.repository.name}
+              systems={data.intelligence?.architecture?.components ?? []}
+              activePinnedIds={pinnedSystemIds}
+              onApply={(pinned) => setPinnedSystemIds(pinned)}
+            />
+          </div>
           <div className="h-[780px] overflow-hidden rounded-2xl border border-[var(--line)] bg-white/80">
             <StructureDiagram
               nodes={data.graph.nodes}
@@ -566,6 +579,7 @@ export function RepositoryWorkbench({
               onClear={clearSelection}
               repositoryName={`${data.repository.owner}/${data.repository.name}`}
               architecture={data.intelligence?.architecture}
+              pinnedSystemIds={pinnedSystemIds}
             />
           </div>
         </div>

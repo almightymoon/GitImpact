@@ -12,24 +12,15 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 |---------|--------|--------|
 | **v1.0** | Public beta / production hardening | RC in progress — see `docs/release-candidate.md` |
 | **v1.1** | Real-world accuracy + adoption | Through v1.1.4 done |
-| **v1.1.1** | Trust, coverage & explainability | Done |
-| **v1.1.2** | Relationship accuracy + Python baseline | Done |
-| **v1.1.3** | Python accuracy & framework intelligence | Done |
 | **v1.1.4** | Go parsing, framework intel & relationship accuracy | Done |
-| **v1.2** | History, change intelligence & team workflows | **Next / in progress** |
+| **v1.2** | History, change intelligence & team workflows | **In progress** |
 | **v1.3** | Optional AI layer / BYOK | Later |
 
 ---
 
 ## Language coverage freeze
 
-JS/TS + Python + Go are the supported language surface. **No Java / Rust / C#** until v1.2 workflow value ships and stabilizes.
-
----
-
-## v1.1.4 — Go parsing, framework intelligence & relationship accuracy ✅
-
-Heuristic Go surface, Echo/Gin/Chi/Cobra/GORM intelligence, wave-6 dogfood 6/6, curated fixtures, held-out review 22 TRUE / 0 FALSE.
+JS/TS + Python + Go are the supported language surface. **No Java / Rust / C#** until v1.2 stabilizes.
 
 ---
 
@@ -37,35 +28,21 @@ Heuristic Go surface, Echo/Gin/Chi/Cobra/GORM intelligence, wave-6 dogfood 6/6, 
 
 **Goal:** Turn GitImpact from an occasional lookup into something teams keep in their development workflow.
 
-```
-Repository analysis history
-      ↓
-compare two analyses
-      ↓
-"What changed in the architecture?"
-
-PR impact history
-      ↓
-"Did this PR increase/decrease blast radius?"
-
-Architecture export packs · Deterministic review reports · Overview history UI
-```
-
-### Shipped in v1.2 start
+### Shipped
 
 | Capability | Surface |
 |------------|---------|
-| Append-only analysis history snapshots | `analysis_history` table + memory fallback |
-| Architecture / blast-radius compare | `compareAnalyses` · CLI `gitimpact compare` · API `?from=&to=` |
-| History listing | CLI `gitimpact history` · `GET /api/repositories/:owner/:repo/history` · Overview panel |
-| Deterministic review report | CLI `gitimpact export review.md` |
-| Architecture export pack | CLI `gitimpact export pack <dir>` → architecture.md + review.md + snapshot.json |
+| Analysis history snapshots | `analysis_history` · Overview panel · CLI `history` |
+| Architecture / blast-radius compare | `compareAnalyses` · CLI `compare` · history API |
+| Deterministic review + export packs | `export review.md` · `export pack` |
+| Local ref impact | `gitimpact impact --from <ref> --to <ref> .` |
+| Saved / team views | Structure pin + save · `saved_views` table · views API · localStorage fallback |
+| PR impact history trend | PR Overview sparkline (blast radius across head SHAs) |
 
-### Still open in v1.2
+### Still open / polish
 
-- Saved / team views (shared filters & pinned systems)
-- Local `impact --from/--to` git ref wiring
-- Deeper PR impact history charts in the PR workbench
+- Richer shared-view collaboration (roles, org scoping)
+- Optional scheduled re-analyze for PR head tracking
 
 ---
 
@@ -80,11 +57,10 @@ Architecture export packs · Deterministic review reports · Overview history UI
 ## Commands
 
 ```bash
-pnpm dogfood -- --wave 6
-pnpm relationships
-pnpm relationships:sample -- --seed v1.1.4-go --prefix go-
+gitimpact impact --from main --to HEAD .
 gitimpact history owner/repo
 gitimpact compare ./before ./after
-gitimpact export review.md .
 gitimpact export pack ./pack .
+pnpm dogfood -- --wave 6
+pnpm relationships
 ```

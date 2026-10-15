@@ -430,15 +430,79 @@ export async function getChangedFilesBetween(
   baseRef: string,
   headRef = "HEAD",
 ): Promise<string[]> {
-  const { stdout } = await execFileAsync(
+  const files = await getDiffFilesBetween(repoPath, baseRef, headRef);
+  return files.map((f) => f.filename);
+}
+
+/**
+ * Local git diff between two refs (same shape as GitHub PR files).
+ * Uses `base...head` merge-base semantics like a PR compare.
+ */
+export async function getDiffFilesBetween(
+  repoPath: string,
+  baseRef: string,
+  headRef = "HEAD",
+): Promise<
+  Array<{
+    filename: string;
+    status: string;
+    patch?: string;
+  }>
+> {
+  const range = `${baseRef}...${headRef}`;
+  const { stdout: nameStatus } = await execFileAsync(
     "git",
-    ["diff", "--name-only", `${baseRef}...${headRef}`],
-    { cwd: repoPath },
+    ["diff", "--name-status", "--find-renames", range],
+    { cwd: repoPath, maxBuffer: 20 * 1024 * 1024 },
   );
-  return stdout
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+
+  const statusByFile = new Map<string, string>();
+  for (const line of nameStatus.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split(/\t/);
+    const code = (parts[0] ?? "M").charAt(0);
+    // R100\told\tnew → use new path
+    const filename = parts.length >= 3 ? parts[2]! : parts[1]!;
+    if (!filename) continue;
+    const status =
+      code === "A"
+        ? "added"
+        : code === "D"
+          ? "removed"
+          : code === "R"
+            ? "renamed"
+            : "modified";
+    statusByFile.set(filename, status);
+  }
+
+  const files: Array<{ filename: string; status: string; patch?: string }> = [];
+  for (const [filename, status] of statusByFile) {
+    let patch: string | undefined;
+    try {
+      const { stdout } = await execFileAsync(
+        "git",
+        ["diff", range, "--", filename],
+        { cwd: repoPath, maxBuffer: 8 * 1024 * 1024 },
+      );
+      patch = stdout || undefined;
+    } catch {
+      patch = undefined;
+    }
+    files.push({ filename, status, patch });
+  }
+
+  return files;
+}
+
+export async function resolveLocalRefSha(
+  repoPath: string,
+  ref: string,
+): Promise<string> {
+  const { stdout } = await execFileAsync("git", ["rev-parse", ref], {
+    cwd: repoPath,
+  });
+  return stdout.trim();
 }
 
 export { path };

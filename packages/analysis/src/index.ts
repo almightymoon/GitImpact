@@ -896,6 +896,132 @@ export async function analyzeLocalPath(
   return persist(stored);
 }
 
+/**
+ * Local blast-radius analysis for changes between two git refs
+ * (e.g. `main...HEAD` or `HEAD~3...HEAD`).
+ */
+export async function analyzeLocalRefImpact(
+  localDir: string,
+  options: {
+    fromRef: string;
+    toRef?: string;
+    depth?: number;
+    maxFiles?: number;
+  },
+): Promise<StoredAnalysis> {
+  const depth = options.depth ?? 3;
+  const fromRef = options.fromRef;
+  const toRef = options.toRef ?? "HEAD";
+  const resolved = path.resolve(localDir);
+  const base = path.basename(resolved) || "local";
+
+  const { getDiffFilesBetween, resolveLocalRefSha, resolveCommitSha } =
+    await import("@gitimpact/git");
+
+  const [baseSha, headSha, diffFiles] = await Promise.all([
+    resolveLocalRefSha(resolved, fromRef),
+    resolveLocalRefSha(resolved, toRef),
+    getDiffFilesBetween(resolved, fromRef, toRef),
+  ]);
+
+  enforcePrChangedFileQuota(diffFiles.length, getResourceQuotas());
+
+  const parsed = await parseRepository(resolved, {
+    maxFiles: options.maxFiles ?? Number(process.env.GITIMPACT_MAX_FILES ?? 2000),
+  });
+  const { graph, store, routes, frameworks } = buildGraphFromParse(parsed);
+
+  const changes = buildChangeRecords(diffFiles);
+  const changedNodes = resolveChangedNodes(store, changes, parsed.contentsByPath);
+  const impact = buildImpactReport(store, changedNodes, depth);
+
+  const pullRequest = {
+    owner: "local",
+    repo: base,
+    number: 0,
+    title: `Local diff ${fromRef}...${toRef}`,
+    baseBranch: fromRef,
+    headBranch: toRef,
+    headSha,
+    url: `local://${base}`,
+  };
+
+  const prOverview = buildPullRequestOverview(impact, changes, pullRequest);
+
+  const intelligence = await buildRepositoryIntelligence({
+    owner: "local",
+    repo: base,
+    clonePath: resolved,
+    files: parsed.files,
+    graphNodes: graph.nodes,
+    graphEdges: graph.edges,
+    routes,
+    frameworks,
+    languages: parsed.languages,
+    packageDeps: parsed.packageDeps,
+    packageName: parsed.packageName,
+    analysisHealth: parsed.analysisHealth,
+    allRelativeFiles: parsed.allRelativeFiles,
+    skipOpenPrs: true,
+  });
+
+  const finalized = await finalizeChecks(graph, {
+    files: parsed.files,
+    contentsByPath: parsed.contentsByPath,
+    packageDeps: parsed.packageDeps,
+    clonePath: resolved,
+    allRelativeFiles: parsed.allRelativeFiles,
+    infraSignals: intelligence.infraSignals,
+    changes,
+    impact,
+    prOverview,
+  });
+
+  let commitSha = headSha;
+  try {
+    commitSha = await resolveCommitSha(resolved);
+  } catch {
+    // keep headSha
+  }
+
+  const id = `local/${base}/diff/${baseSha.slice(0, 7)}...${headSha.slice(0, 7)}`;
+  const stored: StoredAnalysis = {
+    id,
+    createdAt: new Date().toISOString(),
+    repository: {
+      owner: "local",
+      name: base,
+      url: `local://${base}`,
+      defaultBranch: fromRef,
+      clonePath: resolved,
+    },
+    summary: buildSummary(
+      parsed.files,
+      finalized.graph,
+      store,
+      parsed.languages,
+      frameworks,
+      routes.length,
+      parsed.allRelativeFiles,
+    ),
+    graph: finalized.graph,
+    routePath: `/${id}`,
+    pullRequest,
+    changes,
+    impact,
+    prOverview,
+    routes,
+    intelligence,
+    checks: finalized.checks,
+    commitSha,
+    baseSha,
+    headSha,
+    schemaVersion: schemaVersion(),
+  };
+
+  return persist(stored);
+}
+
 export async function analyzeLocalFixture(
   fixtureDir: string,
   options?: { depth?: number; id?: string },

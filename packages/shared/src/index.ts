@@ -675,6 +675,8 @@ export type {
   ArchitectureDiff,
 } from "./history.js";
 
+export type { SavedView, SavedViewInput } from "./views.js";
+
 export {
   relationLabel,
   formatRelationshipChain,

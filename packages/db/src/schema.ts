@@ -162,6 +162,26 @@ export const analysisHistory = pgTable(
   ],
 );
 
+/** v1.2 — shared/team saved views (architecture focus) */
+export const savedViews = pgTable(
+  "saved_views",
+  {
+    id: text("id").primaryKey(),
+    repositoryId: text("repository_id")
+      .notNull()
+      .references(() => repositories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    pinnedSystemIds: jsonb("pinned_system_ids").$type<string[]>().notNull().default([]),
+    hiddenBands: jsonb("hidden_bands").$type<string[]>().notNull().default([]),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("saved_views_repository_id_idx").on(table.repositoryId),
+  ],
+);
+
 export const schema = {
   repositories,
   analyses,
@@ -169,4 +189,5 @@ export const schema = {
   webhookDeliveries,
   analysisJobs,
   analysisHistory,
+  savedViews,
 };
