@@ -13,7 +13,9 @@ Evidence (local/gitignored): `.rc-tmp/evidence/`
 
 Production Compose (`web` + `worker` + Postgres + Redis) boots and serves public analyses through BullMQ. Cache hits, 20× same-SHA dedupe, web/worker restart survival, rate limits, URL security rejects, Redis/Postgres outage **and recovery**, dead-letter **manual retry**, and automated suites were verified.
 
-**Still blocking a beta tag:** private GitHub App E2E (mandatory), live webhook/PR-comment/Check-Run proofs, load test across many distinct repos, and no-exec marker-repo proof.
+**Still blocking a beta tag:** live private GitHub App E2E (mandatory — run `pnpm rc:private-e2e` with App credentials + `GITIMPACT_RC_PRIVATE_REPO`), live webhook/PR-comment/Check-Run proofs, load test across many distinct repos, and no-exec marker-repo proof.
+
+Harness: `scripts/rc-private-e2e.mjs` (skips cleanly without secrets; evidence in `.rc-tmp/evidence/`).
 
 ---
 

@@ -236,6 +236,20 @@ async function main(): Promise<void> {
           webhooks,
         });
       }
+      try {
+        const { pollPrHeadUpdates } = await import("@gitimpact/analysis");
+        const poll = await pollPrHeadUpdates({
+          log: (msg, fields) => log("info", msg, fields ?? {}),
+        });
+        if (poll.enqueued || poll.prsChecked) {
+          log("info", "pr_head_poll", poll);
+        }
+      } catch (pollError) {
+        log("warn", "pr_head_poll_failed", {
+          detail:
+            pollError instanceof Error ? pollError.message : String(pollError),
+        });
+      }
     } catch (error) {
       log("warn", "worker_ops_tick_failed", {
         detail: error instanceof Error ? error.message : String(error),

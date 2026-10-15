@@ -13,14 +13,14 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 | **v1.0** | Public beta / production hardening | RC in progress — see `docs/release-candidate.md` |
 | **v1.1** | Real-world accuracy + adoption | Through v1.1.4 done |
 | **v1.1.4** | Go parsing, framework intel & relationship accuracy | Done |
-| **v1.2** | History, change intelligence & team workflows | **In progress** |
-| **v1.3** | Optional AI layer / BYOK | Later |
+| **v1.2** | History, change intelligence & team workflows | **Done** |
+| **v1.3** | Optional AI layer / BYOK | Foundation shipped (`@gitimpact/ai`) |
 
 ---
 
-## Language coverage freeze
+## Language coverage
 
-JS/TS + Python + Go are the supported language surface. **No Java / Rust / C#** until v1.2 stabilizes.
+Supported surface: **JS/TS + Python + Go + Java + Rust + C#** (heuristic parsers; no toolchain execution).
 
 ---
 
@@ -36,21 +36,26 @@ JS/TS + Python + Go are the supported language surface. **No Java / Rust / C#** 
 | Architecture / blast-radius compare | `compareAnalyses` · CLI `compare` · history API |
 | Deterministic review + export packs | `export review.md` · `export pack` |
 | Local ref impact | `gitimpact impact --from <ref> --to <ref> .` |
-| Saved / team views | Structure pin + save · `saved_views` table · views API · localStorage fallback |
+| Saved / team views | Structure pin + save · `saved_views` · visibility/org/roles · views API |
 | PR impact history trend | PR Overview sparkline (blast radius across head SHAs) |
-
-### Still open / polish
-
-- Richer shared-view collaboration (roles, org scoping)
-- Optional scheduled re-analyze for PR head tracking
+| Scheduled PR head re-analyze | Worker ops tick · `GITIMPACT_PR_HEAD_POLL=1` |
 
 ---
 
-## Explicitly deferred
+## v1.3 — Optional AI / BYOK
 
-- Private-repo / webhook RC E2E → v1.0 when App credentials are available
-- Java / Rust / C# → after v1.2 stabilizes
-- AI → **v1.3**
+| Capability | Surface |
+|------------|---------|
+| Optional narrative enrichment | `@gitimpact/ai` · PR comment section when `GITIMPACT_AI_ENABLED` + key |
+| Deterministic metrics remain source of truth | AI never replaces scores / graphs |
+
+---
+
+## Explicitly deferred / RC blockers
+
+- Private-repo / webhook live E2E → run `pnpm rc:private-e2e` when App credentials are available (`docs/private-repo-e2e.md`)
+- Load test ≥10 distinct repos + no-exec marker proof → v1.0 tag
+- Deeper Java/Rust/C# relationship accuracy dogfood waves → follow-up
 
 ---
 
@@ -63,4 +68,5 @@ gitimpact compare ./before ./after
 gitimpact export pack ./pack .
 pnpm dogfood -- --wave 6
 pnpm relationships
+pnpm rc:private-e2e
 ```

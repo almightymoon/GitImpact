@@ -1381,3 +1381,4 @@ export {
 
 export { enqueuePrAnalysis, enqueueRepositoryAnalysis, ensureInlineAnalysisHandlers, type PrAnalysisJob, type RepoAnalysisJob } from "./queue.js";
 export { processPrAnalysisJob } from "./pr-workflow.js";
+export { pollPrHeadUpdates, type PrHeadPollResult } from "./pr-head-poll.js";

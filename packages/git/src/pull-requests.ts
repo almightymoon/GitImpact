@@ -38,8 +38,8 @@ export async function listOpenPullRequests(
     created_at?: string;
     updated_at?: string;
     user?: { login?: string };
-    head?: { ref?: string };
-    base?: { ref?: string };
+    head?: { ref?: string; sha?: string };
+    base?: { ref?: string; sha?: string };
   }>;
 
   return data.map((pr) => ({
@@ -48,6 +48,8 @@ export async function listOpenPullRequests(
     author: pr.user?.login,
     headBranch: pr.head?.ref ?? "unknown",
     baseBranch: pr.base?.ref ?? "main",
+    headSha: pr.head?.sha,
+    baseSha: pr.base?.sha,
     createdAt: pr.created_at,
     updatedAt: pr.updated_at,
     draft: Boolean(pr.draft),

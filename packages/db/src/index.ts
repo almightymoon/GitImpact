@@ -210,6 +210,7 @@ export { analysisHistory, savedViews } from "./schema.js";
 export {
   listSavedViews,
   createSavedView,
+  updateSavedView,
   deleteSavedView,
   clearMemoryViewsForTests,
 } from "./views.js";

@@ -1,10 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { ArchitectureComponent, SavedView } from "@gitimpact/shared";
+import type {
+  ArchitectureComponent,
+  SavedView,
+  ViewRole,
+  ViewVisibility,
+} from "@gitimpact/shared";
 
 const LOCAL_KEY = (owner: string, repo: string) =>
   `gitimpact:views:${owner}/${repo}`;
+const IDENTITY_KEY = "gitimpact:view-identity";
 
 function loadLocalViews(owner: string, repo: string): SavedView[] {
   try {
@@ -18,6 +24,26 @@ function loadLocalViews(owner: string, repo: string): SavedView[] {
 
 function saveLocalViews(owner: string, repo: string, views: SavedView[]) {
   localStorage.setItem(LOCAL_KEY(owner, repo), JSON.stringify(views.slice(0, 20)));
+}
+
+function loadIdentity(): { login: string; orgs: string; role: ViewRole } {
+  try {
+    const raw = localStorage.getItem(IDENTITY_KEY);
+    if (!raw) return { login: "", orgs: "", role: "editor" };
+    return JSON.parse(raw) as { login: string; orgs: string; role: ViewRole };
+  } catch {
+    return { login: "", orgs: "", role: "editor" };
+  }
+}
+
+function actorHeaders(identity: { login: string; orgs: string; role: ViewRole }): HeadersInit {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (identity.login.trim()) headers["x-gitimpact-actor"] = identity.login.trim();
+  if (identity.orgs.trim()) headers["x-gitimpact-orgs"] = identity.orgs.trim();
+  if (identity.role) headers["x-gitimpact-role"] = identity.role;
+  return headers;
 }
 
 export function SavedViewsPanel({
@@ -35,13 +61,21 @@ export function SavedViewsPanel({
 }) {
   const [views, setViews] = useState<SavedView[]>([]);
   const [name, setName] = useState("");
+  const [visibility, setVisibility] = useState<ViewVisibility>("repo");
+  const [roleRequired, setRoleRequired] = useState<ViewRole>("viewer");
+  const [identity, setIdentity] = useState(loadIdentity);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+  }, [identity]);
 
   const refresh = useCallback(async () => {
     const local = loadLocalViews(owner, repo);
     try {
       const res = await fetch(
         `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/views`,
+        { headers: actorHeaders(identity) },
       );
       if (res.ok) {
         const json = (await res.json()) as { views?: SavedView[] };
@@ -54,7 +88,7 @@ export function SavedViewsPanel({
       // fall through to local
     }
     setViews(local);
-  }, [owner, repo]);
+  }, [owner, repo, identity]);
 
   useEffect(() => {
     void refresh();
@@ -67,13 +101,17 @@ export function SavedViewsPanel({
       name: name.trim(),
       pinnedSystemIds: activePinnedIds,
       hiddenBands: [] as string[],
+      visibility,
+      roleRequired,
+      orgLogin: owner,
+      createdBy: identity.login.trim() || undefined,
     };
     try {
       const res = await fetch(
         `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/views`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: actorHeaders(identity),
           body: JSON.stringify(payload),
         },
       );
@@ -94,6 +132,10 @@ export function SavedViewsPanel({
       pinnedSystemIds: payload.pinnedSystemIds,
       hiddenBands: [],
       scope: "local",
+      visibility,
+      roleRequired,
+      orgLogin: owner,
+      createdBy: identity.login.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -116,7 +158,7 @@ export function SavedViewsPanel({
     }
     await fetch(
       `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/views/${encodeURIComponent(view.id)}`,
-      { method: "DELETE" },
+      { method: "DELETE", headers: actorHeaders(identity) },
     );
     await refresh();
   }
@@ -127,9 +169,35 @@ export function SavedViewsPanel({
     <section className="rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4">
       <h3 className="font-display text-base font-semibold">Saved views</h3>
       <p className="mt-1 text-xs text-[var(--ink-soft)]">
-        Pin systems for team walkthroughs. Views sync to the server when a database is configured;
-        otherwise they stay in this browser.
+        Pin systems for team walkthroughs. Share as repo / org / private; optional GitHub login
+        gates org & private visibility.
       </p>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <input
+          value={identity.login}
+          onChange={(e) => setIdentity((i) => ({ ...i, login: e.target.value }))}
+          placeholder="Your GitHub login"
+          className="rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 text-xs"
+        />
+        <input
+          value={identity.orgs}
+          onChange={(e) => setIdentity((i) => ({ ...i, orgs: e.target.value }))}
+          placeholder="Orgs (comma-separated)"
+          className="rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 text-xs"
+        />
+        <select
+          value={identity.role}
+          onChange={(e) =>
+            setIdentity((i) => ({ ...i, role: e.target.value as ViewRole }))
+          }
+          className="rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 text-xs"
+        >
+          <option value="viewer">Role: viewer</option>
+          <option value="editor">Role: editor</option>
+          <option value="admin">Role: admin</option>
+        </select>
+      </div>
 
       {systemOptions.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -166,6 +234,24 @@ export function SavedViewsPanel({
           placeholder="View name (e.g. Checkout path)"
           className="min-w-[12rem] flex-1 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 text-xs"
         />
+        <select
+          value={visibility}
+          onChange={(e) => setVisibility(e.target.value as ViewVisibility)}
+          className="rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 text-xs"
+        >
+          <option value="repo">Repo</option>
+          <option value="org">Org</option>
+          <option value="private">Private</option>
+        </select>
+        <select
+          value={roleRequired}
+          onChange={(e) => setRoleRequired(e.target.value as ViewRole)}
+          className="rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 text-xs"
+        >
+          <option value="viewer">Mutate: viewer+</option>
+          <option value="editor">Mutate: editor+</option>
+          <option value="admin">Mutate: admin</option>
+        </select>
         <button
           type="button"
           disabled={busy || !name.trim()}
@@ -199,7 +285,9 @@ export function SavedViewsPanel({
               >
                 {view.name}
                 <span className="ml-2 font-mono text-[10px] text-[var(--ink-soft)]">
-                  {view.pinnedSystemIds.length} pinned · {view.scope}
+                  {view.pinnedSystemIds.length} pinned · {view.scope} ·{" "}
+                  {view.visibility ?? "repo"}
+                  {view.createdBy ? ` · @${view.createdBy}` : ""}
                 </span>
               </button>
               <button

@@ -2,6 +2,21 @@
 
 Requires a real GitHub App install. Do not automate against production orgs.
 
+## Automated harness
+
+```bash
+# With App credentials in the environment:
+export GITHUB_APP_ID=...
+export GITHUB_APP_PRIVATE_KEY=...
+export GITHUB_WEBHOOK_SECRET=...
+export GITIMPACT_RC_PRIVATE_REPO=owner/private-repo   # optional live target
+export GITIMPACT_RC_PRIVATE_PR=1                       # optional PR number
+export GITIMPACT_PUBLIC_URL=http://localhost:3001
+pnpm rc:private-e2e
+```
+
+Without credentials the script exits 0 with `SKIPPED_NO_CREDENTIALS` and writes evidence under `.rc-tmp/evidence/`.
+
 ## Happy path
 
 1. Configure App secrets locally / staging.

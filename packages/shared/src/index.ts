@@ -152,7 +152,16 @@ export interface ParsedClass {
 
 export interface ParsedFile {
   path: string;
-  language: "typescript" | "javascript" | "tsx" | "jsx" | "python" | "go";
+  language:
+    | "typescript"
+    | "javascript"
+    | "tsx"
+    | "jsx"
+    | "python"
+    | "go"
+    | "java"
+    | "rust"
+    | "csharp";
   imports: ParsedImport[];
   exports: string[];
   functions: ParsedFunction[];
@@ -295,7 +304,20 @@ export type HttpMethod =
 
 export interface DetectedRoute {
   id: string;
-  framework: "nextjs" | "express" | "nestjs" | "flask" | "fastapi" | "django" | "echo" | "gin" | "chi" | "unknown";
+  framework:
+    | "nextjs"
+    | "express"
+    | "nestjs"
+    | "flask"
+    | "fastapi"
+    | "django"
+    | "echo"
+    | "gin"
+    | "chi"
+    | "spring"
+    | "axum"
+    | "aspnet"
+    | "unknown";
   method: HttpMethod;
   path: string;
   file: string;
@@ -335,6 +357,9 @@ export const CODE_EXTENSIONS = [
   ".cjs",
   ".py",
   ".go",
+  ".java",
+  ".rs",
+  ".cs",
 ] as const;
 
 export const SECRET_PATTERNS = [
@@ -496,6 +521,10 @@ export interface OpenPullRequestSummary {
   author?: string;
   headBranch: string;
   baseBranch: string;
+  /** Head commit SHA when available from GitHub */
+  headSha?: string;
+  /** Base commit SHA when available from GitHub */
+  baseSha?: string;
   createdAt?: string;
   updatedAt?: string;
   draft: boolean;
@@ -675,7 +704,18 @@ export type {
   ArchitectureDiff,
 } from "./history.js";
 
-export type { SavedView, SavedViewInput } from "./views.js";
+export type {
+  SavedView,
+  SavedViewInput,
+  ViewActorContext,
+  ViewRole,
+  ViewVisibility,
+} from "./views.js";
+export {
+  canReadSavedView,
+  canWriteSavedView,
+  roleAtLeast,
+} from "./views.js";
 
 export {
   relationLabel,

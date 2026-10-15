@@ -1,6 +1,10 @@
 import type { DetectedRoute, HttpMethod, ParsedFile } from "@gitimpact/shared";
 import { extractPythonRoutes } from "./python-routes.js";
 import { detectGoFrameworkNames, extractGoRoutes } from "./go-routes.js";
+import {
+  detectJvmishFrameworkNames,
+  extractJvmishRoutes,
+} from "./jvm-routes.js";
 
 export interface FrameworkAnalyzer {
   name: string;
@@ -469,10 +473,22 @@ export function detectFrameworkNames(
   // FastAPI product should not inherit Flask from docs_src / test extras.
   if (names.includes("FastAPI") && names.includes("Flask") && !hasPyImport("flask")) {
     const filtered = names.filter((n) => n !== "Flask");
-    return [...new Set([...filtered, ...detectGoFrameworkNames(files)])];
+    return [
+      ...new Set([
+        ...filtered,
+        ...detectGoFrameworkNames(files),
+        ...detectJvmishFrameworkNames(files),
+      ]),
+    ];
   }
 
-  return [...new Set([...names, ...detectGoFrameworkNames(files)])];
+  return [
+    ...new Set([
+      ...names,
+      ...detectGoFrameworkNames(files),
+      ...detectJvmishFrameworkNames(files),
+    ]),
+  ];
 }
 
 export function extractAllRoutes(
@@ -500,6 +516,7 @@ export function extractAllRoutes(
   const frameworkNames = detectFrameworkNames(files, packageDeps, packageName);
   routes.push(...extractPythonRoutes(files, contents, frameworkNames));
   routes.push(...extractGoRoutes(files, contents, frameworkNames));
+  routes.push(...extractJvmishRoutes(files, contents, frameworkNames));
 
   const seen = new Set<string>();
   return routes.filter((route) => {
@@ -516,3 +533,10 @@ export {
   extractPythonRoutes,
 } from "./python-routes.js";
 export { detectGoFrameworkNames, extractGoHttpRoutes, extractGoRoutes } from "./go-routes.js";
+export {
+  detectJvmishFrameworkNames,
+  extractAxumRoutes,
+  extractAspNetRoutes,
+  extractJvmishRoutes,
+  extractSpringRoutes,
+} from "./jvm-routes.js";

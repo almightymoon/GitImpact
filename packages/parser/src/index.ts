@@ -41,6 +41,13 @@ import {
   parseGoFile,
   parseGoModModule,
 } from "./go-parser.js";
+import { linkJavaCalls, parseJavaFile } from "./java-parser.js";
+import {
+  linkRustCalls,
+  parseCargoPackageName,
+  parseRustFile,
+} from "./rust-parser.js";
+import { linkCsharpCalls, parseCsharpFile } from "./csharp-parser.js";
 
 export interface LanguageParser {
   parseFile(filePath: string, content: string): ParsedFile;
@@ -72,15 +79,19 @@ function isTestFile(filePath: string): boolean {
 function languageFromPath(filePath: string): ParsedFile["language"] {
   if (filePath.endsWith(".py")) return "python";
   if (filePath.endsWith(".go")) return "go";
+  if (filePath.endsWith(".java")) return "java";
+  if (filePath.endsWith(".rs")) return "rust";
+  if (filePath.endsWith(".cs")) return "csharp";
   if (filePath.endsWith(".tsx")) return "tsx";
   if (filePath.endsWith(".jsx")) return "jsx";
   if (filePath.endsWith(".ts")) return "typescript";
   return "javascript";
 }
 
+const NON_JS_TS_EXT = /\.(py|go|java|rs|cs)$/;
+
 function isJsTsPath(filePath: string): boolean {
-  const normalized = filePath.replace(/\\/g, "/");
-  return !normalized.endsWith(".py") && !normalized.endsWith(".go");
+  return !NON_JS_TS_EXT.test(filePath.replace(/\\/g, "/"));
 }
 
 function getLine(node: Node): number {
@@ -650,6 +661,9 @@ export async function parseRepository(
   const jsTsFiles = limited.filter((p) => isJsTsPath(p));
   const pythonFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".py"));
   const goFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".go"));
+  const javaFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".java"));
+  const rustFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".rs"));
+  const csharpFiles = limited.filter((p) => p.replace(/\\/g, "/").endsWith(".cs"));
 
   for (const relativePath of jsTsFiles) {
     const absolute = path.join(rootDir, relativePath);
@@ -663,7 +677,13 @@ export async function parseRepository(
     }
   }
 
-  for (const relativePath of [...pythonFiles, ...goFiles]) {
+  for (const relativePath of [
+    ...pythonFiles,
+    ...goFiles,
+    ...javaFiles,
+    ...rustFiles,
+    ...csharpFiles,
+  ]) {
     const absolute = path.join(rootDir, relativePath);
     try {
       const content = await readFile(absolute, "utf8");
@@ -741,6 +761,55 @@ export async function parseRepository(
     }
   }
   linkGoCalls(files, goModulePath);
+
+  const javaKnown = new Set(
+    [...knownFiles].map((p) => p.replace(/\\/g, "/")).filter((p) => p.endsWith(".java")),
+  );
+  for (const relativePath of javaFiles) {
+    const content = contentsByPath.get(relativePath);
+    if (!content) continue;
+    try {
+      files.push(parseJavaFile(relativePath, content, javaKnown));
+    } catch {
+      parseFailures += 1;
+    }
+  }
+  linkJavaCalls(files);
+
+  let rustCrateName: string | undefined;
+  try {
+    const cargo = await readFile(path.join(rootDir, "Cargo.toml"), "utf8");
+    rustCrateName = parseCargoPackageName(cargo);
+  } catch {
+    rustCrateName = undefined;
+  }
+  const rustKnown = new Set(
+    [...knownFiles].map((p) => p.replace(/\\/g, "/")).filter((p) => p.endsWith(".rs")),
+  );
+  for (const relativePath of rustFiles) {
+    const content = contentsByPath.get(relativePath);
+    if (!content) continue;
+    try {
+      files.push(parseRustFile(relativePath, content, rustKnown, rustCrateName));
+    } catch {
+      parseFailures += 1;
+    }
+  }
+  linkRustCalls(files);
+
+  const csharpKnown = new Set(
+    [...knownFiles].map((p) => p.replace(/\\/g, "/")).filter((p) => p.endsWith(".cs")),
+  );
+  for (const relativePath of csharpFiles) {
+    const content = contentsByPath.get(relativePath);
+    if (!content) continue;
+    try {
+      files.push(parseCsharpFile(relativePath, content, csharpKnown));
+    } catch {
+      parseFailures += 1;
+    }
+  }
+  linkCsharpCalls(files);
 
   const packageManifest = await readPackageManifest(rootDir);
   const packageDeps = packageManifest.deps;
@@ -1071,9 +1140,15 @@ export function detectLanguages(files: ParsedFile[]): LanguageStats[] {
         ? "Python"
         : file.language === "go"
           ? "Go"
-          : file.language === "tsx" || file.language === "typescript"
-            ? "TypeScript"
-            : "JavaScript";
+          : file.language === "java"
+            ? "Java"
+            : file.language === "rust"
+              ? "Rust"
+              : file.language === "csharp"
+                ? "C#"
+                : file.language === "tsx" || file.language === "typescript"
+                  ? "TypeScript"
+                  : "JavaScript";
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   const total = files.length || 1;
@@ -1237,7 +1312,32 @@ export async function detectFrameworks(
   const goFrameworks = await detectGoFrameworks(rootDir, files);
   for (const fw of goFrameworks) frameworks.add(fw);
 
+  for (const fw of detectJvmishFrameworks(files)) frameworks.add(fw);
+
   return [...frameworks];
+}
+
+function detectJvmishFrameworks(files: ParsedFile[]): string[] {
+  const names = new Set<string>();
+  for (const file of files) {
+    const imports = file.imports.map((i) => i.moduleSpecifier).join("\n");
+    if (file.language === "java" && /springframework|spring\.web/i.test(imports)) {
+      names.add("Spring");
+    }
+    if (file.language === "rust") {
+      if (imports.includes("axum")) names.add("Axum");
+      if (imports.includes("actix_web") || imports.includes("actix-web")) {
+        names.add("Actix");
+      }
+    }
+    if (
+      file.language === "csharp" &&
+      (/AspNetCore/i.test(imports) || file.path.endsWith("Program.cs"))
+    ) {
+      names.add("ASP.NET");
+    }
+  }
+  return [...names];
 }
 
 async function detectGoFrameworks(

@@ -19,6 +19,8 @@ export interface PrCommentInput {
     steps: ImpactPathStep[];
   };
   analysisUrl?: string;
+  /** Optional BYOK AI narrative (v1.3) — labeled; never replaces deterministic metrics */
+  aiSummary?: string;
 }
 
 function displaySymbol(node: GraphNode): string {
@@ -53,7 +55,7 @@ export function selectWhyPath(impact: ImpactReport): {
  * Deterministic GitHub PR comment body for v0.6 productization.
  */
 export function formatPullRequestComment(input: PrCommentInput): string {
-  const { impact, overview, pullRequest, whyPath, analysisUrl } = input;
+  const { impact, overview, pullRequest, whyPath, analysisUrl, aiSummary } = input;
   const changedSymbols = impact.changedNodes
     .filter((n) => n.type === "FUNCTION" || n.type === "METHOD" || n.type === "CLASS")
     .map(displaySymbol);
@@ -111,7 +113,19 @@ export function formatPullRequestComment(input: PrCommentInput): string {
   }
 
   lines.push("", "</details>", "");
-  lines.push("_Deterministic static analysis — no AI guesses in this report._");
+
+  if (aiSummary?.trim()) {
+    lines.push(
+      "### AI-assisted narrative (BYOK)",
+      "",
+      aiSummary.trim(),
+      "",
+      "_Optional AI summary — deterministic metrics above remain the source of truth._",
+      "",
+    );
+  } else {
+    lines.push("_Deterministic static analysis — no AI guesses in this report._");
+  }
 
   return lines.join("\n");
 }

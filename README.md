@@ -7,7 +7,7 @@ GitImpact maps the blast radius of code changes across a repository using static
 ## MVP (v0.1)
 
 - Public GitHub repositories & pull requests
-- TypeScript / JavaScript parsing (`ts-morph`)
+- TypeScript / JavaScript parsing (`ts-morph`) plus Python, Go, Java, Rust, and C# heuristics
 - Import / call / test dependency graph
 - Blast-radius traversal with configurable depth
 - Interactive React Flow graph

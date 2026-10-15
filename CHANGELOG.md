@@ -52,6 +52,7 @@
 - **v1.1.4 complete / language freeze:** JS/TS + Python + Go are the supported languages; no Java/Rust/C# until v1.2 workflow value ships
 - **v1.2 start:** analysis history snapshots (`analysis_history`), architecture + blast-radius compare (`gitimpact compare`, history API), deterministic review reports + export packs, Overview history panel
 - **v1.2 continue:** local `gitimpact impact --from/--to` ref blast radius; saved/team architecture views (Structure pins + `saved_views` API); PR Overview impact-history sparkline
+- **v1.2 complete:** saved-view visibility/org/roles + PATCH; optional scheduled PR head poll (`GITIMPACT_PR_HEAD_POLL`); language surface expands to Java/Rust/C# (Spring/Axum/ASP.NET heuristics); RC private E2E harness (`pnpm rc:private-e2e`); v1.3 BYOK AI foundation (`@gitimpact/ai`, optional PR narrative)
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 

@@ -174,11 +174,17 @@ export const savedViews = pgTable(
     pinnedSystemIds: jsonb("pinned_system_ids").$type<string[]>().notNull().default([]),
     hiddenBands: jsonb("hidden_bands").$type<string[]>().notNull().default([]),
     notes: text("notes"),
+    orgLogin: text("org_login"),
+    visibility: text("visibility").notNull().default("repo"),
+    createdBy: text("created_by"),
+    roleRequired: text("role_required").notNull().default("viewer"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     index("saved_views_repository_id_idx").on(table.repositoryId),
+    index("saved_views_org_login_idx").on(table.orgLogin),
+    index("saved_views_visibility_idx").on(table.repositoryId, table.visibility),
   ],
 );
 

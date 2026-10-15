@@ -65,6 +65,30 @@ export async function processPrAnalysisJob(job: PrAnalysisJob): Promise<void> {
         }
       : undefined;
 
+    let aiSummary: string | undefined;
+    try {
+      const { enrichImpactNarrative } = await import("@gitimpact/ai");
+      aiSummary = await enrichImpactNarrative({
+        repository: `${job.owner}/${job.repo}`,
+        pullRequestNumber: job.number,
+        complexityScore: analysis.prOverview.complexityScore,
+        impactLevel: analysis.prOverview.impactLevel,
+        changedSymbols: analysis.impact.changedNodes
+          .filter((n) => n.type === "FUNCTION" || n.type === "METHOD" || n.type === "CLASS")
+          .map((n) => n.name)
+          .slice(0, 20),
+        affectedApis: (analysis.impact.affectedApis ?? [])
+          .map((n) => n.name)
+          .slice(0, 15),
+        relevantTests: (analysis.impact.relatedTests ?? [])
+          .map((t) => t.name)
+          .slice(0, 15),
+        summary: analysis.prOverview.summary,
+      });
+    } catch {
+      aiSummary = undefined;
+    }
+
     const commentBody = formatPullRequestComment({
       pullRequest: analysis.pullRequest,
       impact: analysis.impact,
@@ -73,6 +97,7 @@ export async function processPrAnalysisJob(job: PrAnalysisJob): Promise<void> {
       analysisUrl: job.analysisBaseUrl
         ? `${job.analysisBaseUrl.replace(/\/$/, "")}${analysis.routePath}`
         : undefined,
+      aiSummary,
     });
 
     if (token) {

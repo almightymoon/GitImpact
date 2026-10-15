@@ -19,6 +19,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@gitimpact/ai": "workspace:*",
     "@gitimpact/db": "workspace:*",
     "@gitimpact/framework-detector": "workspace:*",
     "@gitimpact/git": "workspace:*",
