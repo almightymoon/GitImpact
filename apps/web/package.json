@@ -11,6 +11,7 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@gitimpact/ai": "workspace:*",
     "@gitimpact/analysis": "workspace:*",
     "@gitimpact/git": "workspace:*",
     "@gitimpact/db": "workspace:*",

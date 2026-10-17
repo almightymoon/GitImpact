@@ -2,6 +2,7 @@ import { AnalyzeForm } from "@/components/AnalyzeForm";
 import { DemoButton } from "@/components/DemoButton";
 import { RecentAnalyses } from "@/components/RecentAnalyses";
 import { ConnectGitHubButton } from "@/components/ConnectGitHubButton";
+import { AiSettingsPanel } from "@/components/AiSettingsPanel";
 
 export default function HomePage() {
   return (
@@ -46,6 +47,7 @@ export default function HomePage() {
                 <ConnectGitHubButton />
               </div>
               <RecentAnalyses />
+              <AiSettingsPanel />
             </div>
           </div>
 

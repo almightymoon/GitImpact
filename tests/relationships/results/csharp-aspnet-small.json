@@ -1,0 +1,44 @@
+{
+  "id": "csharp-aspnet-small",
+  "classifications": [
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:aspnet-minimal:GET:/users:Program.cs→METHOD:Services/TokenService.cs:TokenService.Issue:0",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:aspnet-minimal:GET:/users:Program.cs",
+      "to": "METHOD:Services/TokenService.cs:TokenService.Issue",
+      "matchedEdgeId": "API_ROUTE:aspnet-minimal:GET:/users:Program.cs->METHOD:Services/TokenService.cs:TokenService.Issue:HANDLED_BY",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 1,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 1,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

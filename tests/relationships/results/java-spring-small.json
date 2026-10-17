@@ -1,0 +1,63 @@
+{
+  "id": "java-spring-small",
+  "classifications": [
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:spring:GET:/users:src/main/java/com/example/UserController.java→METHOD:src/main/java/com/example/UserController.java:UserController.listUsers:0",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:spring:GET:/users:src/main/java/com/example/UserController.java",
+      "to": "METHOD:src/main/java/com/example/UserController.java:UserController.listUsers",
+      "matchedEdgeId": "API_ROUTE:spring:GET:/users:src/main/java/com/example/UserController.java->METHOD:src/main/java/com/example/UserController.java:UserController.listUsers:HANDLED_BY",
+      "confidence": "MEDIUM"
+    },
+    {
+      "expectationId": "CALLS:METHOD:src/main/java/com/example/UserController.java:UserController.listUsers→METHOD:src/main/java/com/example/TokenService.java:TokenService.issue:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "METHOD:src/main/java/com/example/UserController.java:UserController.listUsers",
+      "to": "METHOD:src/main/java/com/example/TokenService.java:TokenService.issue",
+      "matchedEdgeId": "METHOD:src/main/java/com/example/UserController.java:UserController.listUsers->METHOD:src/main/java/com/example/TokenService.java:TokenService.issue:CALLS",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 2,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "CALLS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 2,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

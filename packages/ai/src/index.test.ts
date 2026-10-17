@@ -30,9 +30,15 @@ describe("@gitimpact/ai", () => {
       affectedApis: ["POST /login"],
       relevantTests: ["login.test.ts"],
       summary: "Touches auth",
+      frameworks: ["Express"],
+      directDependents: 3,
+      indirectDependents: 8,
+      whyTarget: "AdminPanel",
     });
     expect(prompt).toContain("login");
     expect(prompt).toContain("POST /login");
+    expect(prompt).toContain("Express");
+    expect(prompt).toContain("AdminPanel");
     expect(prompt).not.toContain("sk-");
   });
 });

@@ -2,7 +2,7 @@
 
 GitImpact analysis is deterministic by default. AI is an **optional post-pass** that narrates already-computed impact digests.
 
-## Enable
+## Server enable (PR comments / worker)
 
 ```bash
 GITIMPACT_AI_ENABLED=1
@@ -14,10 +14,14 @@ GITIMPACT_AI_PROVIDER=openai         # openai | anthropic | openai-compatible
 # GITIMPACT_AI_TIMEOUT_MS=12000
 ```
 
+## Client BYOK (UI)
+
+Homepage → **Optional AI narrative (BYOK)** stores the key in `sessionStorage` and sends it only to `POST /api/ai/narrative`. Analysis jobs never receive the key.
+
 ## Guarantees
 
 - Keys are never written to BullMQ job payloads or structured logs
-- Prompts include symbol/API/test digests only — not full repository contents
+- Prompts include digests only (symbols, APIs, tests, frameworks, blast-radius counts) — not full repository contents
 - PR comments label AI text separately; metrics remain deterministic
 - Disabled by default when no key is configured
 

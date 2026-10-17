@@ -73,8 +73,8 @@ Harness: `scripts/rc-private-e2e.mjs` (skips cleanly without secrets; evidence i
 | PR comment idempotency | NOT TESTED | |
 | Check Run flow | NOT TESTED | |
 | Analysis timeout (forced) | NOT TESTED | Unit covered |
-| Load 10–20 distinct repos | NOT TESTED | Disk/time interrupted |
-| Repo code never executed (marker) | NOT TESTED | Policy + unit; no marker repo |
+| Load 10–20 distinct repos | PARTIAL | `pnpm rc:load-test` harness works (4/12 SUCCEEDED locally; remainder `GITHUB_RATE_LIMITED` without PAT — re-run with `GITHUB_TOKEN` for PASS) |
+| Repo code never executed (marker) | PASS | `pnpm rc:no-exec` evidence in `.rc-tmp/evidence/no-exec-*.json` |
 | Temp dir cleanup | NOT TESTED | |
 | Dependency audit | PARTIAL | 3 high via Next-pinned `postcss` — deferred |
 | Schema-mismatch / expiry E2E | PARTIAL | Unit + cache hit path |

@@ -59,7 +59,7 @@ if (missing.length) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          url: prNumber
+          repository: prNumber
             ? `https://github.com/${privateRepo}/pull/${prNumber}`
             : `https://github.com/${privateRepo}`,
         }),

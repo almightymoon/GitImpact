@@ -10,11 +10,11 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 
 | Version | Theme | Status |
 |---------|--------|--------|
-| **v1.0** | Public beta / production hardening | RC in progress — see `docs/release-candidate.md` |
+| **v1.0** | Public beta / production hardening | RC — run `pnpm rc:*` with evidence |
 | **v1.1** | Real-world accuracy + adoption | Through v1.1.4 done |
 | **v1.1.4** | Go parsing, framework intel & relationship accuracy | Done |
 | **v1.2** | History, change intelligence & team workflows | **Done** |
-| **v1.3** | Optional AI layer / BYOK | Foundation shipped (`@gitimpact/ai`) |
+| **v1.3** | Optional AI layer / BYOK | Foundation + UI shipped |
 
 ---
 
@@ -22,23 +22,21 @@ A developer pastes a random real repository and GitImpact explains it correctly 
 
 Supported surface: **JS/TS + Python + Go + Java + Rust + C#** (heuristic parsers; no toolchain execution).
 
+Dogfood **wave 7** covers Spring / Axum / ASP.NET + library counterparts.
+
 ---
 
-## v1.2 — History, change intelligence & team workflows
+## v1.0 RC commands
 
-**Goal:** Turn GitImpact from an occasional lookup into something teams keep in their development workflow.
+```bash
+pnpm rc:private-e2e   # needs GitHub App secrets + optional GITIMPACT_RC_PRIVATE_REPO
+pnpm rc:load-test     # ≥10 distinct public repos against running web
+pnpm rc:no-exec       # local marker fixture proves install scripts never run
+```
 
-### Shipped
+Evidence lands in `.rc-tmp/evidence/`.
 
-| Capability | Surface |
-|------------|---------|
-| Analysis history snapshots | `analysis_history` · Overview panel · CLI `history` |
-| Architecture / blast-radius compare | `compareAnalyses` · CLI `compare` · history API |
-| Deterministic review + export packs | `export review.md` · `export pack` |
-| Local ref impact | `gitimpact impact --from <ref> --to <ref> .` |
-| Saved / team views | Structure pin + save · `saved_views` · visibility/org/roles · views API |
-| PR impact history trend | PR Overview sparkline (blast radius across head SHAs) |
-| Scheduled PR head re-analyze | Worker ops tick · `GITIMPACT_PR_HEAD_POLL=1` |
+**Still needs human App credentials for the beta tag:** live private install, webhook redelivery, PR comment / Check Run proof.
 
 ---
 
@@ -46,27 +44,17 @@ Supported surface: **JS/TS + Python + Go + Java + Rust + C#** (heuristic parsers
 
 | Capability | Surface |
 |------------|---------|
-| Optional narrative enrichment | `@gitimpact/ai` · PR comment section when `GITIMPACT_AI_ENABLED` + key |
-| Deterministic metrics remain source of truth | AI never replaces scores / graphs |
-
----
-
-## Explicitly deferred / RC blockers
-
-- Private-repo / webhook live E2E → run `pnpm rc:private-e2e` when App credentials are available (`docs/private-repo-e2e.md`)
-- Load test ≥10 distinct repos + no-exec marker proof → v1.0 tag
-- Deeper Java/Rust/C# relationship accuracy dogfood waves → follow-up
+| Server-side enrichment | Worker / pr-workflow when `GITIMPACT_AI_*` set |
+| Client BYOK | Homepage settings → `POST /api/ai/narrative` (key never on job payloads) |
+| Richer digests | frameworks, blast-radius counts, why-target, languages |
 
 ---
 
 ## Commands
 
 ```bash
-gitimpact impact --from main --to HEAD .
-gitimpact history owner/repo
-gitimpact compare ./before ./after
-gitimpact export pack ./pack .
-pnpm dogfood -- --wave 6
-pnpm relationships
-pnpm rc:private-e2e
+pnpm dogfood -- --wave 7
+pnpm relationships -- --id java-spring-small
+pnpm rc:no-exec
+pnpm rc:load-test
 ```

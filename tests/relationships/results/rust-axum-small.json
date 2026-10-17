@@ -1,0 +1,63 @@
+{
+  "id": "rust-axum-small",
+  "classifications": [
+    {
+      "expectationId": "HANDLED_BY:API_ROUTE:axum:GET:/users:src/main.rs→FUNCTION:src/main.rs:list_users:0",
+      "class": "TRUE_POSITIVE",
+      "type": "HANDLED_BY",
+      "from": "API_ROUTE:axum:GET:/users:src/main.rs",
+      "to": "FUNCTION:src/main.rs:list_users",
+      "matchedEdgeId": "API_ROUTE:axum:GET:/users:src/main.rs->FUNCTION:src/main.rs:list_users:HANDLED_BY",
+      "confidence": "MEDIUM"
+    },
+    {
+      "expectationId": "CALLS:FUNCTION:src/main.rs:list_users→FUNCTION:src/tokens.rs:issue:1",
+      "class": "TRUE_POSITIVE",
+      "type": "CALLS",
+      "from": "FUNCTION:src/main.rs:list_users",
+      "to": "FUNCTION:src/tokens.rs:issue",
+      "matchedEdgeId": "FUNCTION:src/main.rs:list_users->FUNCTION:src/tokens.rs:issue:CALLS",
+      "confidence": "HIGH"
+    }
+  ],
+  "overall": {
+    "type": "overall",
+    "truePositives": 2,
+    "falsePositives": 0,
+    "falseNegatives": 0,
+    "lowConfidence": 0,
+    "softMisses": 0,
+    "precision": 1,
+    "recall": 1
+  },
+  "byType": [
+    {
+      "type": "HANDLED_BY",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "type": "CALLS",
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "lowConfidence": 0,
+      "softMisses": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "counts": {
+    "TRUE_POSITIVE": 2,
+    "FALSE_POSITIVE": 0,
+    "MISSING_EDGE": 0,
+    "WRONG_TARGET": 0,
+    "WRONG_TYPE": 0,
+    "LOW_CONFIDENCE": 0
+  }
+}

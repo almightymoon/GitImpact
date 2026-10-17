@@ -116,14 +116,19 @@ export function parseJavaFile(
       const mStart = methodMatch.index;
       const mBrace = body.indexOf("{", mStart);
       const mEnd = mBrace === -1 ? body.length : findMatchingBrace(body, mBrace);
-      const absStart = (brace === -1 ? classStart : brace) + mStart;
+      const bodyBase = brace === -1 ? classStart : brace;
+      const absStart = bodyBase + (mBrace === -1 ? mStart : mBrace);
       methods.push({
         name,
         className,
-        startLine: lineOf(content, absStart),
-        endLine: lineOf(content, (brace === -1 ? classStart : brace) + mEnd),
+        startLine: lineOf(content, bodyBase + mStart),
+        endLine: lineOf(content, bodyBase + mEnd),
         parameters: [],
-        calls: extractCalls(body.slice(mStart, mEnd), absStart, content),
+        calls: extractCalls(
+          body.slice(mBrace === -1 ? mStart : mBrace, mEnd),
+          absStart,
+          content,
+        ),
       });
     }
     classes.push({
@@ -154,12 +159,21 @@ export function parseJavaFile(
 }
 
 export function linkJavaCalls(files: ParsedFile[]): void {
-  const byName = new Map<string, { file: string; kind: "METHOD" | "FUNCTION" }>();
+  const byName = new Map<
+    string,
+    { file: string; kind: "METHOD" | "FUNCTION"; className?: string; symbol: string }
+  >();
   for (const file of files.filter((f) => f.language === "java")) {
     for (const cls of file.classes) {
       for (const method of cls.methods) {
-        byName.set(method.name, { file: file.path, kind: "METHOD" });
-        byName.set(`${cls.name}.${method.name}`, { file: file.path, kind: "METHOD" });
+        const hit = {
+          file: file.path,
+          kind: "METHOD" as const,
+          className: cls.name,
+          symbol: method.name,
+        };
+        byName.set(method.name, hit);
+        byName.set(`${cls.name}.${method.name}`, hit);
       }
     }
   }
@@ -167,10 +181,14 @@ export function linkJavaCalls(files: ParsedFile[]): void {
     for (const cls of file.classes) {
       for (const method of cls.methods) {
         for (const call of method.calls) {
+          // Skip self-name false positives from signature matching
+          if (call.calleeName === method.name && !call.resolvedFile) continue;
           const hit = byName.get(call.calleeName);
-          if (hit) {
+          if (hit && !(hit.className === cls.name && hit.symbol === method.name)) {
             call.resolvedFile = hit.file;
             call.resolvedKind = hit.kind;
+            call.resolvedClassName = hit.className;
+            call.resolvedSymbol = hit.symbol;
             call.confidence = "HIGH";
           }
         }

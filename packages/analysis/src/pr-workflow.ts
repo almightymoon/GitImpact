@@ -84,6 +84,11 @@ export async function processPrAnalysisJob(job: PrAnalysisJob): Promise<void> {
           .map((t) => t.name)
           .slice(0, 15),
         summary: analysis.prOverview.summary,
+        frameworks: analysis.summary?.frameworks,
+        languages: analysis.summary?.languages?.map((l) => l.language),
+        directDependents: analysis.prOverview.directDependencies,
+        indirectDependents: analysis.prOverview.indirectDependencies,
+        whyTarget: whyPath?.targetName,
       });
     } catch {
       aiSummary = undefined;

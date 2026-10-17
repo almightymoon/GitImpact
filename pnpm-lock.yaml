@@ -17,6 +17,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@gitimpact/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@gitimpact/analysis':
         specifier: workspace:*
         version: link:../../packages/analysis
@@ -69,6 +72,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@gitimpact/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@gitimpact/analysis':
         specifier: workspace:*
         version: link:../../packages/analysis

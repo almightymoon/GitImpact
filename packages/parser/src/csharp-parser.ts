@@ -163,35 +163,44 @@ export function parseCsharpFile(
 }
 
 export function linkCsharpCalls(files: ParsedFile[]): void {
-  const byName = new Map<string, { file: string; kind: "METHOD" | "FUNCTION" }>();
-  for (const file of files.filter((f) => f.language === "csharp")) {
-    for (const cls of file.classes) {
-      for (const m of cls.methods) byName.set(m.name, { file: file.path, kind: "METHOD" });
-    }
-    for (const fn of file.functions) byName.set(fn.name, { file: file.path, kind: "FUNCTION" });
-  }
+  const byName = new Map<
+    string,
+    { file: string; kind: "METHOD" | "FUNCTION"; className?: string; symbol: string }
+  >();
   for (const file of files.filter((f) => f.language === "csharp")) {
     for (const cls of file.classes) {
       for (const m of cls.methods) {
-        for (const call of m.calls) {
-          const hit = byName.get(call.calleeName);
-          if (hit) {
-            call.resolvedFile = hit.file;
-            call.resolvedKind = hit.kind;
-            call.confidence = "HIGH";
-          }
-        }
+        const hit = {
+          file: file.path,
+          kind: "METHOD" as const,
+          className: cls.name,
+          symbol: m.name,
+        };
+        byName.set(m.name, hit);
+        byName.set(`${cls.name}.${m.name}`, hit);
       }
     }
     for (const fn of file.functions) {
-      for (const call of fn.calls) {
-        const hit = byName.get(call.calleeName);
-        if (hit) {
-          call.resolvedFile = hit.file;
-          call.resolvedKind = hit.kind;
-          call.confidence = "HIGH";
-        }
+      byName.set(fn.name, { file: file.path, kind: "FUNCTION", symbol: fn.name });
+    }
+  }
+  const apply = (calls: ResolvedCall[], selfName?: string) => {
+    for (const call of calls) {
+      if (call.calleeName === selfName) continue;
+      const hit = byName.get(call.calleeName);
+      if (hit) {
+        call.resolvedFile = hit.file;
+        call.resolvedKind = hit.kind;
+        call.resolvedClassName = hit.className;
+        call.resolvedSymbol = hit.symbol;
+        call.confidence = "HIGH";
       }
     }
+  };
+  for (const file of files.filter((f) => f.language === "csharp")) {
+    for (const cls of file.classes) {
+      for (const m of cls.methods) apply(m.calls, m.name);
+    }
+    for (const fn of file.functions) apply(fn.calls, fn.name);
   }
 }

@@ -1,0 +1,10 @@
+{
+  "description": "ASP.NET minimal MapGet HANDLED_BY TokenService.Issue",
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:aspnet-minimal:GET:/users:Program.cs",
+      "to": "METHOD:Services/TokenService.cs:TokenService.Issue",
+      "type": "HANDLED_BY"
+    }
+  ]
+}

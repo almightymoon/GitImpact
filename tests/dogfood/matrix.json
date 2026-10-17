@@ -438,6 +438,66 @@
       "status": "active",
       "maxFiles": 3000,
       "why": "v1.1.4 Go accuracy — non-framework library package"
+    },
+    {
+      "id": "java-spring-petclinic",
+      "url": "https://github.com/spring-projects/spring-petclinic",
+      "shape": "java-http",
+      "priority": 7,
+      "wave": 7,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Wave 7 Java — Spring PetClinic application surface"
+    },
+    {
+      "id": "rust-axum",
+      "url": "https://github.com/tokio-rs/axum",
+      "shape": "rust-http",
+      "priority": 7,
+      "wave": 7,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Wave 7 Rust — Axum HTTP framework"
+    },
+    {
+      "id": "csharp-minimal-apis",
+      "url": "https://github.com/davidfowl/TodoApi",
+      "shape": "csharp-http",
+      "priority": 7,
+      "wave": 7,
+      "status": "active",
+      "maxFiles": 2000,
+      "why": "Wave 7 C# — ASP.NET minimal API sample"
+    },
+    {
+      "id": "java-guava",
+      "url": "https://github.com/google/guava",
+      "shape": "java-library",
+      "priority": 7,
+      "wave": 7,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Wave 7 Java — non-framework library package"
+    },
+    {
+      "id": "rust-serde",
+      "url": "https://github.com/serde-rs/serde",
+      "shape": "rust-library",
+      "priority": 7,
+      "wave": 7,
+      "status": "active",
+      "maxFiles": 3000,
+      "why": "Wave 7 Rust — non-framework library crate"
+    },
+    {
+      "id": "csharp-newtonsoft-json",
+      "url": "https://github.com/JamesNK/Newtonsoft.Json",
+      "shape": "csharp-library",
+      "priority": 7,
+      "wave": 7,
+      "status": "active",
+      "maxFiles": 4000,
+      "why": "Wave 7 C# — non-framework library package"
     }
   ]
 }

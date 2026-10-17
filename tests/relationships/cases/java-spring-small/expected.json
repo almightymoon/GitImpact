@@ -1,0 +1,15 @@
+{
+  "description": "Java Spring route HANDLED_BY + controller → service CALLS",
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:spring:GET:/users:src/main/java/com/example/UserController.java",
+      "to": "METHOD:src/main/java/com/example/UserController.java:UserController.listUsers",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "METHOD:src/main/java/com/example/UserController.java:UserController.listUsers",
+      "to": "METHOD:src/main/java/com/example/TokenService.java:TokenService.issue",
+      "type": "CALLS"
+    }
+  ]
+}

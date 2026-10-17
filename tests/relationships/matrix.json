@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "v1.1.2–v1.1.4 relationship accuracy — JS/TS + Python + Go curated edges",
+  "description": "v1.1.2–v1.2 relationship accuracy — JS/TS + Python + Go + Java/Rust/C# curated edges",
   "targets": {
     "CALLS": { "precision": 0.9, "recall": 0.8 },
     "IMPORTS": { "precision": 0.95, "recall": 0.9 },
@@ -164,6 +164,27 @@
       "fixture": "../real-world/cases/go-library-small",
       "shape": "go-library",
       "why": "Go library package IMPORTS + CALLS"
+    },
+    {
+      "id": "java-spring-small",
+      "source": "local",
+      "fixture": "../real-world/cases/java-spring-small",
+      "shape": "java-http",
+      "why": "Spring @GetMapping HANDLED_BY + controller → service CALLS"
+    },
+    {
+      "id": "rust-axum-small",
+      "source": "local",
+      "fixture": "../real-world/cases/rust-axum-small",
+      "shape": "rust-http",
+      "why": "Axum route HANDLED_BY + handler → module CALLS"
+    },
+    {
+      "id": "csharp-aspnet-small",
+      "source": "local",
+      "fixture": "../real-world/cases/csharp-aspnet-small",
+      "shape": "csharp-http",
+      "why": "ASP.NET MapGet HANDLED_BY TokenService"
     },
     {
       "id": "nestjs-starter",

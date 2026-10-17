@@ -36,6 +36,13 @@ export interface ImpactDigest {
   affectedApis: string[];
   relevantTests: string[];
   summary?: string;
+  /** Framework labels from deterministic detection */
+  frameworks?: string[];
+  directDependents?: number;
+  indirectDependents?: number;
+  /** Notable why-path target name */
+  whyTarget?: string;
+  languages?: string[];
 }
 
 export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
@@ -66,12 +73,22 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 export function buildImpactNarrativePrompt(digest: ImpactDigest): string {
   return [
     "You are assisting a code-impact tool. Write 2-4 short sentences for developers.",
-    "Do not invent files, APIs, or tests not listed. Prefer caution over certainty.",
+    "Do not invent files, APIs, frameworks, or tests not listed. Prefer caution over certainty.",
     `Repository: ${digest.repository}`,
     digest.pullRequestNumber != null ? `PR: #${digest.pullRequestNumber}` : "",
     digest.complexityScore != null
       ? `Complexity: ${digest.complexityScore}/100 (${digest.impactLevel ?? "n/a"})`
       : "",
+    digest.frameworks?.length
+      ? `Frameworks: ${digest.frameworks.slice(0, 8).join(", ")}`
+      : "",
+    digest.languages?.length
+      ? `Languages: ${digest.languages.slice(0, 6).join(", ")}`
+      : "",
+    digest.directDependents != null || digest.indirectDependents != null
+      ? `Blast radius: direct=${digest.directDependents ?? "?"} indirect=${digest.indirectDependents ?? "?"}`
+      : "",
+    digest.whyTarget ? `Notable dependent: ${digest.whyTarget}` : "",
     `Changed symbols: ${digest.changedSymbols.slice(0, 20).join(", ") || "(none)"}`,
     `Affected APIs: ${digest.affectedApis.slice(0, 15).join(", ") || "(none)"}`,
     `Relevant tests: ${digest.relevantTests.slice(0, 15).join(", ") || "(none)"}`,

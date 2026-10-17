@@ -1,0 +1,15 @@
+{
+  "description": "Rust Axum route HANDLED_BY + handler → tokens CALLS",
+  "mustEdge": [
+    {
+      "from": "API_ROUTE:axum:GET:/users:src/main.rs",
+      "to": "FUNCTION:src/main.rs:list_users",
+      "type": "HANDLED_BY"
+    },
+    {
+      "from": "FUNCTION:src/main.rs:list_users",
+      "to": "FUNCTION:src/tokens.rs:issue",
+      "type": "CALLS"
+    }
+  ]
+}

@@ -228,25 +228,44 @@ export function parseRustFile(
 }
 
 export function linkRustCalls(files: ParsedFile[]): void {
-  const byName = new Map<string, { file: string; kind: "METHOD" | "FUNCTION" }>();
+  const byName = new Map<
+    string,
+    { file: string; kind: "METHOD" | "FUNCTION"; className?: string; symbol: string }
+  >();
   for (const file of files.filter((f) => f.language === "rust")) {
-    for (const fn of file.functions) byName.set(fn.name, { file: file.path, kind: "FUNCTION" });
+    for (const fn of file.functions) {
+      byName.set(fn.name, {
+        file: file.path,
+        kind: "FUNCTION",
+        symbol: fn.name,
+      });
+    }
     for (const cls of file.classes) {
-      for (const m of cls.methods) byName.set(m.name, { file: file.path, kind: "METHOD" });
+      for (const m of cls.methods) {
+        byName.set(m.name, {
+          file: file.path,
+          kind: "METHOD",
+          className: cls.name,
+          symbol: m.name,
+        });
+      }
     }
   }
-  const apply = (calls: ResolvedCall[]) => {
+  const apply = (calls: ResolvedCall[], selfName?: string) => {
     for (const call of calls) {
+      if (call.calleeName === selfName) continue;
       const hit = byName.get(call.calleeName);
       if (hit) {
         call.resolvedFile = hit.file;
         call.resolvedKind = hit.kind;
+        call.resolvedClassName = hit.className;
+        call.resolvedSymbol = hit.symbol;
         call.confidence = "HIGH";
       }
     }
   };
   for (const file of files.filter((f) => f.language === "rust")) {
-    for (const fn of file.functions) apply(fn.calls);
-    for (const cls of file.classes) for (const m of cls.methods) apply(m.calls);
+    for (const fn of file.functions) apply(fn.calls, fn.name);
+    for (const cls of file.classes) for (const m of cls.methods) apply(m.calls, m.name);
   }
 }

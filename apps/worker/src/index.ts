@@ -112,6 +112,31 @@ async function processPayload(payload: JobPayload): Promise<void> {
           }
         : undefined;
 
+      let aiSummary: string | undefined;
+      try {
+        const { enrichImpactNarrative } = await import("@gitimpact/ai");
+        aiSummary = await enrichImpactNarrative({
+          repository: `${payload.owner}/${payload.repo}`,
+          pullRequestNumber: payload.pullRequestNumber,
+          complexityScore: analysis.prOverview.complexityScore,
+          impactLevel: analysis.prOverview.impactLevel,
+          changedSymbols: analysis.impact.changedNodes
+            .filter((n) => n.type === "FUNCTION" || n.type === "METHOD" || n.type === "CLASS")
+            .map((n) => n.name)
+            .slice(0, 20),
+          affectedApis: (analysis.impact.affectedApis ?? []).map((n) => n.name).slice(0, 15),
+          relevantTests: (analysis.impact.relatedTests ?? []).map((t) => t.name).slice(0, 15),
+          summary: analysis.prOverview.summary,
+          frameworks: analysis.summary?.frameworks,
+          languages: analysis.summary?.languages?.map((l) => l.language),
+          directDependents: analysis.prOverview.directDependencies,
+          indirectDependents: analysis.prOverview.indirectDependencies,
+          whyTarget: whyPath?.targetName,
+        });
+      } catch {
+        aiSummary = undefined;
+      }
+
       const commentBody = formatPullRequestComment({
         pullRequest: analysis.pullRequest,
         impact: analysis.impact,
@@ -120,6 +145,7 @@ async function processPayload(payload: JobPayload): Promise<void> {
         analysisUrl: payload.analysisBaseUrl
           ? `${payload.analysisBaseUrl.replace(/\/$/, "")}${analysis.routePath}`
           : undefined,
+        aiSummary,
       });
 
       if (token) {
