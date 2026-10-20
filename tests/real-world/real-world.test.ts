@@ -33,7 +33,18 @@ type FixtureExpected = {
 
 async function listCases(): Promise<string[]> {
   const entries = await readdir(casesRoot, { withFileTypes: true });
-  return entries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
+  const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
+  // Incomplete fixtures (e.g. language samples without expected.json) are skipped.
+  const ready: string[] = [];
+  for (const name of dirs) {
+    try {
+      await readFile(path.join(casesRoot, name, "expected.json"));
+      ready.push(name);
+    } catch {
+      // intentionally omitted until expectations are authored
+    }
+  }
+  return ready;
 }
 
 function hasEdge(

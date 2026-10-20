@@ -27,6 +27,10 @@ export function saveAiClientSettings(settings: AiClientSettings): void {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
 
+export function clearAiClientSettings(): void {
+  sessionStorage.removeItem(STORAGE_KEY);
+}
+
 export function AiSettingsPanel() {
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<AiClientSettings>({
@@ -46,7 +50,19 @@ export function AiSettingsPanel() {
     saveAiClientSettings(next);
   }
 
+  function clearKey() {
+    const next = { ...settings, apiKey: "", enabled: false };
+    persist(next);
+    clearAiClientSettings();
+    setSettings(next);
+    setTestMsg("Key cleared from this browser session.");
+  }
+
   async function testKey() {
+    if (!settings.apiKey.trim()) {
+      setTestMsg("Enter an API key first (BYOK is required on this endpoint).");
+      return;
+    }
     setBusy(true);
     setTestMsg(null);
     try {
@@ -54,7 +70,8 @@ export function AiSettingsPanel() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          apiKey: settings.apiKey || undefined,
+          apiKey: settings.apiKey,
+          provider: settings.provider,
           digest: {
             repository: "demo/gitimpact",
             complexityScore: 25,
@@ -72,11 +89,14 @@ export function AiSettingsPanel() {
         narrative?: string | null;
         message?: string;
         error?: string;
+        disclaimer?: string;
       };
-      if (json.narrative) {
-        setTestMsg("Key works — narrative returned.");
+      if (res.status === 401) {
+        setTestMsg(json.message ?? "API key required.");
+      } else if (json.narrative) {
+        setTestMsg("Key works — narrative returned. Treat model output as untrusted text.");
       } else {
-        setTestMsg(json.message ?? json.error ?? "No narrative (check key / server env).");
+        setTestMsg(json.message ?? json.error ?? "No narrative (check key / provider).");
       }
     } catch (error) {
       setTestMsg(error instanceof Error ? error.message : "Request failed");
@@ -100,9 +120,11 @@ export function AiSettingsPanel() {
       {open ? (
         <div className="mt-3 space-y-2">
           <p className="text-[var(--ink-soft)]">
-            Keys stay in this browser session and are only sent to{" "}
-            <code className="font-mono">/api/ai/narrative</code> — never on analysis
-            job payloads. See <code className="font-mono">docs/ai.md</code>.
+            Deterministic analysis always works without AI. Keys stay in{" "}
+            <code className="font-mono">sessionStorage</code> for this tab and are POSTed only
+            to <code className="font-mono">/api/ai/narrative</code> over the same origin — never
+            on analysis job payloads. Anyone with tab access can read sessionStorage. See{" "}
+            <code className="font-mono">docs/ai.md</code>.
           </p>
           <label className="flex items-center gap-2">
             <input
@@ -134,14 +156,23 @@ export function AiSettingsPanel() {
             className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 font-mono"
             autoComplete="off"
           />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void testKey()}
-            className="rounded-lg border border-[var(--line)] px-3 py-1.5 disabled:opacity-40"
-          >
-            Test key
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void testKey()}
+              className="rounded-lg border border-[var(--line)] px-3 py-1.5 disabled:opacity-40"
+            >
+              Test key
+            </button>
+            <button
+              type="button"
+              onClick={clearKey}
+              className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[var(--ink-soft)]"
+            >
+              Clear key
+            </button>
+          </div>
           {testMsg ? (
             <p className="font-mono text-[10px] text-[var(--ink-soft)]">{testMsg}</p>
           ) : null}

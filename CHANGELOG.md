@@ -54,6 +54,9 @@
 - **v1.2 continue:** local `gitimpact impact --from/--to` ref blast radius; saved/team architecture views (Structure pins + `saved_views` API); PR Overview impact-history sparkline
 - **v1.2 complete:** saved-view visibility/org/roles + PATCH; optional scheduled PR head poll (`GITIMPACT_PR_HEAD_POLL`); language surface expands to Java/Rust/C# (Spring/Axum/ASP.NET heuristics); RC private E2E harness (`pnpm rc:private-e2e`); v1.3 BYOK AI foundation (`@gitimpact/ai`, optional PR narrative)
 - **RC + wave 7:** `pnpm rc:load-test` (≥10 distinct repos), `pnpm rc:no-exec` marker proof; Java/Rust/C# relationship fixtures + dogfood wave 7; Spring/Axum/ASP.NET HANDLED_BY wiring; BYOK UI + `/api/ai/narrative`; richer AI digests; worker AI parity
+- **Launch readiness:** public AI endpoint BYOK-only + rate limit + digest redaction/validation; OSS README/CONTRIBUTING refresh; `.github` issue/PR templates; launch pack drafts under `docs/launch/`
+- **License:** MIT (`LICENSE`, package metadata)
+- **Deps / tests:** Next.js pinned to `15.5.27`; `drizzle-orm` `^0.45.2`; real-world suite skips cases without `expected.json`; residual audit documented in `SECURITY.md`
 - Analysis confidence / coverage report on Overview (parse %, edge confidence, unsupported inventory groups)
 - Adoption: public sample chips, “Report incorrect analysis” issue draft, local-path CLI (`gitimpact analyze ./dir`), `docs/examples.md`
 

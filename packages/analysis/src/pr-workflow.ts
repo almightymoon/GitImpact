@@ -68,28 +68,31 @@ export async function processPrAnalysisJob(job: PrAnalysisJob): Promise<void> {
     let aiSummary: string | undefined;
     try {
       const { enrichImpactNarrative } = await import("@gitimpact/ai");
-      aiSummary = await enrichImpactNarrative({
-        repository: `${job.owner}/${job.repo}`,
-        pullRequestNumber: job.number,
-        complexityScore: analysis.prOverview.complexityScore,
-        impactLevel: analysis.prOverview.impactLevel,
-        changedSymbols: analysis.impact.changedNodes
-          .filter((n) => n.type === "FUNCTION" || n.type === "METHOD" || n.type === "CLASS")
-          .map((n) => n.name)
-          .slice(0, 20),
-        affectedApis: (analysis.impact.affectedApis ?? [])
-          .map((n) => n.name)
-          .slice(0, 15),
-        relevantTests: (analysis.impact.relatedTests ?? [])
-          .map((t) => t.name)
-          .slice(0, 15),
-        summary: analysis.prOverview.summary,
-        frameworks: analysis.summary?.frameworks,
-        languages: analysis.summary?.languages?.map((l) => l.language),
-        directDependents: analysis.prOverview.directDependencies,
-        indirectDependents: analysis.prOverview.indirectDependencies,
-        whyTarget: whyPath?.targetName,
-      });
+      aiSummary = await enrichImpactNarrative(
+        {
+          repository: `${job.owner}/${job.repo}`,
+          pullRequestNumber: job.number,
+          complexityScore: analysis.prOverview.complexityScore,
+          impactLevel: analysis.prOverview.impactLevel,
+          changedSymbols: analysis.impact.changedNodes
+            .filter((n) => n.type === "FUNCTION" || n.type === "METHOD" || n.type === "CLASS")
+            .map((n) => n.name)
+            .slice(0, 20),
+          affectedApis: (analysis.impact.affectedApis ?? [])
+            .map((n) => n.name)
+            .slice(0, 15),
+          relevantTests: (analysis.impact.relatedTests ?? [])
+            .map((t) => t.name)
+            .slice(0, 15),
+          summary: analysis.prOverview.summary,
+          frameworks: analysis.summary?.frameworks,
+          languages: analysis.summary?.languages?.map((l) => l.language),
+          directDependents: analysis.prOverview.directDependencies,
+          indirectDependents: analysis.prOverview.indirectDependencies,
+          whyTarget: whyPath?.targetName,
+        },
+        { allowServerKey: true },
+      );
     } catch {
       aiSummary = undefined;
     }
