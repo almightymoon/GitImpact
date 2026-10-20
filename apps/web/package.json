@@ -19,7 +19,7 @@
     "@gitimpact/queue": "workspace:*",
     "@gitimpact/shared": "workspace:*",
     "@xyflow/react": "^12.6.4",
-    "next": "^15.3.3",
+    "next": "15.5.27",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

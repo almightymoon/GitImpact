@@ -1,20 +1,16 @@
 # GitImpact
 
-**Know What Breaks Before You Merge.**
+**Know what breaks before you merge.**
 
-GitImpact maps the blast radius of code changes across a repository using static analysis and dependency graphs.
+GitImpact estimates the blast radius of code changes with **deterministic static analysis** — dependency graphs, impacted symbols/APIs/tests, and optional GitHub pull-request comments & Check Runs. An optional **Bring Your Own Key (BYOK)** AI layer can narrate those findings; it never replaces the analyzer.
 
-## MVP (v0.1)
+> Accuracy is measured and limited. Heuristic parsers (especially Java / Rust / C#) estimate relationships; they do not prove every runtime consequence of a merge.
 
-- Public GitHub repositories & pull requests
-- TypeScript / JavaScript parsing (`ts-morph`) plus Python, Go, Java, Rust, and C# heuristics
-- Import / call / test dependency graph
-- Blast-radius traversal with configurable depth
-- Interactive React Flow graph
-- URL routes: `/owner/repo` and `/owner/repo/pull/123`
-- CLI: `gitimpact analyze <url>`
+## Why it exists
 
-## Quick start
+Code review often asks: *what else might this PR touch?* GitImpact clones a repo (or PR), builds a graph of imports/calls/routes/tests, and surfaces likely affected components so you can prioritize review and regression testing.
+
+## Quick start (local)
 
 Requires **Node 20+** and **pnpm 9**.
 
@@ -24,222 +20,113 @@ pnpm build:packages
 pnpm --filter @gitimpact/web dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) (use another port if 3000 is taken).
 
-- Paste a public GitHub repo or PR URL, or use the sample chips / local demos
-- Repo demo: [/demo/tiny-fixture](http://localhost:3000/demo/tiny-fixture)
-- PR demo: [/demo/tiny-fixture/pull/1](http://localhost:3000/demo/tiny-fixture/pull/1) (Overview · Graph · Changes · Tests · APIs)
-- Public examples: [docs/examples.md](docs/examples.md)
-- Offline: `gitimpact analyze ./my-checkout`
+- Paste a **public** GitHub repo or PR URL, or try demos:
+  - [/demo/tiny-fixture](http://localhost:3000/demo/tiny-fixture)
+  - [/demo/tiny-fixture/pull/1](http://localhost:3000/demo/tiny-fixture/pull/1)
+- Offline CLI: `node cli/dist/index.js analyze ./my-checkout`
 
-## Persistence
-
-Analyses are cached in memory and, when configured, written to Postgres.
+Optional Postgres (persistence) + Redis (durable queue):
 
 ```bash
 cp .env.example apps/web/.env.local
-pnpm db:up          # starts Postgres via Docker
-# schema auto-applies from packages/db/drizzle/0000_init.sql on first boot
-pnpm build:packages
+pnpm db:up
+pnpm db:push
 pnpm --filter @gitimpact/web dev
+pnpm worker:dev   # when REDIS_URL is set
 ```
 
-Without `DATABASE_URL`, GitImpact still works with in-memory storage (lost on restart).
+Without `DATABASE_URL`, analyses stay in memory (lost on restart).
 
-## Framework route detection
+## What works today
 
-MVP detectors:
+| Area | Status |
+|------|--------|
+| Public GitHub repo / PR analyze | Implemented |
+| Dependency graph + blast-radius traversal | Implemented |
+| PR comment upsert + Check Runs (GitHub App) | Implemented (live private E2E needs App credentials) |
+| CLI (`analyze`, `impact`, `history`, `compare`, `export`) | Implemented |
+| Languages: JS/TS (AST), Python / Go / Java / Rust / C# (heuristics) | Implemented — depth varies |
+| Framework routes (Next, Express, Nest, Flask/FastAPI/Django, Echo/Gin/Chi, Spring/Axum/ASP.NET, …) | Implemented — see dogfood docs |
+| Optional BYOK AI narrative | Implemented — opt-in; deterministic path works without AI |
+| History, compare, saved views, PR impact sparkline | Implemented (v1.2) |
 
-- **Next.js** — `app/api/**/route.ts` and `pages/api/**`
-- **Express** — `app.get/post/...`, `router.get/...`, `.route().get(...)`
+**Experimental / limited:** Java, Rust, and C# relationship accuracy (dogfood wave 7); AI narratives (interpretations only).
 
-### CLI
+**Planned / blocked for beta tag:** live private-repo App E2E with your credentials — see `docs/release-candidate.md`.
 
-```bash
-pnpm --filter @gitimpact/cli build
-node cli/dist/index.js analyze github.com/owner/repo
-```
-
-## Monorepo
+## Deterministic vs AI
 
 ```text
-apps/web                      Next.js UI + API
-packages/shared               Shared types
-packages/git                  GitHub URL + clone helpers
-packages/parser               TS/JS AST extraction
-packages/framework-detector   Next.js + Express route detection
-packages/graph                Dependency graph builder
-packages/impact-engine        Blast-radius traversal
-packages/db                   Postgres + Drizzle persistence
-packages/analysis             Orchestration + cache
-cli                           Local CLI
+clone → parse → graph → impact → persist
+                              ↓ optional
+                     AI narrates the digest (BYOK or server key for PR comments)
 ```
 
-## Principles
+- **Deterministic:** symbols, edges, scores, test gaps — source of truth.
+- **AI (optional):** explains the digest; must not invent files, bugs, or test results.
+- Keys never go on BullMQ job payloads. Details: [`docs/ai.md`](docs/ai.md).
 
-1. Deterministic static analysis first
-2. AI explains findings later (not in MVP core path)
-3. Never execute repository code
-4. Confidence levels on relationships
+## Architecture (high level)
 
-### Accuracy benchmark (v0.4)
+```mermaid
+flowchart LR
+  UI[apps/web] --> API[Analyze / Webhooks]
+  API --> Q[packages/queue]
+  Q --> W[apps/worker]
+  W --> A[packages/analysis]
+  A --> P[parser]
+  A --> G[graph]
+  A --> I[impact-engine]
+  A --> DB[(Postgres)]
+  W --> GH[GitHub App API]
+```
+
+| Path | Role |
+|------|------|
+| `apps/web` | Next.js UI + HTTP APIs |
+| `apps/worker` | BullMQ / inline job processor |
+| `packages/analysis` | Orchestration, PR workflow, coverage |
+| `packages/parser` | Language surface extraction |
+| `packages/graph` / `impact-engine` | Graph + blast radius |
+| `packages/git` | Clone, App auth, comments, checks |
+| `packages/ai` | Optional BYOK narratives |
+| `cli` | Local adoption without the UI |
+
+## GitHub App
+
+Production PR flow: App install → signed webhook → async job → comment + Check Run.
+
+See [`docs/github-app.md`](docs/github-app.md) and [`docs/private-repo-e2e.md`](docs/private-repo-e2e.md).
+
+Required env (production): `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `DATABASE_URL`, `REDIS_URL`. Full list: [`.env.example`](.env.example).
+
+## Tests
 
 ```bash
 pnpm build:packages
 pnpm test:accuracy
-```
-
-Cases live under `tests/accuracy/cases/` and assert exact CALLS/IMPORTS edges, changed symbols, blast-radius nodes, and semantic events. `pnpm test:accuracy` regenerates `tests/accuracy/results.json` with measured precision/recall (not hand-written scores).
-
-### Real-world benchmark
-
-Adversarial snapshots under `tests/real-world/cases/` (Next.js, NestJS, Express, Prisma, monorepo). Reports resolution coverage — not only labelled precision:
-
-```bash
 pnpm test:real-world
+pnpm relationships
+pnpm rc:no-exec          # proves install scripts are never run on analyzed repos
 ```
 
-Call graphs resolve through the TypeScript type checker (repository-level `ts-morph` Project), not name heuristics:
+RC helpers (need running web / credentials as noted): `pnpm rc:load-test`, `pnpm rc:private-e2e`.
 
-```text
-CallExpression → Symbol → Declaration → exact file + function/method
-```
+## Security & privacy
 
-Graph semantics:
+- Repository code is **never executed** (`npm`/`pnpm` scripts, binaries, etc.).
+- Only `https://github.com/...` clone URLs; git via `execFile` (no shell).
+- Webhook signatures verified; tokens not logged.
+- Policy: [`SECURITY.md`](SECURITY.md) · details: [`docs/security.md`](docs/security.md).
 
-- `FILE/CLASS → * : CONTAINS`
-- `FILE → exported symbol : EXPORTS`
-- `FUNCTION/METHOD → FUNCTION/METHOD : CALLS` (resolved)
+## Contributing
 
-### v0.3 — Diff-to-AST
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/contributing.md`](docs/contributing.md).
 
-Changed line ranges from Git patches map to the smallest enclosing FUNCTION/METHOD/CLASS via AST — not declaration-line regex alone.
+Roadmap: [`docs/roadmap.md`](docs/roadmap.md). Changelog: [`CHANGELOG.md`](CHANGELOG.md).
 
-### v0.4 — Semantic Diff Engine
+## License
 
-Unified diffs are compared as old-file AST vs new-file AST, emitting events such as `METHOD_REMOVED`, `PARAMETER_ADDED`, `CALL_ADDED`, and `BODY_CHANGED` — finer than broad STRUCTURAL / INTERFACE / BEHAVIORAL buckets.
-
-### v0.5 — Framework & Resolution Coverage
-
-Dynamic `import()`, NestJS DI (`DEPENDS_ON`) + decorator routes (`HANDLED_BY`), and Prisma delegate `QUERIES` → `DATABASE_MODEL` edges. Goal on the real-world suite: resolution coverage ≥ 90% with precision ≥ 98%.
-
-### v0.6 — GitHub PR Integration
-
-Product flow for teams:
-
-```text
-PR opened / synchronized
-        ↓
-GitImpact analyzes diff
-        ↓
-semantic diff → blast radius → test gaps
-        ↓
-upsert PR comment
-```
-
-**Webhook:** `POST /api/webhooks/github` (events: `pull_request` opened / synchronize / reopened)
-
-**Manual:** `POST /api/pr/comment` or CLI:
-
-```bash
-gitimpact comment https://github.com/owner/repo/pull/123
-gitimpact comment https://github.com/owner/repo/pull/123 --dry-run
-```
-
-Requires `GITHUB_APP_ID` + `GITHUB_APP_PRIVATE_KEY` (preferred) or `GITHUB_TOKEN` (dev). Optional: `GITHUB_WEBHOOK_SECRET`, `GITIMPACT_PUBLIC_URL`, `GITIMPACT_API_KEY`.
-
-### v0.7 — GitHub App & Production PR Workflow
-
-Production-oriented PR pipeline:
-
-```text
-GitHub App installed → installation_id stored
-        ↓
-Webhook (X-GitHub-Delivery claimed once)
-        ↓
-202 Accepted + background job
-        ↓
-Installation access token
-        ↓
-Analyze private/public repo
-        ↓
-Upsert PR comment + neutral Check Run
-```
-
-- **App auth:** short-lived installation tokens (no long-lived PAT required)
-- **Idempotency:** `webhook_deliveries.delivery_id` rejects duplicate deliveries
-- **Async:** webhook returns `202` immediately; analysis runs in-process queue
-- **Checks:** `GitImpact` check run concludes `neutral` (informational, does not block merges)
-- **Manual endpoint:** `POST /api/pr/comment` requires `Authorization: Bearer <GITIMPACT_API_KEY>` to post; unauthenticated callers get dry-run only
-
-Apply DB migration: `packages/db/drizzle/0001_github_app.sql`
-
-### v0.8 — Product UX & Repository Intelligence
-
-Turns analysis into an understandable product surface:
-
-- **Overview:** repository type, README digest, architecture summary, modules, analysis health
-- **Private repos:** clear access-error states (never silent empty graphs)
-- **Graph:** relationship inspector, blast-radius explanation, copyable impact summary
-- **PRs:** open PR listing + “potential impact if merged” detail
-- **Semantic changes / Tests / APIs:** human labels, why-flagged gaps, API chains, infra empty states
-- **Navigation:** empty-canvas click deselects (no fake back-navigation)
-
-Apply DB migration: `packages/db/drizzle/0002_intelligence.sql`
-
-### Roadmap
-
-```text
-v0.9  Code Quality + Security + CI/CD Intelligence
-        ↓
-v1.0  Public Beta & Production Hardening            ← current RC
-        ↓
-v1.1  Real-World Accuracy & Adoption                ← next (dogfood-first)
-```
-
-**v1.0 focus:** durable workers (Redis/BullMQ), rate limits, quotas/timeouts, persistent jobs, structured logs, health/ready, Docker web+worker, docs — not more analyzers.
-
-**v1.1 focus:** dogfood 20–30 real repos → miss log → fix relationship accuracy → then Python → then Go. See `docs/roadmap.md`.
-
-```bash
-pnpm dogfood              # priority-1 matrix
-pnpm dogfood:misses       # open miss summary
-```
-
-See `docs/` for architecture, deployment, configuration, operations, security, and troubleshooting.
-Public beta launch checklist: `docs/beta-checklist.md`. Security policy: `SECURITY.md`.
-Dogfood guide: `docs/dogfood.md`.
-
-### v1.0 — Public Beta & Production Hardening
-
-- **Checks trust:** every finding has ruleId, severity, confidence, evidence, why-it-matters, remediation; `.gitimpact.yml` ignore + severity overrides
-- **Platform:** rate limiting, durable jobs (Redis/BullMQ), persistent analysis cache, repo-size quotas
-- **GitHub App:** install/onboarding flow, private-repo E2E, webhook retry / dead-letter
-- **Ops:** structured logging/observability, production error handling, Docker/deploy docs
-- **Product:** onboarding/tutorial, public docs, external-repo dogfooding, security review of GitImpact itself
-
-#### `.gitimpact.yml` (Checks config)
-
-```yaml
-checks:
-  ignore:
-    - rule: high_complexity_function
-      path: src/legacy/**
-      reason: legacy module scheduled for replacement
-  severity:
-    dangerous_dependency: high
-```
-
-### v0.9 — Code Quality, Security & CI Intelligence
-
-Answers: “What is risky about this code change besides dependency impact?”
-
-- **Checks tab:** Security · Code Quality · Dependencies · CI/CD · Infrastructure
-- **Security:** secret patterns, env mishandling, auth-sensitive paths, dangerous deps, risky sinks
-- **Quality:** complexity, large functions/classes, unused exports, circular imports, `any`, empty catches
-- **CI/CD & infra:** GitHub Actions, Docker, Kubernetes, Helm, Terraform, Argo CD — presence + PR-affected surfaces
-- **PR quality report:** combined Change Impact + Quality + Security + CI/Deployment bullets
-- **Structure:** infrastructure nodes (`INFRASTRUCTURE`) linked via `DEPLOYS` when detected
-- **Architecture map:** GitDiagram-style Structure bands (deployment / server / client / persistence / actors)
-
-Apply DB migration: `packages/db/drizzle/0003_checks.sql`
+[MIT](LICENSE) © 2026 almightymoon

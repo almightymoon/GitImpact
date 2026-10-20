@@ -2,6 +2,7 @@
   "name": "gitimpact",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "description": "Know what breaks before you merge — blast-radius analysis for code changes",
   "scripts": {
     "dev": "turbo run dev --parallel",

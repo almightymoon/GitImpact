@@ -1,27 +1,29 @@
 # Contributing to GitImpact analysis
 
-GitImpact is deterministic static analysis. Do not add managed AI providers.
+GitImpact’s core path is **deterministic static analysis**. Optional BYOK AI (`packages/ai`) may narrate digests but must not invent edges, bugs, or test results. Keep the product fully useful with AI disabled.
 
 ## Pipeline overview
 
 1. **Clone** — `packages/git` clones via `execFile("git", …)` (no shell).
 2. **Discover** — `inventoryRepositoryFiles` walks the workspace under quotas.
-3. **Parse** — `packages/parser` builds ASTs for TS/JS (never executes repo code).
+3. **Parse** — `packages/parser` (TS/JS via ts-morph; Python/Go/Java/Rust/C# heuristics).
 4. **Graph** — `packages/graph` builds dependency nodes/edges.
 5. **Frameworks / APIs** — `packages/framework-detector`.
 6. **Architecture** — `packages/analysis` projection + walkthrough.
 7. **Checks** — security / quality / deps / CI / infra rules.
 8. **Impact** — `packages/impact-engine` for PR / change blast radius.
 9. **Persist** — Postgres (or memory in dev) keyed by commit SHA + `ANALYSIS_SCHEMA_VERSION`.
+10. **Optional AI** — digest → narrative (worker may use server `GITIMPACT_AI_*`; public HTTP requires client BYOK).
 
-Jobs run in `apps/worker` via Redis/BullMQ (`packages/queue`).
+Jobs run in `apps/worker` via Redis/BullMQ (`packages/queue`), or inline when Redis is unset.
 
 ## Add a parser rule
 
-1. Extend `packages/parser` visitors for the AST node you care about.
+1. Extend the relevant file under `packages/parser` (or add a language module).
 2. Emit stable node identities (file + symbol).
-3. Add a fixture under `tests/accuracy` or `tests/real-world`.
-4. Run `pnpm test:accuracy`.
+3. Wire extensions into `CODE_EXTENSIONS` / `parseRepository` when adding a language.
+4. Add a fixture under `tests/accuracy`, `tests/real-world`, or `tests/relationships`.
+5. Run `pnpm --filter @gitimpact/parser test` and the relevant suite.
 
 ## Add a Check rule
 
@@ -34,14 +36,13 @@ Jobs run in `apps/worker` via Redis/BullMQ (`packages/queue`).
 ## Add a framework detector
 
 1. Extend `packages/framework-detector` with file/manifest signals.
-2. Prefer deterministic path/content matches over heuristics that need network.
-3. Export routes/components into the shared graph when applicable.
+2. Prefer deterministic path/content matches over network-dependent heuristics.
+3. Export routes into the shared graph when applicable (`HANDLED_BY` needs `handlerName` / `handlerClass` when possible).
 
 ## Add architecture classification
 
-1. Update classification helpers under `packages/analysis/src/architecture/`.
+1. Update helpers under `packages/analysis/src/architecture/` (and related).
 2. Keep walkthroughs deterministic and evidence-backed.
-3. Avoid collapsing large systems into an opaque “Other” bucket without a test.
 
 ## Benchmarks
 
@@ -49,10 +50,13 @@ Jobs run in `apps/worker` via Redis/BullMQ (`packages/queue`).
 pnpm build:packages
 pnpm test:accuracy
 pnpm test:real-world
+pnpm relationships
+pnpm dogfood -- --wave 7
 ```
 
 ## Security invariants
 
 - Never `npm install` / run scripts from analyzed repositories.
-- Never log installation tokens or private keys.
+- Never log installation tokens, private keys, or AI API keys.
 - Treat every repository as hostile input.
+- Public `/api/ai/narrative` must not use the operator’s server AI key (client BYOK only).
