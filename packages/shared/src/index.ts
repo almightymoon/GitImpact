@@ -554,6 +554,8 @@ export interface RepositoryIntelligence {
   architectureArtifacts?: string[];
   /** Semantic architecture map for Structure view */
   architecture?: ArchitectureMap;
+  /** Parsed tables/columns/FKs from migration, seed, and schema files */
+  databaseSchema?: DatabaseSchemaModel;
 }
 
 export type ArchitectureBandId =
@@ -655,6 +657,59 @@ export interface ArchitectureMap {
   summary?: ArchitectureSummary;
   defaultMode?: ArchitectureMode;
   repositoryType?: RepositoryType;
+}
+
+/** Kind of database definition file discovered during analysis. */
+export type DatabaseSchemaFileKind =
+  | "migration"
+  | "seed"
+  | "schema"
+  | "prisma"
+  | "other";
+
+export interface DatabaseSchemaSourceFile {
+  path: string;
+  kind: DatabaseSchemaFileKind;
+  /** True when git history shows a change within the lookback window (default 7 days). */
+  recent?: boolean;
+}
+
+export interface DatabaseColumn {
+  name: string;
+  type: string;
+  primaryKey?: boolean;
+  nullable?: boolean;
+  unique?: boolean;
+  references?: { table: string; column?: string };
+}
+
+export interface DatabaseTable {
+  name: string;
+  columns: DatabaseColumn[];
+  sourceFiles: string[];
+}
+
+export interface DatabaseForeignKey {
+  id: string;
+  fromTable: string;
+  fromColumn: string;
+  toTable: string;
+  toColumn: string;
+  sourceFile?: string;
+}
+
+export interface DatabaseSchemaModel {
+  tables: DatabaseTable[];
+  foreignKeys: DatabaseForeignKey[];
+  sourceFiles: DatabaseSchemaSourceFile[];
+  /** Lookback window used for “recent” migration/seed/schema detection (days). */
+  lookbackDays: number;
+  summary: {
+    tableCount: number;
+    columnCount: number;
+    foreignKeyCount: number;
+    recentFileCount: number;
+  };
 }
 
 export interface AnalysisErrorPayload {

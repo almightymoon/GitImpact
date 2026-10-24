@@ -4,7 +4,20 @@ import { ANALYSIS_SCHEMA_VERSION } from "@gitimpact/shared";
 import { getDb, isDatabaseConfigured } from "./client.js";
 import { analysisJobs } from "./schema.js";
 
-const memoryJobs = new Map<string, AnalysisJobRecord>();
+/**
+ * Next.js can load workspace packages into multiple module instances per route.
+ * Keep the in-memory job map on globalThis so enqueue + poll share the same store.
+ */
+const globalJobs = globalThis as typeof globalThis & {
+  __gitimpactMemoryJobs?: Map<string, AnalysisJobRecord>;
+};
+
+function memoryJobs(): Map<string, AnalysisJobRecord> {
+  if (!globalJobs.__gitimpactMemoryJobs) {
+    globalJobs.__gitimpactMemoryJobs = new Map();
+  }
+  return globalJobs.__gitimpactMemoryJobs;
+}
 
 function rowToRecord(row: typeof analysisJobs.$inferSelect): AnalysisJobRecord {
   return {
@@ -62,7 +75,7 @@ export async function createAnalysisJob(input: {
 
   const db = getDb();
   if (!db) {
-    memoryJobs.set(record.id, record);
+    memoryJobs().set(record.id, record);
     return record;
   }
 
@@ -104,7 +117,7 @@ export async function updateAnalysisJob(
   const now = new Date();
 
   if (!db) {
-    const existing = memoryJobs.get(id);
+    const existing = memoryJobs().get(id);
     if (!existing) return undefined;
     const next: AnalysisJobRecord = {
       ...existing,
@@ -134,7 +147,7 @@ export async function updateAnalysisJob(
           : (patch.commitSha ?? existing.commitSha),
       updatedAt: now.toISOString(),
     };
-    memoryJobs.set(id, next);
+    memoryJobs().set(id, next);
     return next;
   }
 
@@ -159,7 +172,7 @@ export async function updateAnalysisJob(
 
 export async function getAnalysisJob(id: string): Promise<AnalysisJobRecord | undefined> {
   const db = getDb();
-  if (!db) return memoryJobs.get(id);
+  if (!db) return memoryJobs().get(id);
   const rows = await db.select().from(analysisJobs).where(eq(analysisJobs.id, id)).limit(1);
   return rows[0] ? rowToRecord(rows[0]) : undefined;
 }
@@ -169,7 +182,7 @@ export async function findActiveJobByDedupeKey(
 ): Promise<AnalysisJobRecord | undefined> {
   const db = getDb();
   if (!db) {
-    for (const job of memoryJobs.values()) {
+    for (const job of memoryJobs().values()) {
       if (
         job.dedupeKey === dedupeKey &&
         (job.status === "QUEUED" || job.status === "RUNNING" || job.status === "RETRYING")
@@ -197,7 +210,7 @@ export async function findActiveJobByDedupeKey(
 export async function listFailedJobs(limit = 50): Promise<AnalysisJobRecord[]> {
   const db = getDb();
   if (!db) {
-    return [...memoryJobs.values()]
+    return [...memoryJobs().values()]
       .filter((j) => j.status === "FAILED" || j.status === "DEAD_LETTER")
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .slice(0, limit);
@@ -214,7 +227,7 @@ export async function listFailedJobs(limit = 50): Promise<AnalysisJobRecord[]> {
 export async function listDeadLetterJobs(limit = 50): Promise<AnalysisJobRecord[]> {
   const db = getDb();
   if (!db) {
-    return [...memoryJobs.values()]
+    return [...memoryJobs().values()]
       .filter((j) => j.status === "DEAD_LETTER")
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .slice(0, limit);
@@ -232,12 +245,12 @@ export async function purgeExpiredJobs(olderThan: Date): Promise<number> {
   const db = getDb();
   if (!db) {
     let n = 0;
-    for (const [id, job] of memoryJobs) {
+    for (const [id, job] of memoryJobs()) {
       if (
         (job.status === "SUCCEEDED" || job.status === "DEAD_LETTER") &&
         new Date(job.updatedAt) < olderThan
       ) {
-        memoryJobs.delete(id);
+        memoryJobs().delete(id);
         n += 1;
       }
     }
@@ -255,7 +268,7 @@ export async function purgeExpiredJobs(olderThan: Date): Promise<number> {
 }
 
 export function clearMemoryJobsForTests(): void {
-  memoryJobs.clear();
+  memoryJobs().clear();
 }
 
 export { isDatabaseConfigured };

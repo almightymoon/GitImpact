@@ -36,6 +36,7 @@ async function pollJobUntilDone(
 ): Promise<JobPoll> {
   const started = Date.now();
   const timeoutMs = 10 * 60 * 1000;
+  let notFoundStreak = 0;
 
   while (!signal.aborted) {
     if (Date.now() - started > timeoutMs) {
@@ -53,6 +54,18 @@ async function pollJobUntilDone(
       message?: string;
       code?: string;
     };
+    // Brief 404s can happen right after enqueue (module/store warm-up); retry briefly.
+    if (response.status === 404) {
+      notFoundStreak += 1;
+      if (notFoundStreak > 20) {
+        throw Object.assign(new Error(data.message ?? "Job not found"), {
+          code: data.code ?? "NOT_FOUND",
+        });
+      }
+      await new Promise((r) => setTimeout(r, 400));
+      continue;
+    }
+    notFoundStreak = 0;
     if (!response.ok) {
       throw Object.assign(new Error(data.message ?? "Job not found"), {
         code: data.code,

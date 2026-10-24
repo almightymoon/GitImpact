@@ -505,6 +505,38 @@ export async function resolveLocalRefSha(
   return stdout.trim();
 }
 
+/**
+ * Relative paths touched in the last `days` (default 7), via `git log --since`.
+ * Returns [] when the path is not a git repo or git fails.
+ */
+export async function listPathsChangedSince(
+  repoPath: string,
+  days = 7,
+): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync(
+      "git",
+      [
+        "log",
+        `--since=${Math.max(1, Math.floor(days))}.days`,
+        "--name-only",
+        "--pretty=format:",
+        "--diff-filter=ACMR",
+      ],
+      { cwd: repoPath, timeout: 30_000, maxBuffer: 8 * 1024 * 1024 },
+    );
+    const seen = new Set<string>();
+    for (const line of stdout.split("\n")) {
+      const p = line.trim().replace(/\\/g, "/");
+      if (!p || p.startsWith(".git/")) continue;
+      seen.add(p);
+    }
+    return [...seen];
+  } catch {
+    return [];
+  }
+}
+
 export { path };
 
 export {

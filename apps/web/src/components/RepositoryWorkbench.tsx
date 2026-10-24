@@ -16,6 +16,7 @@ import type {
 } from "@gitimpact/shared";
 import { ImpactGraph } from "@/components/ImpactGraph";
 import { StructureDiagram } from "@/components/StructureDiagram";
+import { DatabaseSchemaDiagram } from "@/components/DatabaseSchemaDiagram";
 import { AnalyzeForm } from "@/components/AnalyzeForm";
 import { AccessErrorPanel } from "@/components/AccessErrorPanel";
 import { RepoOverviewPanel } from "@/components/RepoOverviewPanel";
@@ -36,6 +37,7 @@ type TabId =
   | "overview"
   | "graph"
   | "structure"
+  | "database"
   | "prs"
   | "changes"
   | "tests"
@@ -96,6 +98,7 @@ const TABS_REPO: Array<{ id: TabId; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "graph", label: "Graph" },
   { id: "structure", label: "Structure" },
+  { id: "database", label: "Database" },
   { id: "prs", label: "PRs" },
   { id: "checks", label: "Checks" },
   { id: "tests", label: "Tests" },
@@ -110,6 +113,7 @@ const TABS_PR: Array<{ id: TabId; label: string }> = [
   { id: "tests", label: "Tests" },
   { id: "apis", label: "APIs" },
   { id: "structure", label: "Structure" },
+  { id: "database", label: "Database" },
 ];
 
 export function RepositoryWorkbench({
@@ -530,6 +534,30 @@ export function RepositoryWorkbench({
             onOpenGraph={() => setTab("graph")}
             onOpenTests={() => setTab("tests")}
           />
+        </div>
+      ) : null}
+
+      {tab === "database" ? (
+        <div className="mx-auto max-w-[1400px] px-6 py-6">
+          {data.intelligence?.databaseSchema ? (
+            <div className="h-[780px]">
+              <DatabaseSchemaDiagram model={data.intelligence.databaseSchema} />
+            </div>
+          ) : (
+            <EmptyState
+              title="No database schema detected"
+              message="GitImpact looks for migration, seed, and schema files (SQL, Prisma, Supabase/Drizzle paths), including files changed in the last 7 days. Re-analyze after adding those files."
+              action={
+                <button
+                  type="button"
+                  onClick={() => setTab("structure")}
+                  className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm text-white"
+                >
+                  Open Structure
+                </button>
+              }
+            />
+          )}
         </div>
       ) : null}
 

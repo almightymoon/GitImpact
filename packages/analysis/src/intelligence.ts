@@ -23,6 +23,7 @@ import {
 import { detectWorkspacePackages } from "./architecture-map.js";
 import { buildAnalysisCoverage } from "./coverage.js";
 import { buildInfrastructureNodes } from "./checks/index.js";
+import { buildDatabaseSchemaModel } from "./database-schema/index.js";
 
 async function findReadmeRaw(clonePath: string): Promise<string | undefined> {
   for (const name of ["README.md", "Readme.md", "readme.md", "README.MD"]) {
@@ -134,6 +135,17 @@ export async function buildRepositoryIntelligence(input: {
     files: input.files,
   });
 
+  let databaseSchema: Awaited<ReturnType<typeof buildDatabaseSchemaModel>>;
+  try {
+    databaseSchema = await buildDatabaseSchemaModel({
+      clonePath: input.clonePath,
+      allRelativeFiles: filePaths,
+      lookbackDays: 7,
+    });
+  } catch {
+    databaseSchema = undefined;
+  }
+
   return {
     repositoryType: type,
     typeLabel: label,
@@ -147,5 +159,6 @@ export async function buildRepositoryIntelligence(input: {
     openPrCount: openPullRequests.length,
     architectureArtifacts,
     architecture,
+    databaseSchema,
   };
 }
